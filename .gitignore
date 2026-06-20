@@ -1,0 +1,73 @@
+# Xcode / iOS .gitignore
+
+# Build artifacts
+build/
+DerivedData/
+*.build/
+
+# Xcode workspace state
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# User-specific xcschemes (keep shared schemes)
+*.xcodeproj/xcshareddata/xcdebugger/
+
+# SPM package resolution (uncomment if using SPM)
+# .swiftpm/
+
+# CocoaPods (not used, but just in case)
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Xcode state
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+!default.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+
+# XCTest coverage
+*.xctestresult/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+*.resolved
+
+# Secrets (never commit these)
+*.p12
+*.cer
+*.mobileprovision
+AuthKey_*.p8
+
+# Archive
+*.xcarchive/
+
+# Editor swap files
+*.swp
+*~
