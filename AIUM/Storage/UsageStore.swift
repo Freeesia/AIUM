@@ -99,7 +99,9 @@ extension UsageStore {
     /// Loads snapshots directly from the shared container without needing a
     /// live `UsageStore` instance. Intended for use by the widget extension's
     /// timeline provider.
-    static func loadSnapshotsFromSharedContainer() -> [UsageSnapshot] {
+    /// This method is nonisolated so it can be called from any context, including
+    /// WidgetKit's TimelineProvider callbacks.
+    nonisolated static func loadSnapshotsFromSharedContainer() -> [UsageSnapshot] {
         guard let container = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupIdentifier
         ) else { return [] }

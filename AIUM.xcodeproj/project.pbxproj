@@ -232,7 +232,6 @@
 			isa = PBXGroup;
 			children = (
 				E14D8E9B26844A629165B463 /* UsageStore.swift */,
-				E14D8E9B26844A629165B463 /* UsageStore.swift */,
 				264A77D1515C40969F7AE166 /* KeychainHelper.swift */,
 			);
 			path = Storage;
