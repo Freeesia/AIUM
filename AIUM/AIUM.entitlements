@@ -4,8 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<!-- TODO: Replace with your real App Group identifier -->
-		<string>group.io.github.freeesia.aium</string>
+		<string>group.com.studiofreesia.aium</string>
 	</array>
 </dict>
 </plist>

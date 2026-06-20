@@ -6,94 +6,90 @@
 	objectVersion = 56;
 	objects = {
 
-		/* Begin PBXBuildFile section */
-		1F70776FFBDB45228FCA7966 /* AIUMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */; };
-		0FE640D6D8EC44D1A8D3DBD5 /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
-		9E92C54E58B44FF1B587C8FD /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
-		B0434B945D5B400899EBE8FE /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
-		A3721FAFF3A04AE7B7402248 /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14D8E9B26844A629165B463 /* UsageStore.swift */; };
-		F7968C196293452590AB606A /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14D8E9B26844A629165B463 /* UsageStore.swift */; };
-		79FF57DC03B94E9E8382C215 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264A77D1515C40969F7AE166 /* KeychainHelper.swift */; };
-		26D6BFC773BB4B20AAE25C87 /* UsageProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */; };
-		C5C49E34C7C04F9682DC6FE3 /* GitHubAuthProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */; };
-		23E7FC2CC7AA413FB35B16F0 /* GitHubAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */; };
-		96F9577454F140A195DFBCBC /* GitHubUsageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */; };
+/* Begin PBXBuildFile section */
 		0CC8BD30C5DB447184B8BB26 /* CodexAuthProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A2D9F3E8214356A797A060 /* CodexAuthProvider.swift */; };
-		957537F79F83448EAB886432 /* PrivateCodexUsageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFEEA2CF065486A89BA0A30 /* PrivateCodexUsageProvider.swift */; };
-		2CE9F28546564B13B64F1047 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A6EEC583E8B48F6942248FE /* DashboardViewModel.swift */; };
-		44A0633995FB445A84F75DCC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DCAD3A46244B0FBFD08BC8 /* SettingsViewModel.swift */; };
-		AE68D9630221460BBC96DA4F /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */; };
-		93105079FCC54922B93B5C83 /* UsageCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */; };
-		69086F51B2B8419FAD202301 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AC71101E145D7B8159671 /* SettingsView.swift */; };
-		BB8F6C6F3F114FBD9522105F /* AIUMWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5BF74FF59C4FA486EF77F2 /* AIUMWidgetBundle.swift */; };
-		40021305525E49FEB4F7EF78 /* AIUMWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E645C04D3447AFBC780662 /* AIUMWidget.swift */; };
-		F0AD3F00814E4D8F861E5055 /* AIUMWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54A9CEEF6A38479C93D95820 /* AIUMWidgetView.swift */; };
-		5886C60EFB7A47CCBDF92AAB /* UsageSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */; };
-		2372D11B04F64566940A18DF /* GitHubParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646466DD961E4FD992110566 /* GitHubParsingTests.swift */; };
+		0FE640D6D8EC44D1A8D3DBD5 /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
 		10E3AC5DC92E4187A95074C8 /* CodexParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070087AAF5134199B784A9AA /* CodexParsingTests.swift */; };
-		D48605AFE51D46D188CBA6B4 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B078F7FA3304B0096EFC646 /* Info.plist */; };
-		49FAAED7D5A54AABB98401C5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 23AAD407219E46C290FEA72B /* Assets.xcassets */; };
-		C87A8429443A4D8B9EF65651 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7F8A19D66741437E85CE3BEE /* Info.plist */; };
+		1F70776FFBDB45228FCA7966 /* AIUMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */; };
+		2372D11B04F64566940A18DF /* GitHubParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646466DD961E4FD992110566 /* GitHubParsingTests.swift */; };
+		23E7FC2CC7AA413FB35B16F0 /* GitHubAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */; };
+		26D6BFC773BB4B20AAE25C87 /* UsageProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */; };
+		2CE9F28546564B13B64F1047 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A6EEC583E8B48F6942248FE /* DashboardViewModel.swift */; };
 		37EF9EE2F1414699A78B8FBD /* AIUMWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		/* End PBXBuildFile section */
+		40021305525E49FEB4F7EF78 /* AIUMWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E645C04D3447AFBC780662 /* AIUMWidget.swift */; };
+		44A0633995FB445A84F75DCC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DCAD3A46244B0FBFD08BC8 /* SettingsViewModel.swift */; };
+		49FAAED7D5A54AABB98401C5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 23AAD407219E46C290FEA72B /* Assets.xcassets */; };
+		5886C60EFB7A47CCBDF92AAB /* UsageSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */; };
+		69086F51B2B8419FAD202301 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15AC71101E145D7B8159671 /* SettingsView.swift */; };
+		79FF57DC03B94E9E8382C215 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264A77D1515C40969F7AE166 /* KeychainHelper.swift */; };
+		93105079FCC54922B93B5C83 /* UsageCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */; };
+		957537F79F83448EAB886432 /* PrivateCodexUsageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFEEA2CF065486A89BA0A30 /* PrivateCodexUsageProvider.swift */; };
+		96F9577454F140A195DFBCBC /* GitHubUsageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */; };
+		9E92C54E58B44FF1B587C8FD /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
+		A3721FAFF3A04AE7B7402248 /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14D8E9B26844A629165B463 /* UsageStore.swift */; };
+		AE68D9630221460BBC96DA4F /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */; };
+		B0434B945D5B400899EBE8FE /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */; };
+		BB8F6C6F3F114FBD9522105F /* AIUMWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5BF74FF59C4FA486EF77F2 /* AIUMWidgetBundle.swift */; };
+		C5C49E34C7C04F9682DC6FE3 /* GitHubAuthProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */; };
+		F0AD3F00814E4D8F861E5055 /* AIUMWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54A9CEEF6A38479C93D95820 /* AIUMWidgetView.swift */; };
+		F7968C196293452590AB606A /* UsageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14D8E9B26844A629165B463 /* UsageStore.swift */; };
+/* End PBXBuildFile section */
 
-		/* Begin PBXSourcesBuildPhase section */
-		0342A1067B364C24AE0FD3DF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
+/* Begin PBXCopyFilesBuildPhase section */
+		3ED524205715423F91495927 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
 			files = (
-				1F70776FFBDB45228FCA7966 /* AIUMApp.swift in Sources */,
-				0FE640D6D8EC44D1A8D3DBD5 /* UsageSnapshot.swift in Sources */,
-				A3721FAFF3A04AE7B7402248 /* UsageStore.swift in Sources */,
-				79FF57DC03B94E9E8382C215 /* KeychainHelper.swift in Sources */,
-				26D6BFC773BB4B20AAE25C87 /* UsageProviderProtocol.swift in Sources */,
-				C5C49E34C7C04F9682DC6FE3 /* GitHubAuthProvider.swift in Sources */,
-				23E7FC2CC7AA413FB35B16F0 /* GitHubAPIClient.swift in Sources */,
-				96F9577454F140A195DFBCBC /* GitHubUsageProvider.swift in Sources */,
-				0CC8BD30C5DB447184B8BB26 /* CodexAuthProvider.swift in Sources */,
-				957537F79F83448EAB886432 /* PrivateCodexUsageProvider.swift in Sources */,
-				2CE9F28546564B13B64F1047 /* DashboardViewModel.swift in Sources */,
-				44A0633995FB445A84F75DCC /* SettingsViewModel.swift in Sources */,
-				AE68D9630221460BBC96DA4F /* DashboardView.swift in Sources */,
-				93105079FCC54922B93B5C83 /* UsageCardView.swift in Sources */,
-				69086F51B2B8419FAD202301 /* SettingsView.swift in Sources */,
+				37EF9EE2F1414699A78B8FBD /* AIUMWidget.appex in Embed Foundation Extensions */,
 			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		95D9D71DD1E0437C934177C2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B0434B945D5B400899EBE8FE /* UsageSnapshot.swift in Sources */,
-				F7968C196293452590AB606A /* UsageStore.swift in Sources */,
-				BB8F6C6F3F114FBD9522105F /* AIUMWidgetBundle.swift in Sources */,
-				40021305525E49FEB4F7EF78 /* AIUMWidget.swift in Sources */,
-				F0AD3F00814E4D8F861E5055 /* AIUMWidgetView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		80682A9ACCA24CFAA2CCB04F /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				9E92C54E58B44FF1B587C8FD /* UsageSnapshot.swift in Sources */,
-				5886C60EFB7A47CCBDF92AAB /* UsageSnapshotTests.swift in Sources */,
-				2372D11B04F64566940A18DF /* GitHubParsingTests.swift in Sources */,
-				10E3AC5DC92E4187A95074C8 /* CodexParsingTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		/* End PBXSourcesBuildPhase section */
-		
-		/* Begin PBXFrameworksBuildPhase section */
-		A0A2982AF4B14194AA37AF62 /* Frameworks */ = {
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		070087AAF5134199B784A9AA /* CodexParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexParsingTests.swift; sourceTree = "<group>"; };
+		10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubAuthProvider.swift; sourceTree = "<group>"; };
+		1DFEEA2CF065486A89BA0A30 /* PrivateCodexUsageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateCodexUsageProvider.swift; sourceTree = "<group>"; };
+		23AAD407219E46C290FEA72B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		264A77D1515C40969F7AE166 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		2C973D3CE1FB4EBFA47E929C /* AIUM.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AIUM.entitlements; sourceTree = "<group>"; };
+		34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageProviderProtocol.swift; sourceTree = "<group>"; };
+		3B078F7FA3304B0096EFC646 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshotTests.swift; sourceTree = "<group>"; };
+		47639A97830244DBB1C91C31 /* AIUMWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AIUMWidget.entitlements; sourceTree = "<group>"; };
+		510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCardView.swift; sourceTree = "<group>"; };
+		54A9CEEF6A38479C93D95820 /* AIUMWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidgetView.swift; sourceTree = "<group>"; };
+		5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMApp.swift; sourceTree = "<group>"; };
+		646466DD961E4FD992110566 /* GitHubParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubParsingTests.swift; sourceTree = "<group>"; };
+		64E645C04D3447AFBC780662 /* AIUMWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidget.swift; sourceTree = "<group>"; };
+		6A6EEC583E8B48F6942248FE /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
+		7F8A19D66741437E85CE3BEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		9B5BF74FF59C4FA486EF77F2 /* AIUMWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidgetBundle.swift; sourceTree = "<group>"; };
+		A7C0FE2ADFC5461CA5FE6553 /* AIUMTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIUMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B15AC71101E145D7B8159671 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AIUMWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubUsageProvider.swift; sourceTree = "<group>"; };
+		C0A2D9F3E8214356A797A060 /* CodexAuthProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexAuthProvider.swift; sourceTree = "<group>"; };
+		D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubAPIClient.swift; sourceTree = "<group>"; };
+		E0DCAD3A46244B0FBFD08BC8 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		E14D8E9B26844A629165B463 /* UsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStore.swift; sourceTree = "<group>"; };
+		E87A0E7BB8C24B4DA1B7D1AE /* AIUM.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIUM.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0F51BFAF04554313A9028458 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0F51BFAF04554313A9028458 /* Frameworks */ = {
+		A0A2982AF4B14194AA37AF62 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -107,154 +103,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		/* End PBXFrameworksBuildPhase section */
-		
-		/* Begin PBXResourcesBuildPhase section */
-		D18D1D1BF77049D99D563A6A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D48605AFE51D46D188CBA6B4 /* Info.plist in Resources */,
-				49FAAED7D5A54AABB98401C5 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFB898228E84423BBA476AEB /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C87A8429443A4D8B9EF65651 /* Info.plist in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8F125F8B4BCC4FE9A1396B1E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+/* End PBXFrameworksBuildPhase section */
 
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		/* End PBXResourcesBuildPhase section */
-		
-		/* Begin PBXCopyFilesBuildPhase section */
-		3ED524205715423F91495927 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				37EF9EE2F1414699A78B8FBD /* AIUMWidget.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		/* End PBXCopyFilesBuildPhase section */
-
-		/* Begin PBXFileReference section */
-		5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMApp.swift; sourceTree = "<group>"; };
-		6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
-		E14D8E9B26844A629165B463 /* UsageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStore.swift; sourceTree = "<group>"; };
-		264A77D1515C40969F7AE166 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
-		34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageProviderProtocol.swift; sourceTree = "<group>"; };
-		10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubAuthProvider.swift; sourceTree = "<group>"; };
-		D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubAPIClient.swift; sourceTree = "<group>"; };
-		B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubUsageProvider.swift; sourceTree = "<group>"; };
-		C0A2D9F3E8214356A797A060 /* CodexAuthProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexAuthProvider.swift; sourceTree = "<group>"; };
-		1DFEEA2CF065486A89BA0A30 /* PrivateCodexUsageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateCodexUsageProvider.swift; sourceTree = "<group>"; };
-		6A6EEC583E8B48F6942248FE /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
-		E0DCAD3A46244B0FBFD08BC8 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
-		812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCardView.swift; sourceTree = "<group>"; };
-		B15AC71101E145D7B8159671 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		9B5BF74FF59C4FA486EF77F2 /* AIUMWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidgetBundle.swift; sourceTree = "<group>"; };
-		64E645C04D3447AFBC780662 /* AIUMWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidget.swift; sourceTree = "<group>"; };
-		54A9CEEF6A38479C93D95820 /* AIUMWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIUMWidgetView.swift; sourceTree = "<group>"; };
-		4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshotTests.swift; sourceTree = "<group>"; };
-		646466DD961E4FD992110566 /* GitHubParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubParsingTests.swift; sourceTree = "<group>"; };
-		070087AAF5134199B784A9AA /* CodexParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexParsingTests.swift; sourceTree = "<group>"; };
-		3B078F7FA3304B0096EFC646 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		2C973D3CE1FB4EBFA47E929C /* AIUM.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AIUM.entitlements; sourceTree = "<group>"; };
-		23AAD407219E46C290FEA72B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		7F8A19D66741437E85CE3BEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		47639A97830244DBB1C91C31 /* AIUMWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AIUMWidget.entitlements; sourceTree = "<group>"; };
-		E87A0E7BB8C24B4DA1B7D1AE /* AIUM.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIUM.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AIUMWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A7C0FE2ADFC5461CA5FE6553 /* AIUMTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIUMTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		/* End PBXFileReference section */
-
-		/* Begin PBXGroup section */
-		65A4BAF2FFF248A19BD3AFB8 = {
+/* Begin PBXGroup section */
+		01B009BBDDFB4403AFADD825 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				EADB1A2D83AC4066A24DA641 /* AIUM */,
-				AF273BB50BEC46219C0544E3 /* AIUMWidget */,
-				1A0585086D6D4639BFAC793C /* AIUMTests */,
-				0F256EF91734467A826F06E4 /* Products */,
+				812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */,
+				510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */,
+				B15AC71101E145D7B8159671 /* SettingsView.swift */,
 			);
-			sourceTree = "<group>";
-		};
-		0F256EF91734467A826F06E4 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				E87A0E7BB8C24B4DA1B7D1AE /* AIUM.app */,
-				B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */,
-				A7C0FE2ADFC5461CA5FE6553 /* AIUMTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		EADB1A2D83AC4066A24DA641 /* AIUM */ = {
-			isa = PBXGroup;
-			children = (
-				5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */,
-				5E2AB393416544B998BEC4D9 /* Models */,
-				FEDD6DBD2FF942E092F206F2 /* Storage */,
-				30FE62F5417646B894F355D0 /* Providers */,
-				0E83A7AD1A474766BBADFE91 /* ViewModels */,
-				01B009BBDDFB4403AFADD825 /* Views */,
-				3B078F7FA3304B0096EFC646 /* Info.plist */,
-				2C973D3CE1FB4EBFA47E929C /* AIUM.entitlements */,
-				23AAD407219E46C290FEA72B /* Assets.xcassets */,
-			);
-			path = AIUM;
-			sourceTree = "<group>";
-		};
-		5E2AB393416544B998BEC4D9 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		FEDD6DBD2FF942E092F206F2 /* Storage */ = {
-			isa = PBXGroup;
-			children = (
-				E14D8E9B26844A629165B463 /* UsageStore.swift */,
-				264A77D1515C40969F7AE166 /* KeychainHelper.swift */,
-			);
-			path = Storage;
-			sourceTree = "<group>";
-		};
-		30FE62F5417646B894F355D0 /* Providers */ = {
-			isa = PBXGroup;
-			children = (
-				34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */,
-				B29A5D72D7CF42E0A0D989C1 /* GitHub */,
-				032D9EB06BAF4DE1AE59AC49 /* Codex */,
-			);
-			path = Providers;
-			sourceTree = "<group>";
-		};
-		B29A5D72D7CF42E0A0D989C1 /* GitHub */ = {
-			isa = PBXGroup;
-			children = (
-				10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */,
-				D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */,
-				B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */,
-			);
-			path = GitHub;
+			path = Views;
 			sourceTree = "<group>";
 		};
 		032D9EB06BAF4DE1AE59AC49 /* Codex */ = {
@@ -275,14 +134,52 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		01B009BBDDFB4403AFADD825 /* Views */ = {
+		0F256EF91734467A826F06E4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				812C3BC5ED984A3B9B6332F4 /* DashboardView.swift */,
-				510B9806C4514AAFB3EF0E06 /* UsageCardView.swift */,
-				B15AC71101E145D7B8159671 /* SettingsView.swift */,
+				E87A0E7BB8C24B4DA1B7D1AE /* AIUM.app */,
+				B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */,
+				A7C0FE2ADFC5461CA5FE6553 /* AIUMTests.xctest */,
 			);
-			path = Views;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1A0585086D6D4639BFAC793C /* AIUMTests */ = {
+			isa = PBXGroup;
+			children = (
+				4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */,
+				646466DD961E4FD992110566 /* GitHubParsingTests.swift */,
+				070087AAF5134199B784A9AA /* CodexParsingTests.swift */,
+			);
+			path = AIUMTests;
+			sourceTree = "<group>";
+		};
+		30FE62F5417646B894F355D0 /* Providers */ = {
+			isa = PBXGroup;
+			children = (
+				34EEF7B2AD7E43A9B0787ACD /* UsageProviderProtocol.swift */,
+				B29A5D72D7CF42E0A0D989C1 /* GitHub */,
+				032D9EB06BAF4DE1AE59AC49 /* Codex */,
+			);
+			path = Providers;
+			sourceTree = "<group>";
+		};
+		5E2AB393416544B998BEC4D9 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6F10D9B97B0A4FDD9A93028D /* UsageSnapshot.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		65A4BAF2FFF248A19BD3AFB8 = {
+			isa = PBXGroup;
+			children = (
+				EADB1A2D83AC4066A24DA641 /* AIUM */,
+				AF273BB50BEC46219C0544E3 /* AIUMWidget */,
+				1A0585086D6D4639BFAC793C /* AIUMTests */,
+				0F256EF91734467A826F06E4 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 		AF273BB50BEC46219C0544E3 /* AIUMWidget */ = {
@@ -297,19 +194,61 @@
 			path = AIUMWidget;
 			sourceTree = "<group>";
 		};
-		1A0585086D6D4639BFAC793C /* AIUMTests */ = {
+		B29A5D72D7CF42E0A0D989C1 /* GitHub */ = {
 			isa = PBXGroup;
 			children = (
-				4548282296014EA3ABC4CEA6 /* UsageSnapshotTests.swift */,
-				646466DD961E4FD992110566 /* GitHubParsingTests.swift */,
-				070087AAF5134199B784A9AA /* CodexParsingTests.swift */,
+				10C0810B3BD9415E95A4B6C0 /* GitHubAuthProvider.swift */,
+				D785CD6EB1EA436686A77C0C /* GitHubAPIClient.swift */,
+				B9D7F54C760E48B4B41D6411 /* GitHubUsageProvider.swift */,
 			);
-			path = AIUMTests;
+			path = GitHub;
 			sourceTree = "<group>";
 		};
-		/* End PBXGroup section */
+		EADB1A2D83AC4066A24DA641 /* AIUM */ = {
+			isa = PBXGroup;
+			children = (
+				5EA08D0590E34F849CE8BCC2 /* AIUMApp.swift */,
+				5E2AB393416544B998BEC4D9 /* Models */,
+				FEDD6DBD2FF942E092F206F2 /* Storage */,
+				30FE62F5417646B894F355D0 /* Providers */,
+				0E83A7AD1A474766BBADFE91 /* ViewModels */,
+				01B009BBDDFB4403AFADD825 /* Views */,
+				3B078F7FA3304B0096EFC646 /* Info.plist */,
+				2C973D3CE1FB4EBFA47E929C /* AIUM.entitlements */,
+				23AAD407219E46C290FEA72B /* Assets.xcassets */,
+			);
+			path = AIUM;
+			sourceTree = "<group>";
+		};
+		FEDD6DBD2FF942E092F206F2 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				E14D8E9B26844A629165B463 /* UsageStore.swift */,
+				264A77D1515C40969F7AE166 /* KeychainHelper.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
 
-		/* Begin PBXNativeTarget section */
+/* Begin PBXNativeTarget section */
+		106F0D92C66F4F569C38AB48 /* AIUMWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F625E94FD61F414D8F85232C /* Build configuration list for PBXNativeTarget "AIUMWidget" */;
+			buildPhases = (
+				95D9D71DD1E0437C934177C2 /* Sources */,
+				0F51BFAF04554313A9028458 /* Frameworks */,
+				AFB898228E84423BBA476AEB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AIUMWidget;
+			productName = AIUMWidget;
+			productReference = B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		2858FBCF5D4E422896AA5CB9 /* AIUM */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2BF74B1459B24CCC8DA60C69 /* Build configuration list for PBXNativeTarget "AIUM" */;
@@ -328,23 +267,6 @@
 			productReference = E87A0E7BB8C24B4DA1B7D1AE /* AIUM.app */;
 			productType = "com.apple.product-type.application";
 		};
-		106F0D92C66F4F569C38AB48 /* AIUMWidget */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F625E94FD61F414D8F85232C /* Build configuration list for PBXNativeTarget "AIUMWidget" */;
-			buildPhases = (
-				95D9D71DD1E0437C934177C2 /* Sources */,
-				0F51BFAF04554313A9028458 /* Frameworks */,
-				AFB898228E84423BBA476AEB /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = AIUMWidget;
-			productName = AIUMWidget;
-			productReference = B24C63D5F9864D0B85EB3060 /* AIUMWidget.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		ED4FB2EB90CA4326AF356F6B /* AIUMTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3074601986364460839D62C6 /* Build configuration list for PBXNativeTarget "AIUMTests" */;
@@ -362,20 +284,20 @@
 			productReference = A7C0FE2ADFC5461CA5FE6553 /* AIUMTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		/* End PBXNativeTarget section */
+/* End PBXNativeTarget section */
 
-		/* Begin PBXProject section */
+/* Begin PBXProject section */
 		2A1F3C6C44C54C7A9C46AE03 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
-					2858FBCF5D4E422896AA5CB9 = {
+					106F0D92C66F4F569C38AB48 = {
 						CreatedOnToolsVersion = 15.0;
 					};
-					106F0D92C66F4F569C38AB48 = {
+					2858FBCF5D4E422896AA5CB9 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 					ED4FB2EB90CA4326AF356F6B = {
@@ -402,68 +324,129 @@
 				ED4FB2EB90CA4326AF356F6B /* AIUMTests */,
 			);
 		};
-		/* End PBXProject section */
+/* End PBXProject section */
 
-		/* Begin XCBuildConfiguration section */
-		CEA71EA8E7BE4358821ADDB2 /* Debug */ = {
+/* Begin PBXResourcesBuildPhase section */
+		8F125F8B4BCC4FE9A1396B1E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFB898228E84423BBA476AEB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D18D1D1BF77049D99D563A6A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49FAAED7D5A54AABB98401C5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0342A1067B364C24AE0FD3DF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F70776FFBDB45228FCA7966 /* AIUMApp.swift in Sources */,
+				0FE640D6D8EC44D1A8D3DBD5 /* UsageSnapshot.swift in Sources */,
+				A3721FAFF3A04AE7B7402248 /* UsageStore.swift in Sources */,
+				79FF57DC03B94E9E8382C215 /* KeychainHelper.swift in Sources */,
+				26D6BFC773BB4B20AAE25C87 /* UsageProviderProtocol.swift in Sources */,
+				C5C49E34C7C04F9682DC6FE3 /* GitHubAuthProvider.swift in Sources */,
+				23E7FC2CC7AA413FB35B16F0 /* GitHubAPIClient.swift in Sources */,
+				96F9577454F140A195DFBCBC /* GitHubUsageProvider.swift in Sources */,
+				0CC8BD30C5DB447184B8BB26 /* CodexAuthProvider.swift in Sources */,
+				957537F79F83448EAB886432 /* PrivateCodexUsageProvider.swift in Sources */,
+				2CE9F28546564B13B64F1047 /* DashboardViewModel.swift in Sources */,
+				44A0633995FB445A84F75DCC /* SettingsViewModel.swift in Sources */,
+				AE68D9630221460BBC96DA4F /* DashboardView.swift in Sources */,
+				93105079FCC54922B93B5C83 /* UsageCardView.swift in Sources */,
+				69086F51B2B8419FAD202301 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		80682A9ACCA24CFAA2CCB04F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E92C54E58B44FF1B587C8FD /* UsageSnapshot.swift in Sources */,
+				5886C60EFB7A47CCBDF92AAB /* UsageSnapshotTests.swift in Sources */,
+				2372D11B04F64566940A18DF /* GitHubParsingTests.swift in Sources */,
+				10E3AC5DC92E4187A95074C8 /* CodexParsingTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		95D9D71DD1E0437C934177C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0434B945D5B400899EBE8FE /* UsageSnapshot.swift in Sources */,
+				F7968C196293452590AB606A /* UsageStore.swift in Sources */,
+				BB8F6C6F3F114FBD9522105F /* AIUMWidgetBundle.swift in Sources */,
+				40021305525E49FEB4F7EF78 /* AIUMWidget.swift in Sources */,
+				F0AD3F00814E4D8F861E5055 /* AIUMWidgetView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1F05D239C0CE4ADA970FEA22 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AIUM/AIUM.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AIUM/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		2B9E9F0532684129ABACE078 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AIUMWidget/AIUMWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AIUMWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -502,6 +485,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = KDJQJM26Y7;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -516,6 +500,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -531,7 +516,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AIUM/Info.plist;
@@ -541,107 +525,11 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		1F05D239C0CE4ADA970FEA22 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = AIUM/AIUM.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = AIUM/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		2B9E9F0532684129ABACE078 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = AIUMWidget/AIUMWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = AIUMWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium.widget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		C3A599647280445AB5A5CBB8 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = AIUMWidget/AIUMWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = AIUMWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium.widget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		F1673BAC94D44DC891D726BF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium.tests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIUM.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIUM";
 			};
 			name = Debug;
 		};
@@ -651,11 +539,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.freeesia.aium.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.9;
@@ -664,32 +551,120 @@
 			};
 			name = Release;
 		};
-		/* End XCBuildConfiguration section */
-
-		/* Begin XCConfigurationList section */
-		FD578646504A4901AF3F221E /* Build configuration list for PBXProject "AIUM" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				CEA71EA8E7BE4358821ADDB2 /* Debug */,
-				54C28753CB7E456B94B489D3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+		C3A599647280445AB5A5CBB8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AIUMWidget/AIUMWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AIUMWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
 		};
+		CEA71EA8E7BE4358821ADDB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = KDJQJM26Y7;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F1673BAC94D44DC891D726BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiofreesia.aium.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIUM.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIUM";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
 		2BF74B1459B24CCC8DA60C69 /* Build configuration list for PBXNativeTarget "AIUM" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8E22AD26E78F430EA9576593 /* Debug */,
 				1F05D239C0CE4ADA970FEA22 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F625E94FD61F414D8F85232C /* Build configuration list for PBXNativeTarget "AIUMWidget" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				2B9E9F0532684129ABACE078 /* Debug */,
-				C3A599647280445AB5A5CBB8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -703,9 +678,25 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		/* End XCConfigurationList section */
-
+		F625E94FD61F414D8F85232C /* Build configuration list for PBXNativeTarget "AIUMWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B9E9F0532684129ABACE078 /* Debug */,
+				C3A599647280445AB5A5CBB8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FD578646504A4901AF3F221E /* Build configuration list for PBXProject "AIUM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEA71EA8E7BE4358821ADDB2 /* Debug */,
+				54C28753CB7E456B94B489D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
 	};
 	rootObject = 2A1F3C6C44C54C7A9C46AE03 /* Project object */;
 }
-
