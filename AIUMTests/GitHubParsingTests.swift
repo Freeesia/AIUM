@@ -47,8 +47,8 @@ final class GitHubParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try decoder.decode(GitHubAICreditUsageResponse.self, from: json)
-        XCTAssertEqual(response.usedInCurrentPeriod, 250.5, accuracy: 0.001)
-        XCTAssertEqual(response.totalAllowance, 1000.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.usedInCurrentPeriod), 250.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.totalAllowance), 1000.0, accuracy: 0.001)
         XCTAssertNotNil(response.currentPeriodEnd)
     }
 
@@ -72,8 +72,8 @@ final class GitHubParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try decoder.decode(GitHubPremiumRequestUsageResponse.self, from: json)
-        XCTAssertEqual(response.usedPremiumRequests, 5, accuracy: 0.001)
-        XCTAssertEqual(response.includedPremiumRequests, 300, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.usedPremiumRequests), 5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.includedPremiumRequests), 300, accuracy: 0.001)
         XCTAssertNotNil(response.lastUpdatedAt)
     }
 
