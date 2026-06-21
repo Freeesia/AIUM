@@ -16,6 +16,12 @@ struct CodexRateLimitResponse: Decodable {
     /// Reset credits returned by the server, if any.
     let resetCredits: Double?
 
+    init(primaryWindow: WindowDetail?, secondaryWindow: WindowDetail?, resetCredits: Double?) {
+        self.primaryWindow = primaryWindow
+        self.secondaryWindow = secondaryWindow
+        self.resetCredits = resetCredits
+    }
+
     enum CodingKeys: String, CodingKey {
         case primaryWindow = "primary_window"
         case secondaryWindow = "secondary_window"
@@ -28,6 +34,15 @@ struct CodexRateLimitResponse: Decodable {
         let resetAt: Date?
         let windowDurationMins: Int?
         let usedPercent: Double?
+
+        init(limit: Double?, remaining: Double?, resetAt: Date?,
+             windowDurationMins: Int?, usedPercent: Double?) {
+            self.limit = limit
+            self.remaining = remaining
+            self.resetAt = resetAt
+            self.windowDurationMins = windowDurationMins
+            self.usedPercent = usedPercent
+        }
 
         enum CodingKeys: String, CodingKey {
             case limit

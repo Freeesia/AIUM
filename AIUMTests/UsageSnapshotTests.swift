@@ -102,8 +102,8 @@ final class UsageSnapshotTests: XCTestCase {
         XCTAssertEqual(decoded.windowKind, original.windowKind)
         XCTAssertEqual(decoded.used, original.used, accuracy: 0.001)
         XCTAssertEqual(decoded.limit, original.limit, accuracy: 0.001)
-        XCTAssertEqual(decoded.resetAt?.timeIntervalSinceReferenceDate,
-                       original.resetAt?.timeIntervalSinceReferenceDate,
+        XCTAssertEqual(try XCTUnwrap(decoded.resetAt?.timeIntervalSinceReferenceDate),
+                       try XCTUnwrap(original.resetAt?.timeIntervalSinceReferenceDate),
                        accuracy: 1)
         XCTAssertEqual(decoded.unit, original.unit)
         XCTAssertEqual(decoded.source, original.source)

@@ -30,12 +30,12 @@ final class CodexParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try decoder.decode(CodexRateLimitResponse.self, from: json)
-        XCTAssertEqual(response.primaryWindow?.limit, 50, accuracy: 0.001)
-        XCTAssertEqual(response.primaryWindow?.remaining, 20, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.primaryWindow?.limit), 50, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.primaryWindow?.remaining), 20, accuracy: 0.001)
         XCTAssertNotNil(response.primaryWindow?.resetAt)
         XCTAssertEqual(response.primaryWindow?.windowDurationMins, 60)
-        XCTAssertEqual(response.secondaryWindow?.limit, 500, accuracy: 0.001)
-        XCTAssertEqual(response.resetCredits, 5.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.secondaryWindow?.limit), 500, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.resetCredits), 5.0, accuracy: 0.001)
     }
 
     func testDecodeEmptyRateLimitResponse() throws {
@@ -58,7 +58,7 @@ final class CodexParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try decoder.decode(CodexRateLimitResponse.self, from: json)
-        XCTAssertEqual(response.primaryWindow?.usedPercent, 65.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(response.primaryWindow?.usedPercent), 65.5, accuracy: 0.001)
     }
 
     // MARK: - Normalization
@@ -157,7 +157,7 @@ final class CodexParsingTests: XCTestCase {
     // MARK: - Token refresh single-flight
 
     func testTokenBundleIsExpiredNearExpiry() {
-        var bundle = CodexTokenBundle(
+        let bundle = CodexTokenBundle(
             idToken: "id",
             accessToken: "access",
             refreshToken: "refresh",
@@ -174,27 +174,5 @@ final class CodexParsingTests: XCTestCase {
             expiresAt: Date().addingTimeInterval(3600)
         )
         XCTAssertFalse(bundle.isExpired)
-    }
-}
-
-// MARK: - Helper initializers for testing
-// Allow constructing model objects without going through Decodable
-
-extension CodexRateLimitResponse.WindowDetail {
-    init(limit: Double?, remaining: Double?, resetAt: Date?,
-         windowDurationMins: Int?, usedPercent: Double?) {
-        self.limit = limit
-        self.remaining = remaining
-        self.resetAt = resetAt
-        self.windowDurationMins = windowDurationMins
-        self.usedPercent = usedPercent
-    }
-}
-
-extension CodexRateLimitResponse {
-    init(primaryWindow: WindowDetail?, secondaryWindow: WindowDetail?, resetCredits: Double?) {
-        self.primaryWindow = primaryWindow
-        self.secondaryWindow = secondaryWindow
-        self.resetCredits = resetCredits
     }
 }
