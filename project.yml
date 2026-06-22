@@ -83,6 +83,9 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
+    configFiles:
+      Debug: Config/AIUM.xcconfig
+      Release: Config/AIUM.xcconfig
     sources:
       - path: AIUM
     dependencies:

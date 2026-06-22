@@ -62,7 +62,9 @@ AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/bu
 
 **Required scopes:** `read:user`, `read:org`
 
-**Setup:** Create an OAuth App at https://github.com/settings/developers. Enable device flow under the app settings.
+**Setup:** Create an OAuth App at https://github.com/settings/developers and enable device flow under the app settings. Set the Client ID through the AIUM target build setting `GITHUB_OAUTH_CLIENT_ID`; `AIUM/Info.plist` exposes it to the app as `GitHubOAuthClientID`. Local builds should put the real value in ignored `Config/AIUM.local.xcconfig`; leave the tracked placeholder `YOUR_GITHUB_CLIENT_ID` in place to disable GitHub login.
+
+**Failure diagnostics:** AIUM preserves GitHub usage failures as plan-specific error snapshots. HTTP failures include the status code and response body preview. Decode failures include the endpoint name so plan unsupported cases, endpoint changes, and response-shape changes can be distinguished in the UI.
 
 ---
 

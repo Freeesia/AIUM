@@ -72,6 +72,13 @@ struct DashboardView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .onChange(of: showSettings) { _, isPresented in
+                guard !isPresented else { return }
+                Task {
+                    await updateAuthStatus()
+                    viewModel.refresh()
+                }
+            }
             .task {
                 await updateAuthStatus()
             }

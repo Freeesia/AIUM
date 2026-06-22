@@ -8,6 +8,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var isCodexAuthenticated = false
     @Published var isAuthenticatingGitHub = false
     @Published var isAuthenticatingCodex = false
+    @Published var isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
     @Published var authError: String?
 
     // GitHub device flow state
@@ -65,6 +66,7 @@ final class SettingsViewModel: ObservableObject {
 
     func checkAuthStatus() {
         Task {
+            isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
             isGitHubAuthenticated = await githubAuth.isAuthenticated
             isCodexAuthenticated = await codexAuth.isAuthenticated
         }
@@ -74,6 +76,12 @@ final class SettingsViewModel: ObservableObject {
 
     func startGitHubLogin() {
         guard !isAuthenticatingGitHub else { return }
+        guard GitHubOAuthConfig.clientId != nil else {
+            isGitHubClientIdConfigured = false
+            authError = GitHubAuthError.clientIdNotConfigured.localizedDescription
+            return
+        }
+
         isAuthenticatingGitHub = true
         authError = nil
         githubUserCode = nil

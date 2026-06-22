@@ -121,12 +121,26 @@ extension UsageSnapshot {
     }
 
     /// Returns an error snapshot.
-    static func error(provider: Provider, message: String) -> UsageSnapshot {
+    static func error(
+        provider: Provider,
+        accountId: String? = nil,
+        displayName: String? = nil,
+        planKind: PlanKind = .unknown,
+        windowKind: WindowKind = .monthly,
+        unit: String = "requests",
+        source: String = "error",
+        message: String
+    ) -> UsageSnapshot {
         UsageSnapshot(
             provider: provider,
+            accountId: accountId,
+            displayName: displayName,
+            planKind: planKind,
+            windowKind: windowKind,
             used: 0,
             limit: 0,
-            source: "error",
+            unit: unit,
+            source: source,
             errorMessage: message
         )
     }
