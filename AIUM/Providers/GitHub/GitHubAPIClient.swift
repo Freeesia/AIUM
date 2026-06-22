@@ -42,9 +42,15 @@ struct GitHubPremiumRequestUsageResponse: Decodable {
 
 // MARK: - API Client
 
+protocol GitHubAPIProviding: Actor {
+    func fetchUser(token: String) async throws -> GitHubUser
+    func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse
+    func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse
+}
+
 /// Low-level GitHub REST API client.
 /// All methods require a valid access token.
-actor GitHubAPIClient {
+actor GitHubAPIClient: GitHubAPIProviding {
     private let baseURL = URL(string: "https://api.github.com")!
     private let session: URLSession
 
@@ -57,7 +63,7 @@ actor GitHubAPIClient {
     /// Fetches the authenticated user's profile.
     func fetchUser(token: String) async throws -> GitHubUser {
         let request = makeRequest(path: "/user", token: token)
-        return try await fetch(request)
+        return try await fetch(request, endpointName: "Authenticated User")
     }
 
     /// Fetches AI Credit usage for the given username.
@@ -67,7 +73,7 @@ actor GitHubAPIClient {
             path: "/users/\(username)/settings/billing/ai_credit/usage",
             token: token
         )
-        return try await fetch(request)
+        return try await fetch(request, endpointName: "AI Credits")
     }
 
     /// Fetches legacy Premium Request usage for the given username.
@@ -77,7 +83,7 @@ actor GitHubAPIClient {
             path: "/users/\(username)/settings/billing/premium_request/usage",
             token: token
         )
-        return try await fetch(request)
+        return try await fetch(request, endpointName: "Premium Requests")
     }
 
     // MARK: - Private
@@ -90,27 +96,50 @@ actor GitHubAPIClient {
         return request
     }
 
-    private func fetch<T: Decodable>(_ request: URLRequest) async throws -> T {
+    private func fetch<T: Decodable>(_ request: URLRequest, endpointName: String) async throws -> T {
         let (data, response) = try await session.data(for: request)
         if let httpResponse = response as? HTTPURLResponse,
            !(200..<300).contains(httpResponse.statusCode) {
-            throw GitHubAPIError.httpError(httpResponse.statusCode, String(data: data, encoding: .utf8))
+            let body = String(data: data, encoding: .utf8)
+            switch httpResponse.statusCode {
+            case 401:
+                throw GitHubAPIError.authenticationFailed(statusCode: httpResponse.statusCode, body: body)
+            default:
+                throw GitHubAPIError.httpError(statusCode: httpResponse.statusCode, body: body)
+            }
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(T.self, from: data)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw GitHubAPIError.decodeError(endpoint: endpointName, body: String(data: data, encoding: .utf8), underlying: error)
+        }
     }
 }
 
 // MARK: - Errors
 
 enum GitHubAPIError: LocalizedError {
-    case httpError(Int, String?)
+    case authenticationFailed(statusCode: Int, body: String?)
+    case httpError(statusCode: Int, body: String?)
+    case decodeError(endpoint: String, body: String?, underlying: Error)
 
     var errorDescription: String? {
         switch self {
+        case .authenticationFailed(let code, let body):
+            return "GitHub API auth error \(code): \(Self.preview(body))"
         case .httpError(let code, let body):
-            return "GitHub API error \(code): \(body ?? "no body")"
+            return "GitHub API HTTP \(code): \(Self.preview(body))"
+        case .decodeError(let endpoint, let body, let underlying):
+            return "GitHub API decode error for \(endpoint): \(underlying.localizedDescription). Body: \(Self.preview(body))"
         }
+    }
+
+    private static func preview(_ body: String?) -> String {
+        guard let body, !body.isEmpty else { return "no body" }
+        let singleLine = body.replacingOccurrences(of: "\n", with: " ")
+        if singleLine.count <= 300 { return singleLine }
+        return String(singleLine.prefix(300)) + "..."
     }
 }

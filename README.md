@@ -64,7 +64,20 @@ App Groups の識別子は、アプリ側とウィジェット側で同じもの
 
 GitHub OAuth App を作成し、Device Flow を有効にします。
 
-作成した Client ID を、GitHub 認証 provider の設定値に指定します。必要なスコープは、GitHub 側で取得したい情報に合わせて調整してください。
+作成した Client ID は、Swift ファイルや git 管理ファイルに直接書かず、ローカル用 xcconfig から AIUM ターゲットの build setting `GITHUB_OAUTH_CLIENT_ID` に渡します。
+
+`Config/AIUM.xcconfig` には placeholder を置き、`Config/AIUM.local.xcconfig` を optional include します。`Config/AIUM.local.xcconfig` は `.gitignore` 対象です。
+
+ローカルで GitHub ログインを使う場合は、次のファイルを作成してから `xcodegen generate` を実行します。
+
+```xcconfig
+// Config/AIUM.local.xcconfig
+GITHUB_OAUTH_CLIENT_ID = your_client_id
+```
+
+この値が `YOUR_GITHUB_CLIENT_ID` placeholder または空値の場合、アプリは GitHub ログイン処理を開始せず、設定画面にエラーを表示します。
+
+必要なスコープは `read:user read:org` です。GitHub 側で取得したい情報に合わせて調整してください。
 
 ### 5. Codex 認証を設定する
 

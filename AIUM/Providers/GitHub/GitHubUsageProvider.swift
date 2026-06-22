@@ -14,8 +14,8 @@ private let kPremiumRequestLimit = "github_premium_request_monthly_limit"
 actor GitHubUsageProvider: UsageProvider {
     let provider: Provider = .githubCopilot
 
-    private let authProvider: GitHubAuthProvider
-    private let apiClient: GitHubAPIClient
+    private let authProvider: any GitHubAuthProviding
+    private let apiClient: any GitHubAPIProviding
 
     /// Manual override for AI Credit monthly allowance (0 = use API value).
     var aiCreditMonthlyLimit: Double {
@@ -28,8 +28,8 @@ actor GitHubUsageProvider: UsageProvider {
     }
 
     init(
-        authProvider: GitHubAuthProvider = GitHubAuthProvider(),
-        apiClient: GitHubAPIClient = GitHubAPIClient()
+        authProvider: any GitHubAuthProviding = GitHubAuthProvider(),
+        apiClient: any GitHubAPIProviding = GitHubAPIClient()
     ) {
         self.authProvider = authProvider
         self.apiClient = apiClient
@@ -49,14 +49,18 @@ actor GitHubUsageProvider: UsageProvider {
         let user = try await apiClient.fetchUser(token: token)
         var snapshots: [UsageSnapshot] = []
 
-        // AI Credits
-        if let aiSnapshot = try? await fetchAICreditSnapshot(username: user.login, token: token, user: user) {
+        do {
+            let aiSnapshot = try await fetchAICreditSnapshot(username: user.login, token: token, user: user)
             snapshots.append(aiSnapshot)
+        } catch {
+            snapshots.append(errorSnapshot(for: .aiCredits, error: error, user: user))
         }
 
-        // Legacy Premium Requests
-        if let prSnapshot = try? await fetchPremiumRequestSnapshot(username: user.login, token: token, user: user) {
+        do {
+            let prSnapshot = try await fetchPremiumRequestSnapshot(username: user.login, token: token, user: user)
             snapshots.append(prSnapshot)
+        } catch {
+            snapshots.append(errorSnapshot(for: .premiumRequests, error: error, user: user))
         }
 
         if snapshots.isEmpty {
@@ -125,6 +129,56 @@ actor GitHubUsageProvider: UsageProvider {
             unit: "premium requests",
             source: "GitHub Billing API (legacy)"
         )
+    }
+
+    private func errorSnapshot(
+        for endpoint: GitHubUsageEndpoint,
+        error: Error,
+        user: GitHubUser
+    ) -> UsageSnapshot {
+        UsageSnapshot.error(
+            provider: .githubCopilot,
+            accountId: String(user.id),
+            displayName: user.name ?? user.login,
+            planKind: endpoint.planKind,
+            windowKind: .monthly,
+            unit: endpoint.unit,
+            source: endpoint.source,
+            message: "\(endpoint.displayName): \(error.localizedDescription)"
+        )
+    }
+}
+
+private enum GitHubUsageEndpoint {
+    case aiCredits
+    case premiumRequests
+
+    var displayName: String {
+        switch self {
+        case .aiCredits: return "AI Credits"
+        case .premiumRequests: return "Premium Requests"
+        }
+    }
+
+    var planKind: PlanKind {
+        switch self {
+        case .aiCredits: return .aiCredits
+        case .premiumRequests: return .premiumRequests
+        }
+    }
+
+    var unit: String {
+        switch self {
+        case .aiCredits: return "AI credits"
+        case .premiumRequests: return "premium requests"
+        }
+    }
+
+    var source: String {
+        switch self {
+        case .aiCredits: return "GitHub Billing API"
+        case .premiumRequests: return "GitHub Billing API (legacy)"
+        }
     }
 }
 

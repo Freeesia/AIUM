@@ -9,6 +9,9 @@ struct SettingsView: View {
             Form {
                 // GitHub section
                 Section {
+                    if !viewModel.isGitHubClientIdConfigured {
+                        clientIdWarning
+                    }
                     githubAuthRow
                     if viewModel.isGitHubAuthenticated {
                         limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
@@ -19,7 +22,7 @@ struct SettingsView: View {
                 } header: {
                     Text("GitHub Copilot")
                 } footer: {
-                    Text("Set monthly limits manually if the GitHub API does not return your plan allowance.")
+                    githubFooter
                 }
 
                 // Codex section
@@ -106,6 +109,20 @@ struct SettingsView: View {
                 Label("Sign in with GitHub", systemImage: "person.badge.plus")
             }
         }
+    }
+
+    private var clientIdWarning: some View {
+        Label {
+            Text("Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings before signing in.")
+                .font(.caption)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        }
+    }
+
+    private var githubFooter: some View {
+        Text("Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login.")
     }
 
     // MARK: - Codex auth row
