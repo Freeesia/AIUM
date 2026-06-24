@@ -5,7 +5,7 @@ import Foundation
 /// Normalized view of Codex's private usage response.
 ///
 /// The Codex app-server currently exposes rate-limit data through the ChatGPT
-/// backend (`/api/codex/usage`). Older builds and experiments have returned
+/// backend (`/wham/usage`). Older builds and experiments have returned
 /// snake_case window objects, so decoding stays tolerant while preserving one
 /// strict output shape for the rest of the app.
 struct CodexUsageResponse: Sendable {
@@ -57,19 +57,16 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
     private let session: URLSession
     private let backendBaseURL: URL
     private let usageEndpointPath: String
-    private let profileEndpointPath: String
 
     init(
         authProvider: any CodexAuthProviding = CodexAuthProvider(),
         backendBaseURL: URL = CodexOAuthConfig.backendBaseURL,
         usageEndpointPath: String = CodexOAuthConfig.usageEndpointPath,
-        profileEndpointPath: String = CodexOAuthConfig.profileEndpointPath,
         session: URLSession = .shared
     ) {
         self.authProvider = authProvider
         self.backendBaseURL = backendBaseURL
         self.usageEndpointPath = usageEndpointPath
-        self.profileEndpointPath = profileEndpointPath
         self.session = session
     }
 
@@ -81,12 +78,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
 
     func fetchUsage() async throws -> [UsageSnapshot] {
         let token = try await authProvider.validAccessToken()
-        var tokenBundle = await authProvider.tokenBundle
-
-        if let identity = try? await fetchProfile(token: token, accountId: tokenBundle?.accountId) {
-            try await authProvider.updateAccount(accountId: identity.accountId, email: identity.email)
-            tokenBundle = await authProvider.tokenBundle
-        }
+        let tokenBundle = await authProvider.tokenBundle
 
         let request = makeBackendRequest(
             path: usageEndpointPath,
@@ -94,11 +86,16 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
             accountId: tokenBundle?.accountId
         )
 
+        debugLog("Requesting Codex usage: \(request.url?.absoluteString ?? "unknown URL")")
         let (data, response) = try await session.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse {
+            debugLog("Codex usage response: HTTP \(httpResponse.statusCode)")
+        }
         try validate(response: response, data: data, endpointName: "Codex usage")
 
         let decoded = try decodeResponse(data)
         let snapshots = normalizeSnapshots(decoded, tokenBundle: tokenBundle)
+        debugLog("Decoded \(snapshots.count) Codex usage snapshot(s).")
         guard !snapshots.isEmpty else {
             throw CodexUsageError.noUsageData(body: String(data: data, encoding: .utf8))
         }
@@ -138,13 +135,6 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
 
     // MARK: - Private helpers
 
-    private func fetchProfile(token: String, accountId: String?) async throws -> CodexAccountIdentity? {
-        let request = makeBackendRequest(path: profileEndpointPath, token: token, accountId: accountId)
-        let (data, response) = try await session.data(for: request)
-        try validate(response: response, data: data, endpointName: "Codex profile")
-        return CodexAccountIdentity.extract(jsonData: data)
-    }
-
     private func makeBackendRequest(path: String, token: String, accountId: String?) -> URLRequest {
         var request = URLRequest(url: backendBaseURL.appendingSlashPath(path))
         request.httpMethod = "GET"
@@ -162,11 +152,20 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
               !(200..<300).contains(httpResponse.statusCode)
         else { return }
 
+        debugLog(
+            "\(endpointName) HTTP \(httpResponse.statusCode) at \(httpResponse.url?.absoluteString ?? "unknown URL")"
+        )
         throw CodexUsageError.httpError(
             endpoint: endpointName,
             statusCode: httpResponse.statusCode,
             body: String(data: data, encoding: .utf8)
         )
+    }
+
+    private func debugLog(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        print("[AIUM][CodexUsage] \(message())")
+        #endif
     }
 }
 
@@ -204,6 +203,10 @@ private struct CodexUsageParser {
         var windows: [CodexUsageWindow] = []
 
         windows.append(contentsOf: parseLegacyRootWindows())
+        if root["rate_limit"] is [String: Any] {
+            windows.append(contentsOf: parseRateLimitContainer(root, fallbackLimitId: "codex"))
+        }
+        windows.append(contentsOf: parseRateLimits(root["additional_rate_limits"]))
         windows.append(contentsOf: parseRateLimits(root["rateLimits"]))
         windows.append(contentsOf: parseRateLimits(root["rate_limits"]))
         windows.append(contentsOf: parseRateLimitsById(root["rateLimitsByLimitId"]))
@@ -279,6 +282,24 @@ private struct CodexUsageParser {
         )
         var windows: [CodexUsageWindow] = []
 
+        if let nestedRateLimit = container["rate_limit"] as? [String: Any] {
+            windows.append(contentsOf: parseWindowContainer(nestedRateLimit, metadata: metadata))
+        }
+        windows.append(contentsOf: parseWindowContainer(container, metadata: metadata))
+
+        if windows.isEmpty, looksLikeWindow(container),
+           let parsed = parseWindow(container, label: metadata.limitName ?? "usage", metadata: metadata) {
+            windows.append(parsed)
+        }
+
+        return windows
+    }
+
+    private func parseWindowContainer(
+        _ container: [String: Any],
+        metadata: WindowMetadata
+    ) -> [CodexUsageWindow] {
+        var windows: [CodexUsageWindow] = []
         let windowKeys = [
             "primary",
             "primaryWindow",
@@ -295,11 +316,6 @@ private struct CodexUsageParser {
                   let parsed = parseWindow(window, label: key, metadata: metadata)
             else { continue }
 
-            windows.append(parsed)
-        }
-
-        if windows.isEmpty, looksLikeWindow(container),
-           let parsed = parseWindow(container, label: metadata.limitName ?? "usage", metadata: metadata) {
             windows.append(parsed)
         }
 
@@ -558,6 +574,7 @@ private struct CodexUsageParser {
                     "value",
                     "remaining",
                     "available",
+                    "available_count",
                     "credits",
                     "count",
                 ]) {

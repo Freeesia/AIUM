@@ -64,6 +64,13 @@ final class UsageStore: ObservableObject {
         snapshots.filter { $0.provider == provider }
     }
 
+    /// Replaces all cached snapshots for one provider.
+    func replace(provider: Provider, with newSnapshots: [UsageSnapshot]) {
+        snapshots.removeAll { $0.provider == provider }
+        snapshots.append(contentsOf: newSnapshots)
+        persist()
+    }
+
     /// Clears cached snapshots for a provider (e.g. on logout).
     func clear(provider: Provider) {
         snapshots.removeAll { $0.provider == provider }

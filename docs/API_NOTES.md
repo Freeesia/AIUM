@@ -113,15 +113,7 @@ AIUM extracts `account_id` and `email` from the returned JWT claims when availab
 ### Codex Usage / Rate Limits
 
 ```
-GET https://chatgpt.com/backend-api/api/codex/usage
-Authorization: ******
-ChatGPT-Account-Id: {account_id}  # when known
-```
-
-The provider also makes a best-effort profile request before usage refresh:
-
-```
-GET https://chatgpt.com/backend-api/api/codex/profiles/me
+GET https://chatgpt.com/backend-api/wham/usage
 Authorization: ******
 ChatGPT-Account-Id: {account_id}  # when known
 ```

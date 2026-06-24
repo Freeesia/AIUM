@@ -61,9 +61,7 @@ final class DashboardViewModel: ObservableObject {
         do {
             guard await githubProvider.isAuthenticated else { return }
             let snapshots = try await githubProvider.fetchUsage()
-            for snapshot in snapshots {
-                usageStore.upsert(snapshot)
-            }
+            usageStore.replace(provider: .githubCopilot, with: snapshots)
             githubSnapshots = usageStore.snapshots(for: .githubCopilot)
         } catch {
             let errSnapshot = UsageSnapshot.error(provider: .githubCopilot, message: error.localizedDescription)
@@ -77,9 +75,7 @@ final class DashboardViewModel: ObservableObject {
         do {
             guard await codexProvider.isAuthenticated else { return }
             let snapshots = try await codexProvider.fetchUsage()
-            for snapshot in snapshots {
-                usageStore.upsert(snapshot)
-            }
+            usageStore.replace(provider: .codex, with: snapshots)
             codexSnapshots = usageStore.snapshots(for: .codex)
         } catch {
             let errSnapshot = UsageSnapshot.error(provider: .codex, message: error.localizedDescription)

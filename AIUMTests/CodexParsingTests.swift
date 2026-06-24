@@ -47,6 +47,55 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(secondary.windowDurationMins, 10080)
     }
 
+    func testDecodeCurrentChatGPTRateLimitResponse() throws {
+        let now = Date(timeIntervalSince1970: 1_735_689_000)
+        let json = Data("""
+        {
+          "plan_type": "pro",
+          "rate_limit": {
+            "allowed": true,
+            "limit_reached": false,
+            "primary_window": {
+              "used_percent": 42,
+              "limit_window_seconds": 3600,
+              "reset_after_seconds": 120
+            },
+            "secondary_window": {
+              "used_percent": 5,
+              "limit_window_seconds": 86400,
+              "reset_after_seconds": 43200
+            }
+          },
+          "additional_rate_limits": [
+            {
+              "limit_name": "codex_other",
+              "rate_limit": {
+                "primary_window": {
+                  "used_percent": 88,
+                  "limit_window_seconds": 1800
+                }
+              }
+            }
+          ],
+          "rate_limit_reset_credits": {
+            "available_count": 3
+          }
+        }
+        """.utf8)
+
+        let response = try CodexUsageResponse.decode(from: json, now: now)
+
+        XCTAssertEqual(response.windows.count, 3)
+        XCTAssertEqual(response.windows[0].used, 42, accuracy: 0.001)
+        XCTAssertEqual(response.windows[0].windowKind, .hourly)
+        XCTAssertEqual(response.windows[0].windowDurationMins, 60)
+        XCTAssertEqual(response.windows[1].used, 5, accuracy: 0.001)
+        XCTAssertEqual(response.windows[1].windowKind, .daily)
+        XCTAssertEqual(response.windows[2].used, 88, accuracy: 0.001)
+        XCTAssertEqual(response.windows[2].windowDurationMins, 30)
+        XCTAssertEqual(response.resetCredits, 3)
+    }
+
     func testDecodeLegacySnakeCaseRateLimitResponse() throws {
         let json = """
         {
@@ -388,7 +437,7 @@ final class CodexParsingTests: XCTestCase {
 
     // MARK: - Usage provider networking
 
-    func testUsageProviderSendsAccountHeaderAndUpdatesProfile() async throws {
+    func testUsageProviderUsesWhamEndpointAndSendsAccountHeader() async throws {
         var seenRequests: [URLRequest] = []
         CodexMockURLProtocol.requestHandler = { request in
             seenRequests.append(request)
@@ -400,19 +449,15 @@ final class CodexParsingTests: XCTestCase {
                 headerFields: nil
             )!
 
-            if request.url?.path.contains("/profiles/me") == true {
-                return (response, Data(#"{"accountId":"acct-profile","email":"profile@example.com"}"#.utf8))
-            }
-
             return (response, Data("""
             {
-              "rateLimits": [
-                {
-                  "limitName": "Plus",
-                  "individualLimit": 100,
-                  "primary": { "remaining": 60, "windowDurationMins": 300 }
+              "plan_type": "pro",
+              "rate_limit": {
+                "primary_window": {
+                  "used_percent": 40,
+                  "limit_window_seconds": 18000
                 }
-              ]
+              }
             }
             """.utf8))
         }
@@ -440,13 +485,12 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(snapshots.count, 1)
         let snapshot = try XCTUnwrap(snapshots.first)
         XCTAssertEqual(snapshot.used, 40, accuracy: 0.001)
-        XCTAssertEqual(snapshot.displayName, "profile@example.com")
-        let updatedBundle = await auth.tokenBundle
-        XCTAssertEqual(updatedBundle?.accountId, "acct-profile")
+        XCTAssertEqual(snapshot.displayName, nil)
 
         let usageRequest = try XCTUnwrap(seenRequests.last)
+        XCTAssertEqual(usageRequest.url?.path, "/backend-api/wham/usage")
         XCTAssertEqual(usageRequest.value(forHTTPHeaderField: "Authorization"), "Bearer access")
-        XCTAssertEqual(usageRequest.value(forHTTPHeaderField: "ChatGPT-Account-Id"), "acct-profile")
+        XCTAssertEqual(usageRequest.value(forHTTPHeaderField: "ChatGPT-Account-Id"), "acct-token")
     }
 
     // MARK: - Helpers

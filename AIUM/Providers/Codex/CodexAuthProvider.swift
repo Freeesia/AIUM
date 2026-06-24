@@ -20,8 +20,7 @@ struct CodexOAuthConfig {
     static let deviceVerificationURL = URL(string: "https://auth.openai.com/codex/device")!
     static let deviceRedirectURL = URL(string: "https://auth.openai.com/deviceauth/callback")!
     static let backendBaseURL = URL(string: "https://chatgpt.com/backend-api")!
-    static let usageEndpointPath = "/api/codex/usage"
-    static let profileEndpointPath = "/api/codex/profiles/me"
+    static let usageEndpointPath = "/wham/usage"
 
     static let keychainService = "io.github.freeesia.aium"
     static let keychainAccount = "codex_token_bundle"
