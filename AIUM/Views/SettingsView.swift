@@ -27,7 +27,22 @@ struct SettingsView: View {
 
                 // Codex section
                 Section {
+                    if !viewModel.isCodexClientIdConfigured {
+                        codexClientIdWarning
+                    }
                     codexAuthRow
+                    if viewModel.isCodexAuthenticated,
+                       let account = viewModel.codexAccountDisplayName {
+                        HStack {
+                            Text("Account")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(account)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
                 } header: {
                     Text("OpenAI Codex")
                 } footer: {
@@ -152,6 +167,17 @@ struct SettingsView: View {
             } label: {
                 Label("Sign in with Codex", systemImage: "person.badge.plus")
             }
+            .disabled(!viewModel.isCodexClientIdConfigured)
+        }
+    }
+
+    private var codexClientIdWarning: some View {
+        Label {
+            Text("Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings before signing in.")
+                .font(.caption)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
         }
     }
 

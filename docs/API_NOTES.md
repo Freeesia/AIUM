@@ -79,13 +79,24 @@ AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/bu
 
 ### Authentication: Codex Device Code Flow
 
-Similar to GitHub's device flow, Codex uses an OIDC device authorization grant.
+Codex uses a Codex-specific device authorization flow exposed through the
+ChatGPT auth account API, then exchanges the returned authorization code through
+the normal OAuth token endpoint.
 
-**Endpoints (UNVERIFIED — may need adjustment):**
+**Endpoints used by the current implementation:**
 ```
-POST https://auth.openai.com/oauth/device/code
+POST https://auth.openai.com/api/accounts/deviceauth/usercode
+POST https://auth.openai.com/api/accounts/deviceauth/token
 POST https://auth.openai.com/oauth/token
 ```
+
+`/deviceauth/usercode` returns `device_auth_id`, `user_code`, string `interval`,
+and `expires_at`. The user is sent to `https://auth.openai.com/codex/device`.
+`/deviceauth/token` returns `authorization_code`, `code_challenge`, and
+`code_verifier` after the user approves the code; pending states are represented
+by HTTP 403/404 until approval or timeout.
+
+**Client ID:** `CODEX_OAUTH_CLIENT_ID` is passed through `AIUM/Info.plist` as `CodexOAuthClientID`. The tracked default currently matches the Codex app-server login client ID (`app_EMoamEEZ73f0CkXaXp7hrann`) and can be overridden from ignored `Config/AIUM.local.xcconfig` if OpenAI changes it.
 
 **Token bundle stored in Keychain:**
 - `id_token` — OIDC identity token
@@ -97,16 +108,51 @@ POST https://auth.openai.com/oauth/token
 
 **Token refresh:** AIUM implements single-flight refresh protection — if multiple concurrent tasks request a valid token, only one refresh is performed and all waiters receive the result.
 
+AIUM extracts `account_id` and `email` from the returned JWT claims when available. Usage refresh also calls the Codex profile endpoint and updates the stored account display metadata if the backend returns it.
+
 ### Codex Usage / Rate Limits
 
 ```
-GET https://api.openai.com/v1/usage/rate_limits
+GET https://chatgpt.com/backend-api/api/codex/usage
 Authorization: ******
+ChatGPT-Account-Id: {account_id}  # when known
 ```
 
-> **TODO:** Verify this endpoint path. The actual path may differ.
+The provider also makes a best-effort profile request before usage refresh:
 
-**Expected response shape (UNVERIFIED):**
+```
+GET https://chatgpt.com/backend-api/api/codex/profiles/me
+Authorization: ******
+ChatGPT-Account-Id: {account_id}  # when known
+```
+
+**Supported response shapes:**
+
+Current Codex backend-style rate limits:
+```json
+{
+  "rateLimits": [
+    {
+      "limitId": "gpt-5-codex",
+      "limitName": "GPT-5 Codex",
+      "individualLimit": 100,
+      "primary": {
+        "remaining": 25,
+        "limitWindowSeconds": 18000,
+        "resetAfterSeconds": 3600
+      },
+      "secondary": {
+        "usedPercent": 40,
+        "windowDurationMins": 10080,
+        "resetsAt": "2024-01-16T00:00:00Z"
+      }
+    }
+  ],
+  "rateLimitResetCredits": { "remaining": 2 }
+}
+```
+
+Legacy snake_case windows are still accepted:
 ```json
 {
   "primary_window": {
@@ -127,9 +173,13 @@ Authorization: ******
 ```
 
 **Normalization logic:**
-- `used = limit - remaining` (unless `used_percent` is provided, in which case `used = limit * used_percent / 100`)
-- Primary window → `WindowKind.custom` (hourly)
-- Secondary window → `WindowKind.daily`
+- If `used` is present, use it directly.
+- Else if `limit` and `remaining` are present, `used = limit - remaining`.
+- Else if `usedPercent` / `used_percent` is present with a limit, `used = limit * usedPercent / 100`.
+- Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
+- `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
+
+**Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so private API changes are visible in the app UI.
 
 ---
 

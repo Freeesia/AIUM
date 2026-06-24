@@ -81,7 +81,18 @@ GITHUB_OAUTH_CLIENT_ID = your_client_id
 
 ### 5. Codex 認証を設定する
 
-Codex 側の認証・利用状況取得は非公開 API に依存します。利用する場合は、現在の実装が参照している認証設定とエンドポイントを確認し、自分の環境に合わせて設定してください。
+Codex 側の認証・利用状況取得は非公開 API に依存します。現在の実装では、Codex アプリの login client ID と ChatGPT backend の Codex usage endpoint を利用します。
+
+`Config/AIUM.xcconfig` には現在確認できている `CODEX_OAUTH_CLIENT_ID` を設定しています。この値は公開クライアントIDであり secret ではありませんが、OpenAI 側で変更される可能性があります。変更が必要な場合は、GitHub と同じく `Config/AIUM.local.xcconfig` で上書きしてから `xcodegen generate` を実行します。
+
+```xcconfig
+// Config/AIUM.local.xcconfig
+CODEX_OAUTH_CLIENT_ID = app_xxx
+```
+
+この値が `YOUR_CODEX_CLIENT_ID` placeholder または空値の場合、アプリは Codex ログイン処理を開始せず、設定画面にエラーを表示します。
+
+利用状況取得は `https://chatgpt.com/backend-api/api/codex/usage` を呼び出し、保存済みの `accountId` がある場合は `ChatGPT-Account-Id` ヘッダーに付与します。取得できた `accountId` / `email` は Keychain 内の Codex token bundle に保存し、設定画面と使用量カードの接続先表示に反映します。
 
 この部分は最も壊れやすいため、公開アプリ向けの安定した仕様として扱わないでください。
 

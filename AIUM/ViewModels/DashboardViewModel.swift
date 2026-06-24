@@ -18,11 +18,11 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Init
 
     init(
-        usageStore: UsageStore = .shared,
+        usageStore: UsageStore? = nil,
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
         codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider()
     ) {
-        self.usageStore = usageStore
+        self.usageStore = usageStore ?? .shared
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
         loadFromStore()

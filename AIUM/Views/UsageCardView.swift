@@ -70,8 +70,8 @@ struct UsageCardView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         usageStat(label: "Used", value: formatCount(snapshot.used), color: progressColor)
-                        usageStat(label: "Remaining", value: formatCount(snapshot.limit - snapshot.used), color: .secondary)
                         if snapshot.limit > 0 {
+                            usageStat(label: "Remaining", value: formatCount(max(0, snapshot.limit - snapshot.used)), color: .secondary)
                             usageStat(label: "Limit", value: formatCount(snapshot.limit), color: .secondary)
                         }
                     }

@@ -9,6 +9,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var isAuthenticatingGitHub = false
     @Published var isAuthenticatingCodex = false
     @Published var isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
+    @Published var isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil
+    @Published var codexAccountDisplayName: String?
     @Published var authError: String?
 
     // GitHub device flow state
@@ -46,11 +48,11 @@ final class SettingsViewModel: ObservableObject {
     init(
         githubAuth: GitHubAuthProvider = GitHubAuthProvider(),
         codexAuth: CodexAuthProvider = CodexAuthProvider(),
-        usageStore: UsageStore = .shared
+        usageStore: UsageStore? = nil
     ) {
         self.githubAuth = githubAuth
         self.codexAuth = codexAuth
-        self.usageStore = usageStore
+        self.usageStore = usageStore ?? .shared
 
         let defaults = UserDefaults.standard
         let aiLimit = defaults.double(forKey: "github_ai_credit_monthly_limit")
@@ -67,8 +69,10 @@ final class SettingsViewModel: ObservableObject {
     func checkAuthStatus() {
         Task {
             isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
+            isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil
             isGitHubAuthenticated = await githubAuth.isAuthenticated
             isCodexAuthenticated = await codexAuth.isAuthenticated
+            codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
         }
     }
 
@@ -119,6 +123,12 @@ final class SettingsViewModel: ObservableObject {
 
     func startCodexLogin() {
         guard !isAuthenticatingCodex else { return }
+        guard CodexOAuthConfig.clientId != nil else {
+            isCodexClientIdConfigured = false
+            authError = CodexAuthError.clientIdNotConfigured.localizedDescription
+            return
+        }
+
         isAuthenticatingCodex = true
         authError = nil
         codexUserCode = nil
@@ -132,9 +142,11 @@ final class SettingsViewModel: ObservableObject {
 
                 _ = try await codexAuth.pollForToken(
                     deviceCode: response.deviceCode,
+                    userCode: response.userCode,
                     interval: response.interval
                 )
                 isCodexAuthenticated = true
+                codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
                 codexUserCode = nil
                 codexVerificationURL = nil
             } catch {
@@ -148,6 +160,7 @@ final class SettingsViewModel: ObservableObject {
         Task {
             await codexAuth.logout()
             isCodexAuthenticated = false
+            codexAccountDisplayName = nil
             usageStore.clear(provider: .codex)
         }
     }

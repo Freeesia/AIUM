@@ -62,7 +62,14 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
     // MARK: Computed
 
     public var id: String {
-        "\(provider.rawValue)-\(planKind.rawValue)-\(windowKind.rawValue)"
+        [
+            provider.rawValue,
+            accountId ?? "default",
+            planKind.rawValue,
+            windowKind.rawValue,
+            windowDurationMins.map { "\($0)m" } ?? "window",
+            source,
+        ].joined(separator: "-")
     }
 
     public var usedPercent: Double {
