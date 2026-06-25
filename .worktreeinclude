@@ -1,0 +1,2 @@
+# Copy the ignored local OAuth configuration into Codex-managed worktrees.
+Config/AIUM.local.xcconfig
