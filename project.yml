@@ -1,7 +1,7 @@
 name: AIUM
 options:
   minimumXcodeGenVersion: 2.45.4
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.0"
   defaultConfig: Release
   createIntermediateGroups: true
   developmentLanguage: en

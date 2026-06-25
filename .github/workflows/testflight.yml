@@ -32,7 +32,7 @@ jobs:
   upload:
     name: Upload AIUM to TestFlight
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     environment: testflight
     env:
@@ -58,6 +58,12 @@ jobs:
         run: |
           xcodebuild -version
           xcodebuild -showsdks
+
+          xcode_major=$(xcodebuild -version | awk '/Xcode/ { split($2, version, "."); print version[1]; exit }')
+          if [ -z "$xcode_major" ] || [ "$xcode_major" -lt 26 ]; then
+            echo "::error::TestFlight uploads require Xcode 26 or later. Detected: $(xcodebuild -version | head -1)"
+            exit 1
+          fi
 
       - name: Validate TestFlight configuration
         run: |
