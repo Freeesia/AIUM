@@ -17,13 +17,9 @@
 	</dict>
 	<key>signingStyle</key>
 	<string>manual</string>
-	<key>stripSwiftSymbols</key>
-	<true/>
 	<key>teamID</key>
 	<string>KDJQJM26Y7</string>
 	<key>testFlightInternalTestingOnly</key>
-	<true/>
-	<key>uploadSymbols</key>
 	<true/>
 </dict>
 </plist>
