@@ -20,6 +20,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.studiofreesia.aium.usage-refresh</string>
+	</array>
 	<key>GitHubOAuthClientID</key>
 	<string>$(GITHUB_OAUTH_CLIENT_ID)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -35,6 +39,10 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
