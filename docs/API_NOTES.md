@@ -34,7 +34,7 @@ Returns usage for the newer "AI Credits" billing model used by GitHub Copilot.
 - `usageItems[].grossQuantity` — credits consumed so far this month
 - `timePeriod` — period metadata used to estimate the reset time
 
-> **Note:** User-level billing endpoints only include usage billed directly to an individual user's personal account. If Copilot is managed and billed by an organization or enterprise, use the organization- or enterprise-level endpoint instead. For the organization endpoint, AIUM sends the authenticated username as the `user` query parameter.
+> **Note:** User-level billing endpoints only include usage billed directly to an individual user's personal account, and still require a token accepted by GitHub Billing API with Plan read permission. AIUM's GitHub OAuth Device Flow token can authenticate `/user` but has returned 404 for these usage endpoints in real-device debugging. If Copilot is managed and billed by an organization or enterprise, use the organization- or enterprise-level endpoint instead. For the organization endpoint, AIUM sends the authenticated username as the `user` query parameter.
 
 ### GitHub Copilot Premium Requests
 

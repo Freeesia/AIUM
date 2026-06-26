@@ -215,7 +215,7 @@ private enum GitHubUsageEndpoint {
             if let organization {
                 return "\(displayName): GitHub API HTTP 404. Organization billing usage was not found for \(organization). Check the organization slug and use a token with organization Administration read permission."
             }
-            return "\(displayName): GitHub API HTTP 404. User billing usage only applies to personally billed Copilot plans. For organization-billed seats, set Billing Organization and use an organization token with Administration read permission."
+            return "\(displayName): GitHub API HTTP 404. User billing usage requires a personally billed Copilot plan and a fine-grained PAT or GitHub App user token with Plan read permission. OAuth login tokens can authenticate /user but still return 404 here. For organization-billed seats, set Billing Organization and use an organization token with Administration read permission."
         }
         return "\(displayName): \(error.localizedDescription)"
     }

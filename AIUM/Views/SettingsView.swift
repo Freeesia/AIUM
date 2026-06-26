@@ -139,7 +139,7 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Leave Billing Organization blank for a personally billed Copilot plan. For organization-billed seats, enter the organization slug and save a token with Organization permissions > Administration: Read-only. Set monthly limits manually because the billing report does not return your plan allowance.")
+        Text("Billing usage is not available with the GitHub sign-in token alone. For a personally billed Copilot plan, leave Billing Organization blank and save a token with Account permissions > Plan: Read-only. For organization-billed seats, enter the organization slug and save a token with Organization permissions > Administration: Read-only. Set monthly limits manually because the billing report does not return your plan allowance.")
     }
 
     @ViewBuilder

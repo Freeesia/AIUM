@@ -293,7 +293,8 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(premium.source, "GitHub Billing API")
         XCTAssertNotNil(premium.errorMessage)
         XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("Billing Organization"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("Plan read permission"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("OAuth login tokens"))
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {

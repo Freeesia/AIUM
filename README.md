@@ -77,7 +77,7 @@ GITHUB_OAUTH_CLIENT_ID = your_client_id
 
 この値が `YOUR_GITHUB_CLIENT_ID` placeholder または空値の場合、アプリは GitHub ログイン処理を開始せず、設定画面にエラーを表示します。
 
-OAuth Device Flow で要求するスコープは `read:user read:org` です。ただし、GitHub Billing API の利用状況 endpoint は OAuth Device Flow の token では 404 になる場合があります。
+OAuth Device Flow で要求するスコープは `read:user read:org` です。ただし、GitHub Billing API の利用状況 endpoint は OAuth Device Flow の token だけでは 404 になる場合があります。実機デバッグでも `/user` は 200 でしたが、user-level billing usage endpoint は 404 を返しました。
 
 個人で直接購入した Copilot plan の使用量を取得する場合は、GitHub の fine-grained personal access token を作成し、Account permissions の `Plan` を `Read-only` にした上で、設定画面の `Fine-grained PAT for billing usage` に保存します。
 
