@@ -33,8 +33,8 @@ final class SettingsViewModel: ObservableObject {
                                             forKey: "github_premium_request_monthly_limit") }
     }
 
-    @Published var refreshIntervalMinutes: Int {
-        didSet { UserDefaults.standard.set(refreshIntervalMinutes, forKey: "refresh_interval_minutes") }
+    @Published var refreshSetting: UsageRefreshSetting {
+        didSet { UserDefaults.standard.set(refreshSetting.rawValue, forKey: UsageRefreshSetting.storageKey) }
     }
 
     // MARK: - Dependencies
@@ -57,11 +57,11 @@ final class SettingsViewModel: ObservableObject {
         let defaults = UserDefaults.standard
         let aiLimit = defaults.double(forKey: "github_ai_credit_monthly_limit")
         let prLimit = defaults.double(forKey: "github_premium_request_monthly_limit")
-        let interval = defaults.integer(forKey: "refresh_interval_minutes")
+        let interval = defaults.object(forKey: UsageRefreshSetting.storageKey) as? Int
 
         self.aiCreditMonthlyLimit = aiLimit > 0 ? String(Int(aiLimit)) : ""
         self.premiumRequestMonthlyLimit = prLimit > 0 ? String(Int(prLimit)) : ""
-        self.refreshIntervalMinutes = interval > 0 ? interval : 60
+        self.refreshSetting = UsageRefreshSetting(storedValue: interval)
     }
 
     // MARK: - Auth status

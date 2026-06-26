@@ -50,14 +50,14 @@ struct SettingsView: View {
                 }
 
                 // Refresh interval
-                Section("Refresh") {
-                    Picker("Interval", selection: $viewModel.refreshIntervalMinutes) {
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
-                        Text("1 hour").tag(60)
-                        Text("2 hours").tag(120)
-                        Text("6 hours").tag(360)
+                Section {
+                    Picker("Interval", selection: $viewModel.refreshSetting) {
+                        ForEach(UsageRefreshSetting.allCases) { setting in
+                            Text(setting.displayName).tag(setting)
+                        }
                     }
+                } header: {
+                    Text("Refresh")
                 }
 
                 // App Group info

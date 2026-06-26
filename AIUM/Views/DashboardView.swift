@@ -76,11 +76,14 @@ struct DashboardView: View {
                 guard !isPresented else { return }
                 Task {
                     await updateAuthStatus()
+                    viewModel.restartPeriodicRefresh()
                     viewModel.refresh()
                 }
             }
             .task {
                 await updateAuthStatus()
+                viewModel.refreshIfNeeded()
+                viewModel.startPeriodicRefresh()
             }
             .refreshable {
                 viewModel.refresh()
