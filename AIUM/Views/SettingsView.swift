@@ -1,8 +1,18 @@
 import SwiftUI
+import UIKit
+
+private struct BrowserDestination: Identifiable {
+    let url: URL
+
+    var id: String {
+        url.absoluteString
+    }
+}
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var browserDestination: BrowserDestination?
 
     var body: some View {
         NavigationStack {
@@ -84,6 +94,25 @@ struct SettingsView: View {
             }
             .onAppear {
                 viewModel.checkAuthStatus()
+            }
+            .sheet(item: $browserDestination) { destination in
+                SafariBrowserView(url: destination.url)
+                    .ignoresSafeArea()
+            }
+            .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.authError) { _, authError in
+                if authError != nil {
+                    browserDestination = nil
+                }
             }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },
@@ -192,8 +221,15 @@ struct SettingsView: View {
                 .font(.title2.monospaced().bold())
                 .textSelection(.enabled)
             if let verificationURL = URL(string: url) {
-                Link("Open in Browser", destination: verificationURL)
-                    .font(.caption)
+                Button {
+                    UIPasteboard.general.string = userCode
+                    browserDestination = BrowserDestination(url: verificationURL)
+                } label: {
+                    Label("Copy Code and Open Browser", systemImage: "safari")
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             ProgressView("Waiting for authorization…")
                 .controlSize(.small)
