@@ -62,16 +62,7 @@ struct AIUMSmallWidgetView: View {
             Spacer(minLength: 0)
 
             if let resetAt = snapshot.resetAt {
-                Label {
-                    Text(resetAt, style: .relative)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } icon: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                resetInfo(resetAt: resetAt, style: .compact)
             }
         }
         .padding(12)
@@ -152,15 +143,7 @@ struct AIUMMediumWidgetView: View {
                         .foregroundStyle(.secondary)
 
                     if let resetAt = snapshot.resetAt {
-                        Label {
-                            Text(resetAt, style: .relative)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        } icon: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.caption2)
-                        }
-                        .foregroundStyle(.secondary)
+                        resetInfo(resetAt: resetAt, style: .stacked)
                     }
                 }
             } else {
@@ -212,9 +195,7 @@ struct AIUMAccessoryRectangularView: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                 if let resetAt = snapshot.resetAt {
-                    Text(resetAt, style: .relative)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    resetSummary(resetAt: resetAt)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -231,6 +212,77 @@ private func progressColor(for percent: Double) -> Color {
     if percent >= 90 { return .red }
     if percent >= 70 { return .orange }
     return .blue
+}
+
+private enum ResetInfoStyle {
+    case compact
+    case stacked
+}
+
+@ViewBuilder
+private func resetInfo(resetAt: Date, style: ResetInfoStyle) -> some View {
+    TimelineView(.everyMinute) { context in
+        HStack(alignment: style == .compact ? .center : .top, spacing: 4) {
+            Image(systemName: "arrow.clockwise")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            switch style {
+            case .compact:
+                Text(resetSummaryText(resetAt: resetAt, referenceDate: context.date))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            case .stacked:
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Resets in \(remainingTimeText(until: resetAt, from: context.date))")
+                    Text("At \(resetTimeText(resetAt, relativeTo: context.date))")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+        }
+    }
+}
+
+@ViewBuilder
+private func resetSummary(resetAt: Date) -> some View {
+    TimelineView(.everyMinute) { context in
+        Text(resetSummaryText(resetAt: resetAt, referenceDate: context.date))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+    }
+}
+
+private func resetSummaryText(resetAt: Date, referenceDate: Date) -> String {
+    "\(remainingTimeText(until: resetAt, from: referenceDate)) · \(resetTimeText(resetAt, relativeTo: referenceDate))"
+}
+
+private func remainingTimeText(until resetAt: Date, from referenceDate: Date) -> String {
+    let seconds = resetAt.timeIntervalSince(referenceDate)
+    guard seconds > 0 else { return "now" }
+
+    let totalMinutes = max(1, Int(ceil(seconds / 60)))
+    let days = totalMinutes / (24 * 60)
+    let hours = (totalMinutes % (24 * 60)) / 60
+    let minutes = totalMinutes % 60
+
+    if days > 0 {
+        return hours > 0 ? "\(days)d \(hours)h" : "\(days)d"
+    }
+    if hours > 0 {
+        return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+    }
+    return "\(minutes)m"
+}
+
+private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = Calendar.current.isDate(resetAt, inSameDayAs: referenceDate) ? .none : .medium
+    formatter.timeStyle = .short
+    return formatter.string(from: resetAt)
 }
 
 // MARK: - Previews
