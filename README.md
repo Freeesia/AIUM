@@ -77,7 +77,11 @@ GITHUB_OAUTH_CLIENT_ID = your_client_id
 
 この値が `YOUR_GITHUB_CLIENT_ID` placeholder または空値の場合、アプリは GitHub ログイン処理を開始せず、設定画面にエラーを表示します。
 
-OAuth Device Flow で要求するスコープは `read:user read:org` です。利用状況取得は GitHub Billing API の `2026-03-10` version に依存します。個人アカウントに直接課金されていない Copilot seat や、Billing API の権限条件を満たさないトークンでは、ログインに成功していても使用量取得が 403/404 になる場合があります。
+OAuth Device Flow で要求するスコープは `read:user read:org` です。ただし、GitHub Billing API の利用状況 endpoint は OAuth Device Flow の token では 404 になる場合があります。
+
+使用量取得には、GitHub の fine-grained personal access token を作成し、Account permissions の `Plan` を `Read-only` にした上で、設定画面の `Fine-grained PAT for billing usage` に保存します。保存した token は Keychain に保存され、GitHub 使用量取得に使われます。
+
+利用状況取得は GitHub Billing API の `2026-03-10` version に依存します。個人アカウントに直接課金されていない Copilot seat や、Billing API の権限条件を満たさないトークンでは、ログインに成功していても使用量取得が 403/404 になる場合があります。
 
 ### 5. Codex 認証を設定する
 

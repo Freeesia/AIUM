@@ -184,7 +184,7 @@ private enum GitHubUsageEndpoint {
 
     func errorMessage(for error: Error) -> String {
         if case GitHubAPIError.httpError(let statusCode, _) = error, statusCode == 404 {
-            return "\(displayName): GitHub API HTTP 404. No user billing usage was found for this account/token. Personal Copilot billing APIs may return 404 for organization- or enterprise-billed seats."
+            return "\(displayName): GitHub API HTTP 404. Billing usage requires a fine-grained PAT with Plan read permission; OAuth login tokens can authenticate /user but still return 404 here."
         }
         return "\(displayName): \(error.localizedDescription)"
     }

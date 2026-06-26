@@ -186,7 +186,11 @@ actor GitHubAPIClient: GitHubAPIProviding {
     }
 
     private func fetch<T: Decodable>(_ request: URLRequest, endpointName: String) async throws -> T {
+        debugLog("Requesting \(endpointName): \(request.url?.absoluteString ?? "unknown URL")")
         let (data, response) = try await session.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse {
+            debugLog("Response \(endpointName): HTTP \(httpResponse.statusCode). Body: \(Self.previewBody(data))")
+        }
         if let httpResponse = response as? HTTPURLResponse,
            !(200..<300).contains(httpResponse.statusCode) {
             let body = String(data: data, encoding: .utf8)
@@ -204,6 +208,20 @@ actor GitHubAPIClient: GitHubAPIProviding {
         } catch {
             throw GitHubAPIError.decodeError(endpoint: endpointName, body: String(data: data, encoding: .utf8), underlying: error)
         }
+    }
+
+    private func debugLog(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        guard ProcessInfo.processInfo.arguments.contains("-AIUMDebugGitHubUsage") else { return }
+        print("[AIUM][GitHubAPI] \(message())")
+        #endif
+    }
+
+    private static func previewBody(_ data: Data) -> String {
+        guard let body = String(data: data, encoding: .utf8), !body.isEmpty else { return "empty" }
+        let singleLine = body.replacingOccurrences(of: "\n", with: " ")
+        if singleLine.count <= 500 { return singleLine }
+        return String(singleLine.prefix(500)) + "..."
     }
 }
 

@@ -265,7 +265,7 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(premium.source, "GitHub Billing API (legacy)")
         XCTAssertNotNil(premium.errorMessage)
         XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("organization- or enterprise-billed"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("fine-grained PAT"))
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {

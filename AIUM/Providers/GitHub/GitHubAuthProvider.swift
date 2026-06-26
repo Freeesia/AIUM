@@ -167,6 +167,10 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         )
     }
 
+    func saveManualAccessToken(_ accessToken: String) {
+        save(accessToken)
+    }
+
     private func save(_ accessToken: String) {
         storedAccessToken = accessToken
         KeychainHelper.save(

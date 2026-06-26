@@ -13,6 +13,7 @@ struct SettingsView: View {
                         clientIdWarning
                     }
                     githubAuthRow
+                    githubBillingTokenRow
                     if viewModel.isGitHubAuthenticated {
                         limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
                                  placeholder: "e.g. 1000")
@@ -137,7 +138,22 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login.")
+        Text("GitHub usage endpoints require a fine-grained personal access token with Account permissions > Plan: Read-only. OAuth Device Flow can sign in, but may still return 404 for billing usage. Set monthly limits manually because the billing report does not return your plan allowance.")
+    }
+
+    @ViewBuilder
+    private var githubBillingTokenRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SecureField("Fine-grained PAT for billing usage", text: $viewModel.githubManualAccessToken)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button {
+                viewModel.saveGitHubManualAccessToken()
+            } label: {
+                Label("Save Billing Token", systemImage: "key.fill")
+            }
+            .disabled(viewModel.githubManualAccessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
     }
 
     // MARK: - Codex auth row

@@ -34,7 +34,7 @@ Returns usage for the newer "AI Credits" billing model used by GitHub Copilot.
 - `usageItems[].grossQuantity` — credits consumed so far this month
 - `timePeriod` — period metadata used to estimate the reset time
 
-> **Note:** This endpoint is a GitHub Billing API endpoint. It may require a specific Copilot plan tier, direct personal billing, and a token type/permission accepted by GitHub's Billing API. Organization- or enterprise-billed seats may return 403/404 even when `/user` login succeeds.
+> **Note:** This endpoint is a GitHub Billing API endpoint. It requires a token type/permission accepted by GitHub's Billing API. In practice, OAuth Device Flow tokens can authenticate `/user` but still return 404 for billing usage. Use a fine-grained personal access token with Account permissions > Plan: Read-only, or a GitHub App user token with the equivalent user permission.
 
 ### GitHub Copilot Legacy Premium Requests
 
@@ -60,6 +60,8 @@ AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/bu
 4. Access token is stored in the Keychain
 
 **Requested OAuth scopes:** `read:user`, `read:org`
+
+OAuth Device Flow is still useful for basic GitHub sign-in state and profile lookup. For billing usage, AIUM can store a manually provided fine-grained personal access token in Keychain and use it for the same API calls. The token should include Account permissions > Plan: Read-only.
 
 **Setup:** Create an OAuth App at https://github.com/settings/developers and enable device flow under the app settings. Set the Client ID through the AIUM target build setting `GITHUB_OAUTH_CLIENT_ID`; `AIUM/Info.plist` exposes it to the app as `GitHubOAuthClientID`. Local builds should put the real value in ignored `Config/AIUM.local.xcconfig`; leave the tracked placeholder `YOUR_GITHUB_CLIENT_ID` in place to disable GitHub login.
 

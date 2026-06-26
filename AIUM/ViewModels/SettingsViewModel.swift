@@ -12,6 +12,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil
     @Published var codexAccountDisplayName: String?
     @Published var authError: String?
+    @Published var githubManualAccessToken = ""
 
     // GitHub device flow state
     @Published var githubUserCode: String?
@@ -115,7 +116,20 @@ final class SettingsViewModel: ObservableObject {
         Task {
             await githubAuth.logout()
             isGitHubAuthenticated = false
+            githubManualAccessToken = ""
             usageStore.clear(provider: .githubCopilot)
+        }
+    }
+
+    func saveGitHubManualAccessToken() {
+        let token = githubManualAccessToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else { return }
+
+        Task {
+            await githubAuth.saveManualAccessToken(token)
+            isGitHubAuthenticated = true
+            githubManualAccessToken = ""
+            authError = nil
         }
     }
 

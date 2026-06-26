@@ -50,6 +50,19 @@ final class DashboardViewModel: ObservableObject {
         get async { await codexProvider.isAuthenticated }
     }
 
+    #if DEBUG
+    func debugRefreshGitHubOnly() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        lastError = nil
+
+        Task {
+            await refreshGitHub()
+            isRefreshing = false
+        }
+    }
+    #endif
+
     // MARK: - Private
 
     private func loadFromStore() {
