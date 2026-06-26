@@ -16,6 +16,7 @@ final class DashboardViewModel: ObservableObject {
     private let usageStore: UsageStore
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
+    private let refreshService: UsageRefreshService
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
     private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
@@ -27,9 +28,15 @@ final class DashboardViewModel: ObservableObject {
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
         codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider()
     ) {
-        self.usageStore = usageStore ?? .shared
+        let resolvedUsageStore = usageStore ?? .shared
+        self.usageStore = resolvedUsageStore
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
+        self.refreshService = UsageRefreshService(
+            usageStore: resolvedUsageStore,
+            githubProvider: githubProvider,
+            codexProvider: codexProvider
+        )
         loadFromStore()
     }
 
@@ -104,18 +111,13 @@ final class DashboardViewModel: ObservableObject {
 
     private func refreshNow(shouldReschedulePeriodicRefresh: Bool) async {
         guard !isRefreshing else { return }
-        let previousSnapshots = usageStore.snapshots
         isRefreshing = true
         lastError = nil
 
-        await refreshGitHub()
-        await refreshCodex()
-
-        let currentSnapshots = usageStore.snapshots
-        automaticRefreshIntervalMinutes = UsageRefreshSchedule.automaticIntervalMinutes(
-            previous: previousSnapshots,
-            current: currentSnapshots
-        )
+        let result = await refreshService.refreshUsage()
+        loadFromStore()
+        automaticRefreshIntervalMinutes = result.automaticIntervalMinutes
+        lastError = result.errorMessage
         isRefreshing = false
 
         if shouldReschedulePeriodicRefresh,
@@ -142,40 +144,10 @@ final class DashboardViewModel: ObservableObject {
     }
 
     private var currentRefreshSetting: UsageRefreshSetting {
-        UsageRefreshSetting(
-            storedValue: UserDefaults.standard.object(forKey: UsageRefreshSetting.storageKey) as? Int
-        )
+        UsageRefreshSchedule.refreshSetting()
     }
 
     private static func nanoseconds(minutes: Int) -> UInt64 {
         UInt64(minutes) * 60 * 1_000_000_000
-    }
-
-    private func refreshGitHub() async {
-        do {
-            guard await githubProvider.isAuthenticated else { return }
-            let snapshots = try await githubProvider.fetchUsage()
-            usageStore.replace(provider: .githubCopilot, with: snapshots)
-            githubSnapshots = usageStore.snapshots(for: .githubCopilot)
-        } catch {
-            let errSnapshot = UsageSnapshot.error(provider: .githubCopilot, message: error.localizedDescription)
-            usageStore.upsert(errSnapshot)
-            githubSnapshots = usageStore.snapshots(for: .githubCopilot)
-            lastError = error.localizedDescription
-        }
-    }
-
-    private func refreshCodex() async {
-        do {
-            guard await codexProvider.isAuthenticated else { return }
-            let snapshots = try await codexProvider.fetchUsage()
-            usageStore.replace(provider: .codex, with: snapshots)
-            codexSnapshots = usageStore.snapshots(for: .codex)
-        } catch {
-            let errSnapshot = UsageSnapshot.error(provider: .codex, message: error.localizedDescription)
-            usageStore.upsert(errSnapshot)
-            codexSnapshots = usageStore.snapshots(for: .codex)
-            lastError = (lastError.map { $0 + "\n" } ?? "") + error.localizedDescription
-        }
     }
 }

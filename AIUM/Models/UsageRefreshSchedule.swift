@@ -50,8 +50,30 @@ enum UsageRefreshSetting: Int, CaseIterable, Identifiable, Sendable {
 }
 
 enum UsageRefreshSchedule {
+    static let automaticIntervalStorageKey = "automatic_refresh_interval_minutes"
     static let minimumAutomaticIntervalMinutes = 5
     static let defaultAutomaticIntervalMinutes = 60
+
+    static func refreshSetting(defaults: UserDefaults = .standard) -> UsageRefreshSetting {
+        UsageRefreshSetting(
+            storedValue: defaults.object(forKey: UsageRefreshSetting.storageKey) as? Int
+        )
+    }
+
+    static func storedAutomaticIntervalMinutes(defaults: UserDefaults = .standard) -> Int {
+        guard let interval = defaults.object(forKey: automaticIntervalStorageKey) as? Int else {
+            return defaultAutomaticIntervalMinutes
+        }
+
+        return max(minimumAutomaticIntervalMinutes, interval)
+    }
+
+    static func storeAutomaticIntervalMinutes(
+        _ interval: Int,
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.set(max(minimumAutomaticIntervalMinutes, interval), forKey: automaticIntervalStorageKey)
+    }
 
     static func intervalMinutes(
         for setting: UsageRefreshSetting,
