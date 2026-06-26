@@ -1,5 +1,7 @@
 import Foundation
 
+private let kGitHubBillingOrganization = "github_billing_organization"
+
 @MainActor
 final class SettingsViewModel: ObservableObject {
     // MARK: - Published state
@@ -13,6 +15,14 @@ final class SettingsViewModel: ObservableObject {
     @Published var codexAccountDisplayName: String?
     @Published var authError: String?
     @Published var githubManualAccessToken = ""
+    @Published var githubBillingOrganization: String {
+        didSet {
+            UserDefaults.standard.set(
+                githubBillingOrganization.trimmingCharacters(in: .whitespacesAndNewlines),
+                forKey: kGitHubBillingOrganization
+            )
+        }
+    }
 
     // GitHub device flow state
     @Published var githubUserCode: String?
@@ -63,6 +73,7 @@ final class SettingsViewModel: ObservableObject {
         self.aiCreditMonthlyLimit = aiLimit > 0 ? String(Int(aiLimit)) : ""
         self.premiumRequestMonthlyLimit = prLimit > 0 ? String(Int(prLimit)) : ""
         self.refreshIntervalMinutes = interval > 0 ? interval : 60
+        self.githubBillingOrganization = defaults.string(forKey: kGitHubBillingOrganization) ?? ""
     }
 
     // MARK: - Auth status

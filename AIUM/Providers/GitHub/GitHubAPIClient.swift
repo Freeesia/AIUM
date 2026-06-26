@@ -117,8 +117,8 @@ struct GitHubPremiumRequestUsageResponse: Decodable, Sendable {
 
 protocol GitHubAPIProviding: Actor {
     func fetchUser(token: String) async throws -> GitHubUser
-    func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse
-    func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse
+    func fetchAICreditUsage(username: String, organization: String?, token: String) async throws -> GitHubAICreditUsageResponse
+    func fetchPremiumRequestUsage(username: String, organization: String?, token: String) async throws -> GitHubPremiumRequestUsageResponse
 }
 
 /// Low-level GitHub REST API client.
@@ -141,22 +141,38 @@ actor GitHubAPIClient: GitHubAPIProviding {
     }
 
     /// Fetches AI Credit usage for the given username.
-    /// Endpoint: GET /users/{username}/settings/billing/ai_credit/usage
-    func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
+    /// Endpoint:
+    ///  - GET /users/{username}/settings/billing/ai_credit/usage
+    ///  - GET /organizations/{org}/settings/billing/ai_credit/usage?user={username}
+    func fetchAICreditUsage(username: String, organization: String?, token: String) async throws -> GitHubAICreditUsageResponse {
+        let billingRequest = billingUsageRequest(
+            username: username,
+            organization: organization,
+            userPath: "/users/\(username)/settings/billing/ai_credit/usage",
+            organizationPath: { "/organizations/\($0)/settings/billing/ai_credit/usage" }
+        )
         let request = makeRequest(
-            path: "/users/\(username)/settings/billing/ai_credit/usage",
-            queryItems: currentMonthQueryItems(),
+            path: billingRequest.path,
+            queryItems: billingRequest.queryItems,
             token: token
         )
         return try await fetch(request, endpointName: "AI Credits")
     }
 
-    /// Fetches legacy Premium Request usage for the given username.
-    /// Endpoint: GET /users/{username}/settings/billing/premium_request/usage
-    func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
+    /// Fetches Premium Request usage for the given username.
+    /// Endpoint:
+    ///  - GET /users/{username}/settings/billing/premium_request/usage
+    ///  - GET /organizations/{org}/settings/billing/premium_request/usage?user={username}
+    func fetchPremiumRequestUsage(username: String, organization: String?, token: String) async throws -> GitHubPremiumRequestUsageResponse {
+        let billingRequest = billingUsageRequest(
+            username: username,
+            organization: organization,
+            userPath: "/users/\(username)/settings/billing/premium_request/usage",
+            organizationPath: { "/organizations/\($0)/settings/billing/premium_request/usage" }
+        )
         let request = makeRequest(
-            path: "/users/\(username)/settings/billing/premium_request/usage",
-            queryItems: currentMonthQueryItems(),
+            path: billingRequest.path,
+            queryItems: billingRequest.queryItems,
             token: token
         )
         return try await fetch(request, endpointName: "Premium Requests")
@@ -183,6 +199,23 @@ actor GitHubAPIClient: GitHubAPIProviding {
             URLQueryItem(name: "year", value: String(year)),
             URLQueryItem(name: "month", value: String(month)),
         ]
+    }
+
+    private func billingUsageRequest(
+        username: String,
+        organization: String?,
+        userPath: String,
+        organizationPath: (String) -> String
+    ) -> (path: String, queryItems: [URLQueryItem]) {
+        let trimmedOrganization = organization?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let trimmedOrganization, !trimmedOrganization.isEmpty else {
+            return (userPath, currentMonthQueryItems())
+        }
+
+        return (
+            organizationPath(trimmedOrganization),
+            currentMonthQueryItems() + [URLQueryItem(name: "user", value: username)]
+        )
     }
 
     private func fetch<T: Decodable>(_ request: URLRequest, endpointName: String) async throws -> T {

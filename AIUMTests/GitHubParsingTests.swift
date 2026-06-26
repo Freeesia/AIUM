@@ -188,7 +188,7 @@ final class GitHubParsingTests: XCTestCase {
         let client = makeAPIClient(statusCode: 404, body: #"{"message":"Not Found"}"#)
 
         do {
-            _ = try await client.fetchAICreditUsage(username: "octocat", token: "token")
+            _ = try await client.fetchAICreditUsage(username: "octocat", organization: nil, token: "token")
             XCTFail("Expected HTTP error.")
         } catch GitHubAPIError.httpError(let statusCode, let body) {
             XCTAssertEqual(statusCode, 404)
@@ -238,7 +238,35 @@ final class GitHubParsingTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         let client = GitHubAPIClient(session: URLSession(configuration: configuration))
 
-        let response = try await client.fetchAICreditUsage(username: "octocat", token: "token")
+        let response = try await client.fetchAICreditUsage(username: "octocat", organization: nil, token: "token")
+        XCTAssertEqual(response.usedQuantity, 42, accuracy: 0.001)
+    }
+
+    func testAPIClientUsesOrganizationBillingEndpointWhenOrganizationIsConfigured() async throws {
+        MockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url?.path, "/organizations/acme/settings/billing/ai_credit/usage")
+
+            let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
+            let queryItems = components.queryItems ?? []
+            XCTAssertEqual(queryItems.first { $0.name == "user" }?.value, "octocat")
+            XCTAssertNotNil(queryItems.first { $0.name == "year" })
+            XCTAssertNotNil(queryItems.first { $0.name == "month" })
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let body = #"{"usageItems":[{"grossQuantity":42}]}"#
+            return (response, Data(body.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let client = GitHubAPIClient(session: URLSession(configuration: configuration))
+
+        let response = try await client.fetchAICreditUsage(username: "octocat", organization: " acme ", token: "token")
         XCTAssertEqual(response.usedQuantity, 42, accuracy: 0.001)
     }
 
@@ -262,10 +290,10 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(ai.used, 20, accuracy: 0.001)
 
         let premium = try XCTUnwrap(snapshots.first { $0.planKind == .premiumRequests })
-        XCTAssertEqual(premium.source, "GitHub Billing API (legacy)")
+        XCTAssertEqual(premium.source, "GitHub Billing API")
         XCTAssertNotNil(premium.errorMessage)
         XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("fine-grained PAT"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("Billing Organization"))
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {
@@ -341,14 +369,14 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
         user
     }
 
-    func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
+    func fetchAICreditUsage(username: String, organization: String?, token: String) async throws -> GitHubAICreditUsageResponse {
         if let aiError { throw aiError }
         return aiResponse ?? GitHubAICreditUsageResponse(
             usageItems: [.mock(quantity: 10)]
         )
     }
 
-    func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
+    func fetchPremiumRequestUsage(username: String, organization: String?, token: String) async throws -> GitHubPremiumRequestUsageResponse {
         if let premiumError { throw premiumError }
         return premiumResponse ?? GitHubPremiumRequestUsageResponse(
             usageItems: [.mock(quantity: 5)]

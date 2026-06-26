@@ -13,6 +13,7 @@ struct SettingsView: View {
                         clientIdWarning
                     }
                     githubAuthRow
+                    githubBillingOrganizationRow
                     githubBillingTokenRow
                     if viewModel.isGitHubAuthenticated {
                         limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
@@ -138,7 +139,19 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("GitHub usage endpoints require a fine-grained personal access token with Account permissions > Plan: Read-only. OAuth Device Flow can sign in, but may still return 404 for billing usage. Set monthly limits manually because the billing report does not return your plan allowance.")
+        Text("Leave Billing Organization blank for a personally billed Copilot plan. For organization-billed seats, enter the organization slug and save a token with Organization permissions > Administration: Read-only. Set monthly limits manually because the billing report does not return your plan allowance.")
+    }
+
+    @ViewBuilder
+    private var githubBillingOrganizationRow: some View {
+        HStack {
+            Text("Billing Organization")
+            Spacer()
+            TextField("optional org slug", text: $viewModel.githubBillingOrganization)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .multilineTextAlignment(.trailing)
+        }
     }
 
     @ViewBuilder
