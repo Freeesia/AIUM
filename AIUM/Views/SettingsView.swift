@@ -70,7 +70,17 @@ struct SettingsView: View {
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
                     }
-                    Text("The App Group must be configured in both the AIUM target and the AIUMWidget target.")
+                    HStack {
+                        Text("Status")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(UsageStore.isSharedContainerAvailable ? "Shared" : "Fallback")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(UsageStore.isSharedContainerAvailable ? .green : .orange)
+                    }
+                    Text(UsageStore.isSharedContainerAvailable
+                         ? "Usage snapshots are saved in the App Group container and can be read by widgets."
+                         : "The App Group container is unavailable. The app falls back to app-only Documents storage, so widgets cannot read the saved snapshots.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

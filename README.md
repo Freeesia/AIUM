@@ -58,7 +58,9 @@ xcodegen generate
 - Bundle Identifier
 - App Groups
 
-App Groups の識別子は、アプリ側とウィジェット側で同じものを指定してください。コード内で App Group 識別子を参照している場合は、自分の設定に合わせて変更します。
+標準設定では、App Groups の識別子は `group.com.studiofreesia.aium` です。`AIUM/AIUM.entitlements`、`AIUMWidget/AIUMWidget.entitlements`、`UsageStore.appGroupIdentifier` は同じ値にしてください。
+
+App Group container を取得できない場合、アプリ本体は app-only の Documents 領域にフォールバックして使用量スナップショットを保存します。この領域は Widget Extension から読めないため、ウィジェットには保存済み使用量が表示されません。設定画面の App Group セクションで `Status` が `Shared` になっていることを確認してください。
 
 ### 4. GitHub OAuth を設定する
 
