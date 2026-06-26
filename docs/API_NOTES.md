@@ -6,7 +6,8 @@ This document describes the GitHub and Codex API endpoints used by AIUM.
 
 ## GitHub APIs
 
-All GitHub API requests use the `Authorization: ****** header and target `https://api.github.com`.
+All GitHub API requests use the `Authorization: Bearer ******` header and target `https://api.github.com`.
+Usage requests send `X-GitHub-Api-Version: 2026-03-10` because the billing usage endpoints are available in the current GitHub REST API version.
 
 ### Authenticated User
 
@@ -30,11 +31,10 @@ GET /users/{username}/settings/billing/ai_credit/usage
 Returns usage for the newer "AI Credits" billing model used by GitHub Copilot.
 
 **Response fields used:**
-- `used_in_current_period` — credits consumed so far this month
-- `total_allowance` — total monthly credit allowance (may be null; use manual override in Settings)
-- `current_period_end` — ISO 8601 timestamp for when the period resets
+- `usageItems[].grossQuantity` — credits consumed so far this month
+- `timePeriod` — period metadata used to estimate the reset time
 
-> **Note:** This endpoint may require a specific Copilot plan tier and may not be available to all users.
+> **Note:** This endpoint is a GitHub Billing API endpoint. It may require a specific Copilot plan tier, direct personal billing, and a token type/permission accepted by GitHub's Billing API. Organization- or enterprise-billed seats may return 403/404 even when `/user` login succeeds.
 
 ### GitHub Copilot Legacy Premium Requests
 
@@ -45,9 +45,8 @@ GET /users/{username}/settings/billing/premium_request/usage
 Returns usage for the older "Premium Requests" billing model.
 
 **Response fields used:**
-- `used_premium_requests` — requests used so far
-- `included_premium_requests` — included monthly allowance (may be null; use manual override)
-- `last_updated_at` — when the usage data was last updated
+- `usageItems[].grossQuantity` — requests used so far
+- `timePeriod` — period/update metadata
 
 > **Note:** This endpoint may be deprecated in the future as GitHub transitions to the AI Credits model.
 
@@ -60,7 +59,7 @@ AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/bu
 3. App polls `https://github.com/login/oauth/access_token` with `device_code`
 4. Access token is stored in the Keychain
 
-**Required scopes:** `read:user`, `read:org`
+**Requested OAuth scopes:** `read:user`, `read:org`
 
 **Setup:** Create an OAuth App at https://github.com/settings/developers and enable device flow under the app settings. Set the Client ID through the AIUM target build setting `GITHUB_OAUTH_CLIENT_ID`; `AIUM/Info.plist` exposes it to the app as `GitHubOAuthClientID`. Local builds should put the real value in ignored `Config/AIUM.local.xcconfig`; leave the tracked placeholder `YOUR_GITHUB_CLIENT_ID` in place to disable GitHub login.
 
