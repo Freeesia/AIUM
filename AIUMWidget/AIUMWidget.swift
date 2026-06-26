@@ -18,6 +18,8 @@ struct AIUMWidgetEntry: TimelineEntry {
 // MARK: - Timeline Provider
 
 struct AIUMWidgetProvider: TimelineProvider {
+    private static let refreshInterval: TimeInterval = 5 * 60
+
     func placeholder(in context: Context) -> AIUMWidgetEntry {
         AIUMWidgetEntry(
             date: Date(),
@@ -56,11 +58,12 @@ struct AIUMWidgetProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<AIUMWidgetEntry>) -> Void) {
+        let now = Date()
         let snapshots = UsageStore.loadSnapshotsFromSharedContainer()
-        let entry = AIUMWidgetEntry(date: Date(), snapshots: snapshots, provider: nil)
+        let entry = AIUMWidgetEntry(date: now, snapshots: snapshots, provider: nil)
 
-        // Refresh every 30 minutes
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        // Re-read cached snapshots every 5 minutes. WidgetKit may coalesce updates.
+        let nextUpdate = now.addingTimeInterval(Self.refreshInterval)
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
