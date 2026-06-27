@@ -44,44 +44,15 @@ struct GitHubBillingTimePeriod: Decodable, Sendable {
 }
 
 struct GitHubBillingUsageItem: Decodable, Sendable {
-    let product: String?
-    let sku: String?
-    let model: String?
-    let unitType: String?
-    let quantity: Double?
-    let grossQuantity: Double?
-    let netQuantity: Double?
-
-    var consumedQuantity: Double {
-        grossQuantity ?? quantity ?? netQuantity ?? 0
-    }
+    let grossQuantity: Double
 }
 
 struct GitHubAICreditUsageResponse: Decodable, Sendable {
     let timePeriod: GitHubBillingTimePeriod?
     let usageItems: [GitHubBillingUsageItem]
 
-    init(
-        timePeriod: GitHubBillingTimePeriod? = nil,
-        usageItems: [GitHubBillingUsageItem] = []
-    ) {
-        self.timePeriod = timePeriod
-        self.usageItems = usageItems
-    }
-
     var usedQuantity: Double {
-        usageItems.reduce(0) { $0 + $1.consumedQuantity }
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case timePeriod
-        case usageItems
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        timePeriod = try container.decodeIfPresent(GitHubBillingTimePeriod.self, forKey: .timePeriod)
-        usageItems = try container.decodeIfPresent([GitHubBillingUsageItem].self, forKey: .usageItems) ?? []
+        usageItems.reduce(0) { $0 + $1.grossQuantity }
     }
 }
 
@@ -89,27 +60,8 @@ struct GitHubPremiumRequestUsageResponse: Decodable, Sendable {
     let timePeriod: GitHubBillingTimePeriod?
     let usageItems: [GitHubBillingUsageItem]
 
-    init(
-        timePeriod: GitHubBillingTimePeriod? = nil,
-        usageItems: [GitHubBillingUsageItem] = []
-    ) {
-        self.timePeriod = timePeriod
-        self.usageItems = usageItems
-    }
-
     var usedQuantity: Double {
-        usageItems.reduce(0) { $0 + $1.consumedQuantity }
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case timePeriod
-        case usageItems
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        timePeriod = try container.decodeIfPresent(GitHubBillingTimePeriod.self, forKey: .timePeriod)
-        usageItems = try container.decodeIfPresent([GitHubBillingUsageItem].self, forKey: .usageItems) ?? []
+        usageItems.reduce(0) { $0 + $1.grossQuantity }
     }
 }
 
@@ -188,11 +140,7 @@ actor GitHubAPIClient: GitHubAPIProviding {
     }
 
     private func fetch<T: Decodable>(_ request: URLRequest, endpointName: String) async throws -> T {
-        debugLog("Requesting \(endpointName): \(request.url?.absoluteString ?? "unknown URL")")
         let (data, response) = try await session.data(for: request)
-        if let httpResponse = response as? HTTPURLResponse {
-            debugLog("Response \(endpointName): HTTP \(httpResponse.statusCode). Body: \(Self.previewBody(data))")
-        }
         if let httpResponse = response as? HTTPURLResponse,
            !(200..<300).contains(httpResponse.statusCode) {
             let body = String(data: data, encoding: .utf8)
@@ -212,19 +160,6 @@ actor GitHubAPIClient: GitHubAPIProviding {
         }
     }
 
-    private func debugLog(_ message: @autoclosure () -> String) {
-        #if DEBUG
-        guard ProcessInfo.processInfo.arguments.contains("-AIUMDebugGitHubUsage") else { return }
-        print("[AIUM][GitHubAPI] \(message())")
-        #endif
-    }
-
-    private static func previewBody(_ data: Data) -> String {
-        guard let body = String(data: data, encoding: .utf8), !body.isEmpty else { return "empty" }
-        let singleLine = body.replacingOccurrences(of: "\n", with: " ")
-        if singleLine.count <= 500 { return singleLine }
-        return String(singleLine.prefix(500)) + "..."
-    }
 }
 
 // MARK: - Errors

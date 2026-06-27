@@ -67,11 +67,9 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertNotNil(response.timePeriod?.periodEndDate())
     }
 
-    func testDecodeAICreditUsageWithoutItems() throws {
+    func testDecodeAICreditUsageWithoutItemsFails() throws {
         let json = "{}".data(using: .utf8)!
-        let response = try decoder.decode(GitHubAICreditUsageResponse.self, from: json)
-        XCTAssertTrue(response.usageItems.isEmpty)
-        XCTAssertEqual(response.usedQuantity, 0, accuracy: 0.001)
+        XCTAssertThrowsError(try decoder.decode(GitHubAICreditUsageResponse.self, from: json))
     }
 
     // MARK: - GitHubPremiumRequestUsageResponse
@@ -307,6 +305,7 @@ final class GitHubParsingTests: XCTestCase {
         let auth = FakeGitHubAuthProvider(token: "token")
         let api = FakeGitHubAPIClient(
             aiResponse: GitHubAICreditUsageResponse(
+                timePeriod: nil,
                 usageItems: [.mock(quantity: 20)]
             ),
             premiumError: GitHubAPIError.httpError(statusCode: 404, body: #"{"message":"Not Found"}"#)
@@ -423,6 +422,7 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
     func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
         if let aiError { throw aiError }
         return aiResponse ?? GitHubAICreditUsageResponse(
+            timePeriod: nil,
             usageItems: [.mock(quantity: 10)]
         )
     }
@@ -430,6 +430,7 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
     func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
         if let premiumError { throw premiumError }
         return premiumResponse ?? GitHubPremiumRequestUsageResponse(
+            timePeriod: nil,
             usageItems: [.mock(quantity: 5)]
         )
     }
@@ -437,15 +438,7 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
 
 private extension GitHubBillingUsageItem {
     static func mock(quantity: Double) -> GitHubBillingUsageItem {
-        GitHubBillingUsageItem(
-            product: nil,
-            sku: nil,
-            model: nil,
-            unitType: nil,
-            quantity: nil,
-            grossQuantity: quantity,
-            netQuantity: nil
-        )
+        GitHubBillingUsageItem(grossQuantity: quantity)
     }
 }
 

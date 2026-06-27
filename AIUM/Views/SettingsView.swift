@@ -226,7 +226,7 @@ struct SettingsView: View {
     @ViewBuilder
     private func deviceCodePrompt(userCode: String, url: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Open \(url) and enter:")
+            Text("Open \(url) in your browser and enter:")
                 .font(.caption)
             Text(userCode)
                 .font(.title2.monospaced().bold())
