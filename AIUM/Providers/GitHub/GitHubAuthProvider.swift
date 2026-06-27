@@ -12,10 +12,9 @@ struct GitHubOAuthConfig {
 
     static let deviceCodeURL = URL(string: "https://github.com/login/device/code")!
     static let tokenURL = URL(string: "https://github.com/login/oauth/access_token")!
-    static let scope = "read:user read:org"
 
     static let keychainService = "io.github.freeesia.aium"
-    static let keychainAccount = "github_access_token"
+    static let keychainAccount = "github_app_user_token"
 
     static func resolvedClientId(from rawValue: String?) -> String? {
         guard let trimmed = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -29,8 +28,39 @@ struct GitHubOAuthConfig {
 }
 
 protocol GitHubAuthProviding: Actor {
-    var accessToken: String? { get async }
+    func validAccessToken() async throws -> String?
     var isAuthenticated: Bool { get async }
+}
+
+protocol GitHubTokenStoring: Sendable {
+    func load() -> GitHubTokenBundle?
+    func save(_ bundle: GitHubTokenBundle) throws
+    func delete()
+}
+
+struct KeychainGitHubTokenStore: GitHubTokenStoring {
+    func load() -> GitHubTokenBundle? {
+        try? KeychainHelper.loadCodable(
+            GitHubTokenBundle.self,
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
+
+    func save(_ bundle: GitHubTokenBundle) throws {
+        try KeychainHelper.saveCodable(
+            bundle,
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
+
+    func delete() {
+        KeychainHelper.delete(
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
 }
 
 // MARK: - Device Flow Models
@@ -51,13 +81,36 @@ struct GitHubDeviceCodeResponse: Decodable {
     }
 }
 
+struct GitHubTokenBundle: Codable, Sendable {
+    let accessToken: String
+    let accessTokenExpiresAt: Date?
+    let refreshToken: String?
+    let refreshTokenExpiresAt: Date?
+
+    func hasUsableCredentials(now: Date = Date()) -> Bool {
+        if let accessTokenExpiresAt, accessTokenExpiresAt <= now {
+            guard let refreshToken,
+                  !refreshToken.isEmpty,
+                  refreshTokenExpiresAt.map({ $0 > now }) ?? true
+            else { return false }
+        }
+        return !accessToken.isEmpty
+    }
+}
+
 private struct GitHubTokenResponse: Decodable {
     let accessToken: String?
+    let expiresIn: Int?
+    let refreshToken: String?
+    let refreshTokenExpiresIn: Int?
     let error: String?
     let errorDescription: String?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
+        case expiresIn = "expires_in"
+        case refreshToken = "refresh_token"
+        case refreshTokenExpiresIn = "refresh_token_expires_in"
         case error
         case errorDescription = "error_description"
     }
@@ -66,28 +119,38 @@ private struct GitHubTokenResponse: Decodable {
 // MARK: - Auth Provider
 
 actor GitHubAuthProvider: GitHubAuthProviding {
-    private var storedAccessToken: String?
     private let session: URLSession
     private let clientIdProvider: @Sendable () -> String?
+    private let tokenStore: any GitHubTokenStoring
 
     init(
         session: URLSession = .shared,
-        clientIdProvider: @escaping @Sendable () -> String? = { GitHubOAuthConfig.clientId }
+        clientIdProvider: @escaping @Sendable () -> String? = { GitHubOAuthConfig.clientId },
+        tokenStore: any GitHubTokenStoring = KeychainGitHubTokenStore()
     ) {
         self.session = session
         self.clientIdProvider = clientIdProvider
-        storedAccessToken = KeychainHelper.load(
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
-        )
-    }
-
-    var accessToken: String? {
-        get async { storedAccessToken }
+        self.tokenStore = tokenStore
     }
 
     var isAuthenticated: Bool {
-        get async { storedAccessToken != nil }
+        get async { tokenStore.load()?.hasUsableCredentials() == true }
+    }
+
+    func validAccessToken() async throws -> String? {
+        guard let bundle = tokenStore.load() else { return nil }
+        guard let expiresAt = bundle.accessTokenExpiresAt,
+              expiresAt <= Date().addingTimeInterval(60)
+        else { return bundle.accessToken }
+
+        guard let refreshToken = bundle.refreshToken,
+              bundle.refreshTokenExpiresAt.map({ $0 > Date() }) ?? true
+        else {
+            logout()
+            throw GitHubAuthError.sessionExpired
+        }
+
+        return try await refreshAccessToken(refreshToken).accessToken
     }
 
     func startDeviceFlow() async throws -> GitHubDeviceCodeResponse {
@@ -99,10 +162,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = formBody([
-            "client_id": clientId,
-            "scope": GitHubOAuthConfig.scope,
-        ])
+        request.httpBody = formBody(["client_id": clientId])
 
         let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
@@ -121,23 +181,20 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         while Date() < deadline {
             try await Task.sleep(nanoseconds: UInt64(pollInterval) * 1_000_000_000)
 
-            var request = URLRequest(url: GitHubOAuthConfig.tokenURL)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            request.httpBody = formBody([
-                "client_id": clientId,
-                "device_code": deviceCode,
-                "grant_type": grantType,
-            ])
+            let tokenResponse: GitHubTokenResponse
+            do {
+                tokenResponse = try await requestToken([
+                    "client_id": clientId,
+                    "device_code": deviceCode,
+                    "grant_type": grantType,
+                ])
+            } catch let error as URLError where Self.isTransient(error) {
+                continue
+            }
 
-            let (data, response) = try await session.data(for: request)
-            try validate(response: response, data: data)
-            let tokenResponse = try JSONDecoder().decode(GitHubTokenResponse.self, from: data)
-
-            if let accessToken = tokenResponse.accessToken, !accessToken.isEmpty {
-                save(accessToken)
-                return accessToken
+            if let bundle = tokenBundle(from: tokenResponse) {
+                try save(bundle)
+                return bundle.accessToken
             }
 
             switch tokenResponse.error {
@@ -160,20 +217,53 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     }
 
     func logout() {
-        storedAccessToken = nil
-        KeychainHelper.delete(
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
+        tokenStore.delete()
+    }
+
+    private func refreshAccessToken(_ refreshToken: String) async throws -> GitHubTokenBundle {
+        guard let clientId = clientIdProvider() else {
+            throw GitHubAuthError.clientIdNotConfigured
+        }
+
+        let tokenResponse = try await requestToken([
+            "client_id": clientId,
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+        ])
+
+        if let bundle = tokenBundle(from: tokenResponse) {
+            try save(bundle)
+            return bundle
+        }
+
+        logout()
+        throw GitHubAuthError.sessionExpired
+    }
+
+    private func requestToken(_ parameters: [String: String]) async throws -> GitHubTokenResponse {
+        var request = URLRequest(url: GitHubOAuthConfig.tokenURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = formBody(parameters)
+
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(GitHubTokenResponse.self, from: data)
+    }
+
+    private func tokenBundle(from response: GitHubTokenResponse, now: Date = Date()) -> GitHubTokenBundle? {
+        guard let accessToken = response.accessToken, !accessToken.isEmpty else { return nil }
+        return GitHubTokenBundle(
+            accessToken: accessToken,
+            accessTokenExpiresAt: response.expiresIn.map { now.addingTimeInterval(TimeInterval($0)) },
+            refreshToken: response.refreshToken,
+            refreshTokenExpiresAt: response.refreshTokenExpiresIn.map { now.addingTimeInterval(TimeInterval($0)) }
         )
     }
 
-    private func save(_ accessToken: String) {
-        storedAccessToken = accessToken
-        KeychainHelper.save(
-            accessToken,
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
-        )
+    private func save(_ bundle: GitHubTokenBundle) throws {
+        try tokenStore.save(bundle)
     }
 
     private func validate(response: URLResponse, data: Data) throws {
@@ -182,6 +272,15 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         else { return }
 
         throw GitHubAuthError.httpError(httpResponse.statusCode, String(data: data, encoding: .utf8))
+    }
+
+    private static func isTransient(_ error: URLError) -> Bool {
+        switch error.code {
+        case .networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost:
+            return true
+        default:
+            return false
+        }
     }
 
     private func formBody(_ parameters: [String: String]) -> Data? {
@@ -198,19 +297,22 @@ enum GitHubAuthError: LocalizedError {
     case deviceCodeExpired
     case accessDenied
     case timeout
+    case sessionExpired
     case httpError(Int, String?)
     case unknown(String)
 
     var errorDescription: String? {
         switch self {
         case .clientIdNotConfigured:
-            return "GitHub OAuth Client ID is not configured. Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings."
+            return "GitHub App Client ID is not configured. Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings."
         case .deviceCodeExpired:
             return "Device code expired. Please try again."
         case .accessDenied:
             return "Access denied."
         case .timeout:
             return "Timed out waiting for GitHub authorization."
+        case .sessionExpired:
+            return "Your GitHub session expired. Sign in again."
         case .httpError(let code, let body):
             return "GitHub auth error \(code): \(body ?? "no body")"
         case .unknown(let message):

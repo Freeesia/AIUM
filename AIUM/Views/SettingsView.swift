@@ -162,6 +162,7 @@ struct SettingsView: View {
             } label: {
                 Label("Sign in with GitHub", systemImage: "person.badge.plus")
             }
+            .disabled(!viewModel.isGitHubClientIdConfigured)
         }
     }
 
@@ -176,7 +177,7 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login.")
+        Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
     }
 
     // MARK: - Codex auth row
