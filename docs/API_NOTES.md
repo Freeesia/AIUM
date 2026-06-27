@@ -167,7 +167,7 @@ Legacy snake_case windows are still accepted:
 **Normalization logic:**
 - If `used` is present, use it directly.
 - Else if `limit` and `remaining` are present, `used = limit - remaining`.
-- Else if `usedPercent` / `used_percent` is present with a limit, `used = limit * usedPercent / 100`.
+- Else if `usedPercent` / `used_percent` (0...100) is present with a limit, `used = limit * usedPercent / 100`.
 - Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
 - `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
 
