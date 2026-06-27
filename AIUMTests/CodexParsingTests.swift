@@ -96,6 +96,31 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(response.resetCredits, 3)
     }
 
+    func testDecodeCurrentChatGPTZeroAndOnePercentWithoutScaling() throws {
+        let json = Data("""
+        {
+          "rate_limit": {
+            "primary_window": {
+              "used_percent": 0,
+              "limit_window_seconds": 3600
+            },
+            "secondary_window": {
+              "used_percent": 1,
+              "limit_window_seconds": 86400
+            }
+          }
+        }
+        """.utf8)
+
+        let response = try CodexUsageResponse.decode(from: json)
+
+        XCTAssertEqual(response.windows.count, 2)
+        XCTAssertEqual(response.windows[0].used, 0, accuracy: 0.001)
+        XCTAssertEqual(response.windows[0].limit, 100, accuracy: 0.001)
+        XCTAssertEqual(response.windows[1].used, 1, accuracy: 0.001)
+        XCTAssertEqual(response.windows[1].limit, 100, accuracy: 0.001)
+    }
+
     func testDecodeLegacySnakeCaseRateLimitResponse() throws {
         let json = """
         {
@@ -133,7 +158,7 @@ final class CodexParsingTests: XCTestCase {
             {
               "limitName": "Plus",
               "primary": {
-                "usedPercent": 0.655,
+                "usedPercent": 65.5,
                 "windowDurationMins": 300
               }
             }
