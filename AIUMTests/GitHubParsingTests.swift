@@ -168,6 +168,45 @@ final class GitHubParsingTests: XCTestCase {
         }
     }
 
+    func testGitHubAppDeviceFlowDoesNotRequestOAuthScopes() async throws {
+        MockURLProtocol.requestHandler = { request in
+            let body = try self.requestBodyString(request)
+            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
+            XCTAssertFalse(body.contains("scope="))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"device_code":"device","user_code":"CODE-1234","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" }
+        )
+
+        let response = try await provider.startDeviceFlow()
+        XCTAssertEqual(response.userCode, "CODE-1234")
+    }
+
+    func testExpiredGitHubAppTokenIsUsableWithValidRefreshToken() {
+        let bundle = GitHubTokenBundle(
+            accessToken: "ghu_expired",
+            accessTokenExpiresAt: Date(timeIntervalSince1970: 100),
+            refreshToken: "ghr_valid",
+            refreshTokenExpiresAt: Date(timeIntervalSince1970: 300)
+        )
+
+        XCTAssertTrue(bundle.hasUsableCredentials(now: Date(timeIntervalSince1970: 200)))
+        XCTAssertFalse(bundle.hasUsableCredentials(now: Date(timeIntervalSince1970: 400)))
+    }
+
     // MARK: - API errors
 
     func testAPIClientClassifiesAuthError() async throws {
@@ -188,7 +227,7 @@ final class GitHubParsingTests: XCTestCase {
         let client = makeAPIClient(statusCode: 404, body: #"{"message":"Not Found"}"#)
 
         do {
-            _ = try await client.fetchAICreditUsage(username: "octocat", organization: nil, token: "token")
+            _ = try await client.fetchAICreditUsage(username: "octocat", token: "token")
             XCTFail("Expected HTTP error.")
         } catch GitHubAPIError.httpError(let statusCode, let body) {
             XCTAssertEqual(statusCode, 404)
@@ -238,35 +277,7 @@ final class GitHubParsingTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         let client = GitHubAPIClient(session: URLSession(configuration: configuration))
 
-        let response = try await client.fetchAICreditUsage(username: "octocat", organization: nil, token: "token")
-        XCTAssertEqual(response.usedQuantity, 42, accuracy: 0.001)
-    }
-
-    func testAPIClientUsesOrganizationBillingEndpointWhenOrganizationIsConfigured() async throws {
-        MockURLProtocol.requestHandler = { request in
-            XCTAssertEqual(request.url?.path, "/organizations/acme/settings/billing/ai_credit/usage")
-
-            let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
-            let queryItems = components.queryItems ?? []
-            XCTAssertEqual(queryItems.first { $0.name == "user" }?.value, "octocat")
-            XCTAssertNotNil(queryItems.first { $0.name == "year" })
-            XCTAssertNotNil(queryItems.first { $0.name == "month" })
-
-            let response = HTTPURLResponse(
-                url: try XCTUnwrap(request.url),
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!
-            let body = #"{"usageItems":[{"grossQuantity":42}]}"#
-            return (response, Data(body.utf8))
-        }
-
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [MockURLProtocol.self]
-        let client = GitHubAPIClient(session: URLSession(configuration: configuration))
-
-        let response = try await client.fetchAICreditUsage(username: "octocat", organization: " acme ", token: "token")
+        let response = try await client.fetchAICreditUsage(username: "octocat", token: "token")
         XCTAssertEqual(response.usedQuantity, 42, accuracy: 0.001)
     }
 
@@ -293,8 +304,7 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(premium.source, "GitHub Billing API")
         XCTAssertNotNil(premium.errorMessage)
         XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("Plan read permission"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("OAuth login tokens"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("personally billed Copilot usage"))
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {
@@ -327,6 +337,26 @@ final class GitHubParsingTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         return GitHubAPIClient(session: URLSession(configuration: configuration))
     }
+
+    private func requestBodyString(_ request: URLRequest) throws -> String {
+        if let body = request.httpBody {
+            return try XCTUnwrap(String(data: body, encoding: .utf8))
+        }
+
+        let stream = try XCTUnwrap(request.httpBodyStream)
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 1024)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            guard count >= 0 else { throw try XCTUnwrap(stream.streamError) }
+            if count == 0 { break }
+            data.append(buffer, count: count)
+        }
+        return try XCTUnwrap(String(data: data, encoding: .utf8))
+    }
 }
 
 private actor FakeGitHubAuthProvider: GitHubAuthProviding {
@@ -336,8 +366,8 @@ private actor FakeGitHubAuthProvider: GitHubAuthProviding {
         self.token = token
     }
 
-    var accessToken: String? {
-        get async { token }
+    func validAccessToken() async throws -> String? {
+        token
     }
 
     var isAuthenticated: Bool {
@@ -370,14 +400,14 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
         user
     }
 
-    func fetchAICreditUsage(username: String, organization: String?, token: String) async throws -> GitHubAICreditUsageResponse {
+    func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
         if let aiError { throw aiError }
         return aiResponse ?? GitHubAICreditUsageResponse(
             usageItems: [.mock(quantity: 10)]
         )
     }
 
-    func fetchPremiumRequestUsage(username: String, organization: String?, token: String) async throws -> GitHubPremiumRequestUsageResponse {
+    func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
         if let premiumError { throw premiumError }
         return premiumResponse ?? GitHubPremiumRequestUsageResponse(
             usageItems: [.mock(quantity: 5)]

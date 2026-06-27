@@ -81,11 +81,6 @@ struct DashboardView: View {
             }
             .task {
                 await updateAuthStatus()
-                #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("-AIUMDebugGitHubUsage") {
-                    viewModel.debugRefreshGitHubOnly()
-                }
-                #endif
             }
             .refreshable {
                 viewModel.refresh()

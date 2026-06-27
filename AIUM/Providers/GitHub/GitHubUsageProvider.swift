@@ -4,7 +4,6 @@ import Foundation
 
 private let kAICreditLimit = "github_ai_credit_monthly_limit"
 private let kPremiumRequestLimit = "github_premium_request_monthly_limit"
-private let kBillingOrganization = "github_billing_organization"
 
 // MARK: - GitHub Usage Provider
 
@@ -28,13 +27,6 @@ actor GitHubUsageProvider: UsageProvider {
         UserDefaults.standard.double(forKey: kPremiumRequestLimit)
     }
 
-    var billingOrganization: String? {
-        let value = UserDefaults.standard.string(forKey: kBillingOrganization)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let value, !value.isEmpty else { return nil }
-        return value
-    }
-
     init(
         authProvider: any GitHubAuthProviding = GitHubAuthProvider(),
         apiClient: any GitHubAPIProviding = GitHubAPIClient()
@@ -50,36 +42,33 @@ actor GitHubUsageProvider: UsageProvider {
     }
 
     func fetchUsage() async throws -> [UsageSnapshot] {
-        guard let token = await authProvider.accessToken else {
+        guard let token = try await authProvider.validAccessToken() else {
             throw GitHubUsageError.notAuthenticated
         }
 
         let user = try await apiClient.fetchUser(token: token)
-        let organization = billingOrganization
         var snapshots: [UsageSnapshot] = []
 
         do {
             let aiSnapshot = try await fetchAICreditSnapshot(
                 username: user.login,
-                organization: organization,
                 token: token,
                 user: user
             )
             snapshots.append(aiSnapshot)
         } catch {
-            snapshots.append(errorSnapshot(for: .aiCredits, error: error, user: user, organization: organization))
+            snapshots.append(errorSnapshot(for: .aiCredits, error: error, user: user))
         }
 
         do {
             let prSnapshot = try await fetchPremiumRequestSnapshot(
                 username: user.login,
-                organization: organization,
                 token: token,
                 user: user
             )
             snapshots.append(prSnapshot)
         } catch {
-            snapshots.append(errorSnapshot(for: .premiumRequests, error: error, user: user, organization: organization))
+            snapshots.append(errorSnapshot(for: .premiumRequests, error: error, user: user))
         }
 
         if snapshots.isEmpty {
@@ -93,11 +82,10 @@ actor GitHubUsageProvider: UsageProvider {
 
     private func fetchAICreditSnapshot(
         username: String,
-        organization: String?,
         token: String,
         user: GitHubUser
     ) async throws -> UsageSnapshot {
-        let response = try await apiClient.fetchAICreditUsage(username: username, organization: organization, token: token)
+        let response = try await apiClient.fetchAICreditUsage(username: username, token: token)
 
         let used = response.usedQuantity
         // The current billing report exposes usage, not plan allowance.
@@ -111,7 +99,7 @@ actor GitHubUsageProvider: UsageProvider {
         return UsageSnapshot(
             provider: .githubCopilot,
             accountId: String(user.id),
-            displayName: displayName(user: user, organization: organization),
+            displayName: user.name ?? user.login,
             planKind: .aiCredits,
             windowKind: .monthly,
             used: used,
@@ -124,11 +112,10 @@ actor GitHubUsageProvider: UsageProvider {
 
     private func fetchPremiumRequestSnapshot(
         username: String,
-        organization: String?,
         token: String,
         user: GitHubUser
     ) async throws -> UsageSnapshot {
-        let response = try await apiClient.fetchPremiumRequestUsage(username: username, organization: organization, token: token)
+        let response = try await apiClient.fetchPremiumRequestUsage(username: username, token: token)
 
         let used = response.usedQuantity
         // The current billing report exposes usage, not plan allowance.
@@ -142,7 +129,7 @@ actor GitHubUsageProvider: UsageProvider {
         return UsageSnapshot(
             provider: .githubCopilot,
             accountId: String(user.id),
-            displayName: displayName(user: user, organization: organization),
+            displayName: user.name ?? user.login,
             planKind: .premiumRequests,
             windowKind: .monthly,
             used: used,
@@ -156,25 +143,18 @@ actor GitHubUsageProvider: UsageProvider {
     private func errorSnapshot(
         for endpoint: GitHubUsageEndpoint,
         error: Error,
-        user: GitHubUser,
-        organization: String?
+        user: GitHubUser
     ) -> UsageSnapshot {
         UsageSnapshot.error(
             provider: .githubCopilot,
             accountId: String(user.id),
-            displayName: displayName(user: user, organization: organization),
+            displayName: user.name ?? user.login,
             planKind: endpoint.planKind,
             windowKind: .monthly,
             unit: endpoint.unit,
             source: endpoint.source,
-            message: endpoint.errorMessage(for: error, organization: organization)
+            message: endpoint.errorMessage(for: error)
         )
-    }
-
-    private func displayName(user: GitHubUser, organization: String?) -> String {
-        let userName = user.name ?? user.login
-        guard let organization else { return userName }
-        return "\(userName) @ \(organization)"
     }
 }
 
@@ -210,12 +190,9 @@ private enum GitHubUsageEndpoint {
         }
     }
 
-    func errorMessage(for error: Error, organization: String?) -> String {
+    func errorMessage(for error: Error) -> String {
         if case GitHubAPIError.httpError(let statusCode, _) = error, statusCode == 404 {
-            if let organization {
-                return "\(displayName): GitHub API HTTP 404. Organization billing usage was not found for \(organization). Check the organization slug and use a token with organization Administration read permission."
-            }
-            return "\(displayName): GitHub API HTTP 404. User billing usage requires a personally billed Copilot plan and a fine-grained PAT or GitHub App user token with Plan read permission. OAuth login tokens can authenticate /user but still return 404 here. For organization-billed seats, set Billing Organization and use an organization token with Administration read permission."
+            return "\(displayName): GitHub API HTTP 404. This account does not expose personally billed Copilot usage to the GitHub App."
         }
         return "\(displayName): \(error.localizedDescription)"
     }

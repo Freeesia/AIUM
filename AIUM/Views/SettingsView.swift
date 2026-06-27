@@ -1,8 +1,16 @@
 import SwiftUI
+import UIKit
+
+private struct BrowserDestination: Identifiable {
+    let url: URL
+
+    var id: String { url.absoluteString }
+}
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var browserDestination: BrowserDestination?
 
     var body: some View {
         NavigationStack {
@@ -13,8 +21,6 @@ struct SettingsView: View {
                         clientIdWarning
                     }
                     githubAuthRow
-                    githubBillingOrganizationRow
-                    githubBillingTokenRow
                     if viewModel.isGitHubAuthenticated {
                         limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
                                  placeholder: "e.g. 1000")
@@ -87,6 +93,19 @@ struct SettingsView: View {
             .onAppear {
                 viewModel.checkAuthStatus()
             }
+            .sheet(item: $browserDestination) { destination in
+                SafariBrowserView(url: destination.url)
+                    .ignoresSafeArea()
+            }
+            .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
+                if isAuthenticated { browserDestination = nil }
+            }
+            .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
+                if isAuthenticated { browserDestination = nil }
+            }
+            .onChange(of: viewModel.authError) { _, authError in
+                if authError != nil { browserDestination = nil }
+            }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },
                 set: { if !$0 { viewModel.authError = nil } }
@@ -125,6 +144,7 @@ struct SettingsView: View {
             } label: {
                 Label("Sign in with GitHub", systemImage: "person.badge.plus")
             }
+            .disabled(!viewModel.isGitHubClientIdConfigured)
         }
     }
 
@@ -139,34 +159,7 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Billing usage is not available with the GitHub sign-in token alone. For a personally billed Copilot plan, leave Billing Organization blank and save a token with Account permissions > Plan: Read-only. For organization-billed seats, enter the organization slug and save a token with Organization permissions > Administration: Read-only. Set monthly limits manually because the billing report does not return your plan allowance.")
-    }
-
-    @ViewBuilder
-    private var githubBillingOrganizationRow: some View {
-        HStack {
-            Text("Billing Organization")
-            Spacer()
-            TextField("optional org slug", text: $viewModel.githubBillingOrganization)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .multilineTextAlignment(.trailing)
-        }
-    }
-
-    @ViewBuilder
-    private var githubBillingTokenRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SecureField("Fine-grained PAT for billing usage", text: $viewModel.githubManualAccessToken)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-            Button {
-                viewModel.saveGitHubManualAccessToken()
-            } label: {
-                Label("Save Billing Token", systemImage: "key.fill")
-            }
-            .disabled(viewModel.githubManualAccessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        }
+        Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
     }
 
     // MARK: - Codex auth row
@@ -215,14 +208,21 @@ struct SettingsView: View {
     @ViewBuilder
     private func deviceCodePrompt(userCode: String, url: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Open \(url) in your browser and enter:")
+            Text("Open \(url) and enter:")
                 .font(.caption)
             Text(userCode)
                 .font(.title2.monospaced().bold())
                 .textSelection(.enabled)
             if let verificationURL = URL(string: url) {
-                Link("Open in Browser", destination: verificationURL)
-                    .font(.caption)
+                Button {
+                    UIPasteboard.general.string = userCode
+                    browserDestination = BrowserDestination(url: verificationURL)
+                } label: {
+                    Label("Copy Code and Open Browser", systemImage: "safari")
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             ProgressView("Waiting for authorization…")
                 .controlSize(.small)
