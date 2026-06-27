@@ -4,7 +4,9 @@ import UIKit
 private struct BrowserDestination: Identifiable {
     let url: URL
 
-    var id: String { url.absoluteString }
+    var id: String {
+        url.absoluteString
+    }
 }
 
 struct SettingsView: View {
@@ -58,14 +60,14 @@ struct SettingsView: View {
                 }
 
                 // Refresh interval
-                Section("Refresh") {
-                    Picker("Interval", selection: $viewModel.refreshIntervalMinutes) {
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
-                        Text("1 hour").tag(60)
-                        Text("2 hours").tag(120)
-                        Text("6 hours").tag(360)
+                Section {
+                    Picker("Interval", selection: $viewModel.refreshSetting) {
+                        ForEach(UsageRefreshSetting.allCases) { setting in
+                            Text(setting.displayName).tag(setting)
+                        }
                     }
+                } header: {
+                    Text("Refresh")
                 }
 
                 // App Group info
@@ -78,7 +80,17 @@ struct SettingsView: View {
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
                     }
-                    Text("The App Group must be configured in both the AIUM target and the AIUMWidget target.")
+                    HStack {
+                        Text("Status")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(UsageStore.isSharedContainerAvailable ? "Shared" : "Fallback")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(UsageStore.isSharedContainerAvailable ? .green : .orange)
+                    }
+                    Text(UsageStore.isSharedContainerAvailable
+                         ? "Usage snapshots are saved in the App Group container and can be read by widgets."
+                         : "The App Group container is unavailable. The app falls back to app-only Documents storage, so widgets cannot read the saved snapshots.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -98,13 +110,19 @@ struct SettingsView: View {
                     .ignoresSafeArea()
             }
             .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
-                if isAuthenticated { browserDestination = nil }
+                if isAuthenticated {
+                    browserDestination = nil
+                }
             }
             .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
-                if isAuthenticated { browserDestination = nil }
+                if isAuthenticated {
+                    browserDestination = nil
+                }
             }
             .onChange(of: viewModel.authError) { _, authError in
-                if authError != nil { browserDestination = nil }
+                if authError != nil {
+                    browserDestination = nil
+                }
             }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },

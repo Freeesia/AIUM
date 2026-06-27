@@ -32,6 +32,37 @@ protocol GitHubAuthProviding: Actor {
     var isAuthenticated: Bool { get async }
 }
 
+protocol GitHubTokenStoring: Sendable {
+    func load() -> GitHubTokenBundle?
+    func save(_ bundle: GitHubTokenBundle) throws
+    func delete()
+}
+
+struct KeychainGitHubTokenStore: GitHubTokenStoring {
+    func load() -> GitHubTokenBundle? {
+        try? KeychainHelper.loadCodable(
+            GitHubTokenBundle.self,
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
+
+    func save(_ bundle: GitHubTokenBundle) throws {
+        try KeychainHelper.saveCodable(
+            bundle,
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
+
+    func delete() {
+        KeychainHelper.delete(
+            service: GitHubOAuthConfig.keychainService,
+            account: GitHubOAuthConfig.keychainAccount
+        )
+    }
+}
+
 // MARK: - Device Flow Models
 
 struct GitHubDeviceCodeResponse: Decodable {
@@ -88,29 +119,26 @@ private struct GitHubTokenResponse: Decodable {
 // MARK: - Auth Provider
 
 actor GitHubAuthProvider: GitHubAuthProviding {
-    private var storedTokenBundle: GitHubTokenBundle?
     private let session: URLSession
     private let clientIdProvider: @Sendable () -> String?
+    private let tokenStore: any GitHubTokenStoring
 
     init(
         session: URLSession = .shared,
-        clientIdProvider: @escaping @Sendable () -> String? = { GitHubOAuthConfig.clientId }
+        clientIdProvider: @escaping @Sendable () -> String? = { GitHubOAuthConfig.clientId },
+        tokenStore: any GitHubTokenStoring = KeychainGitHubTokenStore()
     ) {
         self.session = session
         self.clientIdProvider = clientIdProvider
-        storedTokenBundle = try? KeychainHelper.loadCodable(
-            GitHubTokenBundle.self,
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
-        )
+        self.tokenStore = tokenStore
     }
 
     var isAuthenticated: Bool {
-        get async { storedTokenBundle?.hasUsableCredentials() == true }
+        get async { tokenStore.load()?.hasUsableCredentials() == true }
     }
 
     func validAccessToken() async throws -> String? {
-        guard let bundle = storedTokenBundle else { return nil }
+        guard let bundle = tokenStore.load() else { return nil }
         guard let expiresAt = bundle.accessTokenExpiresAt,
               expiresAt <= Date().addingTimeInterval(60)
         else { return bundle.accessToken }
@@ -189,11 +217,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     }
 
     func logout() {
-        storedTokenBundle = nil
-        KeychainHelper.delete(
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
-        )
+        tokenStore.delete()
     }
 
     private func refreshAccessToken(_ refreshToken: String) async throws -> GitHubTokenBundle {
@@ -239,12 +263,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     }
 
     private func save(_ bundle: GitHubTokenBundle) throws {
-        try KeychainHelper.saveCodable(
-            bundle,
-            service: GitHubOAuthConfig.keychainService,
-            account: GitHubOAuthConfig.keychainAccount
-        )
-        storedTokenBundle = bundle
+        try tokenStore.save(bundle)
     }
 
     private func validate(response: URLResponse, data: Data) throws {

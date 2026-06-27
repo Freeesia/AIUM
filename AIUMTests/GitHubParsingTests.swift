@@ -207,6 +207,26 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertFalse(bundle.hasUsableCredentials(now: Date(timeIntervalSince1970: 400)))
     }
 
+    func testAuthProviderReadsTokenSavedByAnotherInstance() async throws {
+        let store = InMemoryGitHubTokenStore()
+        let dashboardProvider = GitHubAuthProvider(tokenStore: store)
+
+        let initiallyAuthenticated = await dashboardProvider.isAuthenticated
+        XCTAssertFalse(initiallyAuthenticated)
+
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_access",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_refresh",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        let authenticatedAfterSave = await dashboardProvider.isAuthenticated
+        let accessToken = try await dashboardProvider.validAccessToken()
+        XCTAssertTrue(authenticatedAfterSave)
+        XCTAssertEqual(accessToken, "ghu_access")
+    }
+
     // MARK: - API errors
 
     func testAPIClientClassifiesAuthError() async throws {
@@ -457,6 +477,23 @@ private final class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private final class InMemoryGitHubTokenStore: GitHubTokenStoring, @unchecked Sendable {
+    private let lock = NSLock()
+    private var bundle: GitHubTokenBundle?
+
+    func load() -> GitHubTokenBundle? {
+        lock.withLock { bundle }
+    }
+
+    func save(_ bundle: GitHubTokenBundle) throws {
+        lock.withLock { self.bundle = bundle }
+    }
+
+    func delete() {
+        lock.withLock { bundle = nil }
+    }
 }
 
 private struct DecodingFailure: LocalizedError {

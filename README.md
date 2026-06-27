@@ -58,7 +58,9 @@ xcodegen generate
 - Bundle Identifier
 - App Groups
 
-App Groups の識別子は、アプリ側とウィジェット側で同じものを指定してください。コード内で App Group 識別子を参照している場合は、自分の設定に合わせて変更します。
+標準設定では、App Groups の識別子は `group.com.studiofreesia.aium` です。`AIUM/AIUM.entitlements`、`AIUMWidget/AIUMWidget.entitlements`、`UsageStore.appGroupIdentifier` は同じ値にしてください。
+
+App Group container を取得できない場合、アプリ本体は app-only の Documents 領域にフォールバックして使用量スナップショットを保存します。この領域は Widget Extension から読めないため、ウィジェットには保存済み使用量が表示されません。設定画面の App Group セクションで `Status` が `Shared` になっていることを確認してください。
 
 ### 4. GitHub App を設定する
 
@@ -112,7 +114,7 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 4. 必要に応じて利用上限値を手動で補正する
 5. ホーム画面またはロック画面にウィジェットを追加する
 
-ウィジェットは iOS の更新スケジュールに従って再描画されます。リアルタイム更新を保証するものではありません。
+ウィジェットは 5 分ごとに App Group 共有領域の利用状況キャッシュを読み直すように要求します。実際の再描画タイミングは iOS の更新スケジュールに従うため、リアルタイム更新を保証するものではありません。
 
 ## データの扱い
 
