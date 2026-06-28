@@ -2,7 +2,7 @@
 
 ## Lobe Icons
 
-The GitHub Copilot and OpenAI SVG icons in `Shared/BrandIcons.xcassets` are
+The GitHub Copilot and Codex SVG icons in `Shared/BrandIcons.xcassets` are
 derived from [Lobe Icons](https://github.com/lobehub/lobe-icons).
 
 MIT License
