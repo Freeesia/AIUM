@@ -12,6 +12,13 @@ public enum Provider: String, Codable, CaseIterable, Sendable {
         case .codex: return "OpenAI Codex"
         }
     }
+
+    var iconAssetName: String {
+        switch self {
+        case .githubCopilot: return "GitHubCopilot"
+        case .codex: return "OpenAI"
+        }
+    }
 }
 
 // MARK: - WindowKind

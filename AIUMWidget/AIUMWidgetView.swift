@@ -99,23 +99,25 @@ struct AIUMMediumWidgetView: View {
         HStack(spacing: 0) {
             providerPane(
                 provider: .githubCopilot,
-                snapshot: githubSnapshot,
-                icon: "person.crop.circle"
+                snapshot: githubSnapshot
             )
             Divider()
             providerPane(
                 provider: .codex,
-                snapshot: codexSnapshot,
-                icon: "cpu.fill"
+                snapshot: codexSnapshot
             )
         }
         .padding(12)
     }
 
     @ViewBuilder
-    private func providerPane(provider: Provider, snapshot: UsageSnapshot?, icon: String) -> some View {
+    private func providerPane(provider: Provider, snapshot: UsageSnapshot?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(provider.displayName, systemImage: icon)
+            Label {
+                Text(provider.displayName)
+            } icon: {
+                ProviderIconView(provider: provider, size: 14)
+            }
                 .font(.caption2.bold())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)

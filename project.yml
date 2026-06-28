@@ -90,6 +90,7 @@ targets:
       Release: Config/AIUM.xcconfig
     sources:
       - path: AIUM
+      - path: Shared
     dependencies:
       - target: AIUMWidget
     settings:
@@ -123,6 +124,7 @@ targets:
       - path: AIUMWidget
       - path: AIUM/Models/UsageSnapshot.swift
       - path: AIUM/Storage/UsageStore.swift
+      - path: Shared
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: AIUMWidget/AIUMWidget.entitlements
