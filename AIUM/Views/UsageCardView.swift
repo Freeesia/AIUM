@@ -1,5 +1,30 @@
 import SwiftUI
 
+enum UsageRelativeTimeText {
+    static func reset(at resetAt: Date, relativeTo referenceDate: Date, locale: Locale = .autoupdatingCurrent) -> String {
+        let interval = resetAt.timeIntervalSince(referenceDate)
+        let roundedMinutes = interval >= 0
+            ? ceil(interval / 60)
+            : floor(interval / 60)
+        let roundedDate = referenceDate.addingTimeInterval(roundedMinutes * 60)
+        return format(roundedDate, relativeTo: referenceDate, locale: locale)
+    }
+
+    static func fetched(at fetchedAt: Date, relativeTo referenceDate: Date, locale: Locale = .autoupdatingCurrent) -> String {
+        let elapsedMinutes = max(0, floor(referenceDate.timeIntervalSince(fetchedAt) / 60))
+        let roundedDate = referenceDate.addingTimeInterval(-elapsedMinutes * 60)
+        return format(roundedDate, relativeTo: referenceDate, locale: locale)
+    }
+
+    private static func format(_ date: Date, relativeTo referenceDate: Date, locale: Locale) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
+        formatter.unitsStyle = .abbreviated
+        formatter.dateTimeStyle = date == referenceDate ? .named : .numeric
+        return formatter.localizedString(for: date, relativeTo: referenceDate)
+    }
+}
+
 struct UsageCardView: View {
     let snapshot: UsageSnapshot
 
@@ -11,6 +36,13 @@ struct UsageCardView: View {
     }
 
     var body: some View {
+        TimelineView(.everyMinute) { context in
+            cardContent(relativeTo: context.date)
+        }
+    }
+
+    @ViewBuilder
+    private func cardContent(relativeTo referenceDate: Date) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
@@ -27,7 +59,7 @@ struct UsageCardView: View {
                         .foregroundStyle(.tertiary)
                 }
                 Spacer()
-                if snapshot.isStale {
+                if referenceDate.timeIntervalSince(snapshot.fetchedAt) > 3600 {
                     Image(systemName: "clock.badge.exclamationmark")
                         .foregroundStyle(.orange)
                         .help("Data may be stale")
@@ -75,7 +107,7 @@ struct UsageCardView: View {
             HStack {
                 Label {
                     if let resetAt = snapshot.resetAt {
-                        Text(resetAt, style: .relative)
+                        Text(UsageRelativeTimeText.reset(at: resetAt, relativeTo: referenceDate))
                     } else {
                         Text("—")
                     }
@@ -85,7 +117,7 @@ struct UsageCardView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 Spacer()
-                Text("Updated \(snapshot.fetchedAt, style: .relative)")
+                Text("Updated \(UsageRelativeTimeText.fetched(at: snapshot.fetchedAt, relativeTo: referenceDate))")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
