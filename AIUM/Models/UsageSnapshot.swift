@@ -118,13 +118,21 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
 
 extension UsageSnapshot {
     /// Returns the highest-usage snapshot for a provider.
-    /// Successful snapshots are preferred so a failed endpoint does not hide
-    /// usable data from another usage window for the same provider.
+    /// Provider-level failures take precedence so authentication and refresh
+    /// errors are not hidden by stale successful data. Endpoint-specific
+    /// failures do not hide usable data from another window.
     static func displaySnapshot(
         from snapshots: [UsageSnapshot],
         for provider: Provider
     ) -> UsageSnapshot? {
         let providerSnapshots = snapshots.filter { $0.provider == provider }
+        let providerErrors = providerSnapshots.filter {
+            $0.errorMessage != nil && $0.planKind == .unknown
+        }
+        if let latestProviderError = providerErrors.max(by: { $0.fetchedAt < $1.fetchedAt }) {
+            return latestProviderError
+        }
+
         let successfulSnapshots = providerSnapshots.filter { $0.errorMessage == nil }
         let candidates = successfulSnapshots.isEmpty ? providerSnapshots : successfulSnapshots
 

@@ -45,7 +45,7 @@ struct AIUMWidgetEntry: TimelineEntry {
 
 // MARK: - Timeline Provider
 
-struct AIUMWidgetProvider: AppIntentTimelineProvider {
+struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
     private static let refreshInterval: TimeInterval = 5 * 60
 
     func placeholder(in context: Context) -> AIUMWidgetEntry {
@@ -111,11 +111,11 @@ struct AIUMWidgetProvider: AppIntentTimelineProvider {
     )
 }
 
-struct AIUMMediumWidgetProvider: TimelineProvider {
+struct AIUMStaticWidgetProvider: TimelineProvider {
     private static let refreshInterval: TimeInterval = 5 * 60
 
     func placeholder(in context: Context) -> AIUMWidgetEntry {
-        AIUMWidgetProvider.placeholderEntry
+        AIUMLockScreenWidgetProvider.placeholderEntry
     }
 
     func getSnapshot(in context: Context, completion: @escaping (AIUMWidgetEntry) -> Void) {
@@ -144,17 +144,33 @@ struct AIUMSmallWidget: Widget {
     static let kind = "AIUMSmallWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
-            kind: Self.kind,
-            intent: AIUMWidgetConfigurationIntent.self,
-            provider: AIUMWidgetProvider()
-        ) { entry in
-            AIUMConfigurableWidgetView(entry: entry)
+        StaticConfiguration(kind: Self.kind, provider: AIUMStaticWidgetProvider()) { entry in
+            AIUMSmallWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Usage")
         .description("Shows your primary usage at a glance.")
-        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular])
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+// MARK: - Lock Screen Widget (configurable provider)
+
+struct AIUMLockScreenWidget: Widget {
+    static let kind = "AIUMLockScreenUsageWidget"
+
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: Self.kind,
+            intent: AIUMWidgetConfigurationIntent.self,
+            provider: AIUMLockScreenWidgetProvider()
+        ) { entry in
+            AIUMConfigurableWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("AIUM — Lock Screen Usage")
+        .description("Shows the highest usage for your selected provider.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular])
     }
 }
 
@@ -164,7 +180,7 @@ struct AIUMMediumWidget: Widget {
     static let kind = "AIUMMediumWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: Self.kind, provider: AIUMMediumWidgetProvider()) { entry in
+        StaticConfiguration(kind: Self.kind, provider: AIUMStaticWidgetProvider()) { entry in
             AIUMMediumWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }

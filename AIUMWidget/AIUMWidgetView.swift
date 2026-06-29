@@ -188,9 +188,11 @@ struct AIUMAccessoryCircularView: View {
 
     var body: some View {
         if let snapshot = entry.displaySnapshot {
-            if snapshot.errorMessage != nil {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .accessibilityLabel("Usage unavailable")
+            if let errorMessage = snapshot.errorMessage {
+                unavailableGauge(
+                    systemImage: "exclamationmark.triangle.fill",
+                    accessibilityValue: errorMessage
+                )
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
                     Text(snapshot.provider.displayName)
@@ -203,9 +205,27 @@ struct AIUMAccessoryCircularView: View {
                 .accessibilityValue("\(Int(snapshot.usedPercent)) percent used")
             }
         } else {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .accessibilityLabel("Not signed in to \(entry.provider.displayName)")
+            unavailableGauge(
+                systemImage: "person.crop.circle.badge.exclamationmark",
+                accessibilityValue: "Not signed in"
+            )
         }
+    }
+
+    private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
+        Gauge(value: 0) {
+            Text(entry.provider.displayName)
+        } currentValueLabel: {
+            VStack(spacing: 0) {
+                Text(providerAbbreviation(entry.provider))
+                    .font(.system(size: 9, weight: .bold))
+                Image(systemName: systemImage)
+                    .font(.system(size: 9))
+            }
+        }
+        .gaugeStyle(.accessoryCircular)
+        .accessibilityLabel(entry.provider.displayName)
+        .accessibilityValue(accessibilityValue)
     }
 }
 
@@ -215,8 +235,12 @@ struct AIUMAccessoryRectangularView: View {
     var body: some View {
         if let snapshot = entry.displaySnapshot {
             if snapshot.errorMessage != nil {
-                Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(snapshot.provider.displayName)
+                        .font(.caption2.bold())
+                    Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                }
             } else {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(snapshot.provider.displayName)
@@ -232,8 +256,12 @@ struct AIUMAccessoryRectangularView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         } else {
-            Label("Not signed in", systemImage: "person.crop.circle.badge.questionmark")
-                .font(.caption2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.provider.displayName)
+                    .font(.caption2.bold())
+                Label("Not signed in", systemImage: "person.crop.circle.badge.exclamationmark")
+                    .font(.caption2)
+            }
         }
     }
 }
@@ -244,6 +272,13 @@ private func progressColor(for percent: Double) -> Color {
     if percent >= 90 { return .red }
     if percent >= 70 { return .orange }
     return .blue
+}
+
+private func providerAbbreviation(_ provider: Provider) -> String {
+    switch provider {
+    case .githubCopilot: "GH"
+    case .codex: "CX"
+    }
 }
 
 private enum ResetInfoStyle {
@@ -342,7 +377,7 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
 }
 
 #Preview("Lock Screen Circular", as: .accessoryCircular) {
-    AIUMSmallWidget()
+    AIUMLockScreenWidget()
 } timeline: {
     AIUMWidgetEntry(
         date: Date(),
@@ -364,7 +399,7 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
 }
 
 #Preview("Lock Screen Rectangular", as: .accessoryRectangular) {
-    AIUMSmallWidget()
+    AIUMLockScreenWidget()
 } timeline: {
     AIUMWidgetEntry(
         date: Date(),

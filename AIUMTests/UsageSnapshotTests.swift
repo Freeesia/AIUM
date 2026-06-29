@@ -152,7 +152,8 @@ final class UsageSnapshotTests: XCTestCase {
     func testDisplaySnapshotPrefersSuccessfulSnapshotOverError() throws {
         let error = UsageSnapshot.error(
             provider: .githubCopilot,
-            source: "error",
+            planKind: .premiumRequests,
+            source: "endpoint",
             message: "Unavailable"
         )
         let successful = UsageSnapshot(
@@ -169,6 +170,32 @@ final class UsageSnapshotTests: XCTestCase {
 
         XCTAssertEqual(selected.source, "successful")
         XCTAssertNil(selected.errorMessage)
+    }
+
+    func testDisplaySnapshotPrefersProviderErrorOverStaleSuccess() throws {
+        let successful = UsageSnapshot(
+            provider: .codex,
+            used: 80,
+            limit: 100,
+            source: "successful",
+            fetchedAt: Date(timeIntervalSince1970: 100)
+        )
+        let authenticationError = UsageSnapshot(
+            provider: .codex,
+            planKind: .unknown,
+            used: 0,
+            limit: 0,
+            source: "error",
+            fetchedAt: Date(timeIntervalSince1970: 200),
+            errorMessage: "Authentication failed"
+        )
+
+        let selected = try XCTUnwrap(UsageSnapshot.displaySnapshot(
+            from: [successful, authenticationError],
+            for: .codex
+        ))
+
+        XCTAssertEqual(selected.errorMessage, "Authentication failed")
     }
 
     func testDisplaySnapshotReturnsErrorWhenNoSuccessfulSnapshotExists() throws {
