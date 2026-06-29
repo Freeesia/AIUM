@@ -10,13 +10,6 @@ struct UsageCardView: View {
         return .blue
     }
 
-    private var resetText: String {
-        guard let resetAt = snapshot.resetAt else { return "—" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: resetAt, relativeTo: Date())
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -80,11 +73,19 @@ struct UsageCardView: View {
 
             // Footer
             HStack {
-                Label(resetText, systemImage: "arrow.clockwise")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Label {
+                    if let resetAt = snapshot.resetAt {
+                        Text(resetAt, style: .relative)
+                    } else {
+                        Text("—")
+                    }
+                } icon: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
                 Spacer()
-                Text(fetchedAtText)
+                Text("Updated \(snapshot.fetchedAt, style: .relative)")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -103,12 +104,6 @@ struct UsageCardView: View {
         case .codexPro: return "Pro Plan"
         case .unknown: return snapshot.windowKind.rawValue.capitalized
         }
-    }
-
-    private var fetchedAtText: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return "Updated \(formatter.localizedString(for: snapshot.fetchedAt, relativeTo: Date()))"
     }
 
     private func formatCount(_ value: Double) -> String {
