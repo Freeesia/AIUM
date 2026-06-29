@@ -9,8 +9,13 @@ struct ProviderIconView: View {
         self.size = size
     }
 
+    private var renderingMode: Image.TemplateRenderingMode {
+        provider == .codex ? .original : .template
+    }
+
     var body: some View {
         Image(provider.iconAssetName)
+            .renderingMode(renderingMode)
             .resizable()
             .scaledToFit()
             .frame(width: size, height: size)
