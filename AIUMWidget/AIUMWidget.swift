@@ -29,6 +29,10 @@ struct AIUMWidgetConfigurationIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "Provider", default: .githubCopilot)
     var provider: AIUMWidgetProviderOption
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Provider: \(\.$provider)")
+    }
 }
 
 // MARK: - Timeline Entry
@@ -171,6 +175,7 @@ struct AIUMLockScreenWidget: Widget {
         .configurationDisplayName("AIUM — Lock Screen Usage")
         .description("Shows the highest usage for your selected provider.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .promptsForUserConfiguration()
     }
 }
 
