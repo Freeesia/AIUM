@@ -104,7 +104,7 @@ struct DashboardView: View {
             Label {
                 Text(provider.displayName)
             } icon: {
-                ProviderIconView(provider: provider, size: 44)
+                ProviderIconView(provider: provider, size: 22)
             }
                 .font(.title3.bold())
             Spacer()

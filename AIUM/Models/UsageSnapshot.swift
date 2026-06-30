@@ -16,7 +16,7 @@ public enum Provider: String, Codable, CaseIterable, Sendable {
     var iconAssetName: String {
         switch self {
         case .githubCopilot: return "GitHubCopilot"
-        case .codex: return "Codex"
+        case .codex: return "OpenAI"
         }
     }
 }
