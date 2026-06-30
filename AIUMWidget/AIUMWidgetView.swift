@@ -135,7 +135,7 @@ struct AIUMMediumWidgetView: View {
             Label {
                 Text(provider.displayName)
             } icon: {
-                ProviderIconView(provider: provider, size: 14)
+                ProviderIconView(provider: provider, size: 28)
             }
                 .font(.caption2.bold())
                 .foregroundStyle(.secondary)
@@ -197,7 +197,7 @@ struct AIUMAccessoryCircularView: View {
                 )
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
-                    ProviderIconView(provider: snapshot.provider, size: 10)
+                    ProviderIconView(provider: snapshot.provider, size: 20)
                 } currentValueLabel: {
                     Text("\(Int(snapshot.usedPercent))%")
                         .font(.system(size: 12, weight: .bold))
@@ -216,7 +216,7 @@ struct AIUMAccessoryCircularView: View {
 
     private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
         Gauge(value: 0) {
-            ProviderIconView(provider: entry.provider, size: 10)
+            ProviderIconView(provider: entry.provider, size: 20)
         } currentValueLabel: {
             VStack(spacing: 0) {
                 Text(providerAbbreviation(entry.provider))
