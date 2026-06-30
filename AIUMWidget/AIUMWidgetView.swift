@@ -197,7 +197,7 @@ struct AIUMAccessoryCircularView: View {
                 )
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
-                    Text(snapshot.provider.displayName)
+                    ProviderIconView(provider: snapshot.provider, size: 10)
                 } currentValueLabel: {
                     Text("\(Int(snapshot.usedPercent))%")
                         .font(.system(size: 12, weight: .bold))
@@ -216,7 +216,7 @@ struct AIUMAccessoryCircularView: View {
 
     private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
         Gauge(value: 0) {
-            Text(entry.provider.displayName)
+            ProviderIconView(provider: entry.provider, size: 10)
         } currentValueLabel: {
             VStack(spacing: 0) {
                 Text(providerAbbreviation(entry.provider))
