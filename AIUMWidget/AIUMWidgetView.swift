@@ -1,6 +1,25 @@
 import WidgetKit
 import SwiftUI
 
+// MARK: - Configurable Widget View
+
+struct AIUMConfigurableWidgetView: View {
+    @Environment(\.widgetFamily) private var widgetFamily
+    var entry: AIUMWidgetEntry
+
+    @ViewBuilder
+    var body: some View {
+        switch widgetFamily {
+        case .accessoryCircular:
+            AIUMAccessoryCircularView(entry: entry)
+        case .accessoryRectangular:
+            AIUMAccessoryRectangularView(entry: entry)
+        default:
+            AIUMSmallWidgetView(entry: entry)
+        }
+    }
+}
+
 // MARK: - Small Widget View
 
 struct AIUMSmallWidgetView: View {
@@ -169,16 +188,44 @@ struct AIUMAccessoryCircularView: View {
 
     var body: some View {
         if let snapshot = entry.displaySnapshot {
-            Gauge(value: snapshot.usedPercent / 100) {
-                Image(systemName: "gauge.medium")
-            } currentValueLabel: {
-                Text("\(Int(snapshot.usedPercent))%")
-                    .font(.system(size: 12, weight: .bold))
+            if let errorMessage = snapshot.errorMessage {
+                unavailableGauge(
+                    systemImage: "exclamationmark.triangle.fill",
+                    accessibilityValue: errorMessage
+                )
+            } else {
+                Gauge(value: snapshot.usedPercent / 100) {
+                    Text(snapshot.provider.displayName)
+                } currentValueLabel: {
+                    Text("\(Int(snapshot.usedPercent))%")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .gaugeStyle(.accessoryCircular)
+                .accessibilityLabel(snapshot.provider.displayName)
+                .accessibilityValue("\(Int(snapshot.usedPercent)) percent used")
             }
-            .gaugeStyle(.accessoryCircular)
         } else {
-            Image(systemName: "person.crop.circle.badge.questionmark")
+            unavailableGauge(
+                systemImage: "person.crop.circle.badge.exclamationmark",
+                accessibilityValue: "Not signed in"
+            )
         }
+    }
+
+    private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
+        Gauge(value: 0) {
+            Text(entry.provider.displayName)
+        } currentValueLabel: {
+            VStack(spacing: 0) {
+                Text(providerAbbreviation(entry.provider))
+                    .font(.system(size: 9, weight: .bold))
+                Image(systemName: systemImage)
+                    .font(.system(size: 9))
+            }
+        }
+        .gaugeStyle(.accessoryCircular)
+        .accessibilityLabel(entry.provider.displayName)
+        .accessibilityValue(accessibilityValue)
     }
 }
 
@@ -187,21 +234,34 @@ struct AIUMAccessoryRectangularView: View {
 
     var body: some View {
         if let snapshot = entry.displaySnapshot {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(snapshot.provider.displayName)
-                    .font(.caption2.bold())
-                    .lineLimit(1)
-                Text("\(Int(snapshot.usedPercent))% used")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                if let resetAt = snapshot.resetAt {
-                    resetSummary(resetAt: resetAt)
+            if snapshot.errorMessage != nil {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(snapshot.provider.displayName)
+                        .font(.caption2.bold())
+                    Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption2)
                 }
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(snapshot.provider.displayName)
+                        .font(.caption2.bold())
+                        .lineLimit(1)
+                    Text("\(Int(snapshot.usedPercent))% used")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    if let resetAt = snapshot.resetAt {
+                        resetSummary(resetAt: resetAt)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Text("Not signed in")
-                .font(.caption2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.provider.displayName)
+                    .font(.caption2.bold())
+                Label("Not signed in", systemImage: "person.crop.circle.badge.exclamationmark")
+                    .font(.caption2)
+            }
         }
     }
 }
@@ -212,6 +272,13 @@ private func progressColor(for percent: Double) -> Color {
     if percent >= 90 { return .red }
     if percent >= 70 { return .orange }
     return .blue
+}
+
+private func providerAbbreviation(_ provider: Provider) -> String {
+    switch provider {
+    case .githubCopilot: "GH"
+    case .codex: "CX"
+    }
 }
 
 private enum ResetInfoStyle {
@@ -305,7 +372,51 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
                 source: "preview"
             )
         ],
-        provider: nil
+        provider: .githubCopilot
+    )
+}
+
+#Preview("Lock Screen Circular", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [
+            UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexPro,
+                windowKind: .hourly,
+                used: 42,
+                limit: 50,
+                resetAt: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
+                unit: "requests",
+                source: "preview"
+            ),
+        ],
+        provider: .codex
+    )
+}
+
+#Preview("Lock Screen Rectangular", as: .accessoryRectangular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [
+            UsageSnapshot(
+                provider: .githubCopilot,
+                displayName: "octocat",
+                planKind: .aiCredits,
+                windowKind: .monthly,
+                used: 750,
+                limit: 1000,
+                resetAt: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
+                unit: "AI credits",
+                source: "preview"
+            ),
+        ],
+        provider: .githubCopilot
     )
 }
 
@@ -338,6 +449,6 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
                 source: "preview"
             ),
         ],
-        provider: nil
+        provider: .githubCopilot
     )
 }

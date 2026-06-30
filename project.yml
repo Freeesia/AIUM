@@ -6,7 +6,7 @@ options:
   createIntermediateGroups: true
   developmentLanguage: en
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
 configs:
   Debug: debug
   Release: release
@@ -55,7 +55,7 @@ settings:
     GCC_WARN_UNINITIALIZED_AUTOS: YES_AGGRESSIVE
     GCC_WARN_UNUSED_FUNCTION: "YES"
     GCC_WARN_UNUSED_VARIABLE: "YES"
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
     MTL_FAST_MATH: "YES"
     SDKROOT: iphoneos
     STRING_CATALOG_GENERATE_SYMBOLS: "YES"
@@ -84,7 +84,7 @@ targets:
   AIUM:
     type: application
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     configFiles:
       Debug: Config/AIUM.xcconfig
       Release: Config/AIUM.xcconfig
@@ -118,7 +118,7 @@ targets:
   AIUMWidget:
     type: app-extension
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: AIUMWidget
       - path: AIUM/Models/UsageSnapshot.swift
@@ -147,7 +147,7 @@ targets:
   AIUMTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: AIUMTests
     dependencies:
