@@ -14,13 +14,13 @@ struct UsageRefreshResult {
 @MainActor
 final class UsageRefreshService {
     private let usageStore: UsageStore
-    private let githubProvider: GitHubUsageProvider
-    private let codexProvider: PrivateCodexUsageProvider
+    private let githubProvider: any UsageProvider
+    private let codexProvider: any UsageProvider
 
     init(
         usageStore: UsageStore? = nil,
-        githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
-        codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider()
+        githubProvider: any UsageProvider = GitHubUsageProvider(),
+        codexProvider: any UsageProvider = PrivateCodexUsageProvider()
     ) {
         self.usageStore = usageStore ?? .shared
         self.githubProvider = githubProvider
@@ -50,8 +50,10 @@ final class UsageRefreshService {
     }
 
     private func refreshGitHub() async -> String? {
+        let hasCachedUsage = !usageStore.snapshots(for: .githubCopilot).isEmpty
+        guard await githubProvider.isAuthenticated || hasCachedUsage else { return nil }
+
         do {
-            guard await githubProvider.isAuthenticated else { return nil }
             let snapshots = try await githubProvider.fetchUsage()
             usageStore.replace(provider: .githubCopilot, with: snapshots)
             return nil
@@ -63,8 +65,10 @@ final class UsageRefreshService {
     }
 
     private func refreshCodex() async -> String? {
+        let hasCachedUsage = !usageStore.snapshots(for: .codex).isEmpty
+        guard await codexProvider.isAuthenticated || hasCachedUsage else { return nil }
+
         do {
-            guard await codexProvider.isAuthenticated else { return nil }
             let snapshots = try await codexProvider.fetchUsage()
             usageStore.replace(provider: .codex, with: snapshots)
             return nil

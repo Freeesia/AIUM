@@ -1,9 +1,14 @@
 import BackgroundTasks
 import Foundation
+import OSLog
 
 final class UsageBackgroundRefreshScheduler {
     static let shared = UsageBackgroundRefreshScheduler()
     static let taskIdentifier = "com.studiofreesia.aium.usage-refresh"
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.studiofreesia.aium",
+        category: "BackgroundRefresh"
+    )
 
     private var isRegistered = false
 
@@ -18,12 +23,13 @@ final class UsageBackgroundRefreshScheduler {
         ) { task in
             self.handle(task)
         }
+        if !isRegistered {
+            Self.logger.error("Failed to register background refresh task")
+        }
     }
 
     func scheduleNextRefresh() {
         guard isRegistered, !Self.isRunningTests else { return }
-
-        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskIdentifier)
 
         let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         request.earliestBeginDate = Date().addingTimeInterval(
@@ -32,10 +38,9 @@ final class UsageBackgroundRefreshScheduler {
 
         do {
             try BGTaskScheduler.shared.submit(request)
+            Self.logger.debug("Scheduled background refresh")
         } catch {
-            #if DEBUG
-            print("[AIUM][BackgroundRefresh] Failed to schedule usage refresh: \(error.localizedDescription)")
-            #endif
+            Self.logger.error("Failed to schedule background refresh: \(error.localizedDescription)")
         }
     }
 
@@ -45,13 +50,23 @@ final class UsageBackgroundRefreshScheduler {
             return
         }
 
+        // Schedule first so the refresh chain survives expiration or termination.
+        scheduleNextRefresh()
+        Self.logger.info("Background usage refresh started")
+
         let refreshTask = Task {
             let result = await UsageRefreshService().refreshUsage()
-            scheduleNextRefresh()
-            task.setTaskCompleted(success: result.isSuccess)
+            let success = result.isSuccess && !Task.isCancelled
+            if let errorMessage = result.errorMessage {
+                Self.logger.error("Background usage refresh failed: \(errorMessage)")
+            } else {
+                Self.logger.info("Background usage refresh completed")
+            }
+            task.setTaskCompleted(success: success)
         }
 
         task.expirationHandler = {
+            Self.logger.error("Background usage refresh expired")
             refreshTask.cancel()
         }
     }

@@ -476,7 +476,7 @@ private final class InMemoryGitHubTokenStore: GitHubTokenStoring, @unchecked Sen
     private let lock = NSLock()
     private var bundle: GitHubTokenBundle?
 
-    func load() -> GitHubTokenBundle? {
+    func load() throws -> GitHubTokenBundle? {
         lock.withLock { bundle }
     }
 

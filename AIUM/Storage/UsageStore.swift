@@ -38,6 +38,7 @@ final class UsageStore: ObservableObject {
     // MARK: - Private
 
     private let storeURL: URL?
+    private let reloadWidgetTimelines: () -> Void
 
     private init() {
         if let sharedStoreURL = Self.sharedStoreURL() {
@@ -46,6 +47,15 @@ final class UsageStore: ObservableObject {
             // Fall back to app's Documents directory (widget won't see this).
             storeURL = Self.documentsStoreURL()
         }
+        reloadWidgetTimelines = { WidgetCenter.shared.reloadAllTimelines() }
+        load()
+    }
+
+    /// Creates an isolated store for unit tests without touching the App Group
+    /// container or spending the widget reload budget.
+    init(testingStoreURL: URL) {
+        storeURL = testingStoreURL
+        reloadWidgetTimelines = {}
         load()
     }
 
@@ -104,7 +114,7 @@ final class UsageStore: ObservableObject {
         if let data = try? encoder.encode(snapshots) {
             do {
                 try data.write(to: url, options: .atomicWrite)
-                WidgetCenter.shared.reloadAllTimelines()
+                reloadWidgetTimelines()
             } catch {
                 // Persist failures are intentionally ignored for now so usage
                 // refreshes do not break the dashboard UI.
