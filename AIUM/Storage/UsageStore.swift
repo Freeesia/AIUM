@@ -6,7 +6,6 @@ import Foundation
 /// Uses an App Group container JSON file so the widget extension can read
 /// the same data as the main app.
 ///
-/// Replace `appGroupIdentifier` with your real App Group ID (e.g. "group.io.github.freeesia.aium").
 @MainActor
 final class UsageStore: ObservableObject {
     // MARK: - Singleton
@@ -15,9 +14,7 @@ final class UsageStore: ObservableObject {
 
     // MARK: - Configuration
 
-    /// The App Group identifier shared between the app and the widget extension.
-    /// Set this to your real App Group ID.
-    static let appGroupIdentifier = "group.io.github.freeesia.aium"
+    private nonisolated static let appGroupIdentifier = "group.com.studiofreesia.aium"
 
     // MARK: - Published state
 

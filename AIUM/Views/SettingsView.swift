@@ -60,20 +60,6 @@ struct SettingsView: View {
                     }
                 }
 
-                // App Group info
-                Section("App Group") {
-                    HStack {
-                        Text("Identifier")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(UsageStore.appGroupIdentifier)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("The App Group must be configured in both the AIUM target and the AIUMWidget target.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
