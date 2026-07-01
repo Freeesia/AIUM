@@ -118,23 +118,25 @@ struct AIUMMediumWidgetView: View {
         HStack(spacing: 0) {
             providerPane(
                 provider: .githubCopilot,
-                snapshot: githubSnapshot,
-                icon: "person.crop.circle"
+                snapshot: githubSnapshot
             )
             Divider()
             providerPane(
                 provider: .codex,
-                snapshot: codexSnapshot,
-                icon: "cpu.fill"
+                snapshot: codexSnapshot
             )
         }
         .padding(12)
     }
 
     @ViewBuilder
-    private func providerPane(provider: Provider, snapshot: UsageSnapshot?, icon: String) -> some View {
+    private func providerPane(provider: Provider, snapshot: UsageSnapshot?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(provider.displayName, systemImage: icon)
+            Label {
+                Text(provider.displayName)
+            } icon: {
+                ProviderIconView(provider: provider, size: 28)
+            }
                 .font(.caption2.bold())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -195,7 +197,7 @@ struct AIUMAccessoryCircularView: View {
                 )
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
-                    Text(snapshot.provider.displayName)
+                    ProviderIconView(provider: snapshot.provider, size: 20)
                 } currentValueLabel: {
                     Text("\(Int(snapshot.usedPercent))%")
                         .font(.system(size: 12, weight: .bold))
@@ -214,7 +216,7 @@ struct AIUMAccessoryCircularView: View {
 
     private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
         Gauge(value: 0) {
-            Text(entry.provider.displayName)
+            ProviderIconView(provider: entry.provider, size: 20)
         } currentValueLabel: {
             VStack(spacing: 0) {
                 Text(providerAbbreviation(entry.provider))
