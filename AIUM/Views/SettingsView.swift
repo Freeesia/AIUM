@@ -1,8 +1,18 @@
 import SwiftUI
+import UIKit
+
+private struct BrowserDestination: Identifiable {
+    let url: URL
+
+    var id: String {
+        url.absoluteString
+    }
+}
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var browserDestination: BrowserDestination?
 
     var body: some View {
         NavigationStack {
@@ -50,14 +60,14 @@ struct SettingsView: View {
                 }
 
                 // Refresh interval
-                Section("Refresh") {
-                    Picker("Interval", selection: $viewModel.refreshIntervalMinutes) {
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
-                        Text("1 hour").tag(60)
-                        Text("2 hours").tag(120)
-                        Text("6 hours").tag(360)
+                Section {
+                    Picker("Interval", selection: $viewModel.refreshSetting) {
+                        ForEach(UsageRefreshSetting.allCases) { setting in
+                            Text(setting.displayName).tag(setting)
+                        }
                     }
+                } header: {
+                    Text("Refresh")
                 }
 
             }
@@ -70,6 +80,25 @@ struct SettingsView: View {
             }
             .onAppear {
                 viewModel.checkAuthStatus()
+            }
+            .sheet(item: $browserDestination) { destination in
+                SafariBrowserView(url: destination.url)
+                    .ignoresSafeArea()
+            }
+            .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.authError) { _, authError in
+                if authError != nil {
+                    browserDestination = nil
+                }
             }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },
@@ -109,6 +138,7 @@ struct SettingsView: View {
             } label: {
                 Label("Sign in with GitHub", systemImage: "person.badge.plus")
             }
+            .disabled(!viewModel.isGitHubClientIdConfigured)
         }
     }
 
@@ -123,7 +153,7 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login.")
+        Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
     }
 
     // MARK: - Codex auth row
@@ -178,8 +208,15 @@ struct SettingsView: View {
                 .font(.title2.monospaced().bold())
                 .textSelection(.enabled)
             if let verificationURL = URL(string: url) {
-                Link("Open in Browser", destination: verificationURL)
-                    .font(.caption)
+                Button {
+                    UIPasteboard.general.string = userCode
+                    browserDestination = BrowserDestination(url: verificationURL)
+                } label: {
+                    Label("Copy Code and Open Browser", systemImage: "safari")
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             ProgressView("Waiting for authorization…")
                 .controlSize(.small)

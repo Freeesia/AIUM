@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 /// Persists and retrieves UsageSnapshots so that both the app and widgets
 /// can share the latest cached data without performing network calls.
@@ -14,7 +15,21 @@ final class UsageStore: ObservableObject {
 
     // MARK: - Configuration
 
-    private nonisolated static let appGroupIdentifier = "group.com.studiofreesia.aium"
+    /// The App Group identifier shared between the app and the widget extension.
+    /// This must match both entitlement files:
+    /// - AIUM/AIUM.entitlements
+    /// - AIUMWidget/AIUMWidget.entitlements
+    nonisolated static let appGroupIdentifier = "group.com.studiofreesia.aium"
+
+    private nonisolated static let snapshotsFilename = "usage_snapshots.json"
+
+    /// Whether the configured App Group container is available at runtime.
+    ///
+    /// When this is false the app falls back to its own Documents directory,
+    /// which is intentionally not visible to the widget extension.
+    nonisolated static var isSharedContainerAvailable: Bool {
+        sharedContainerURL() != nil
+    }
 
     // MARK: - Published state
 
@@ -25,16 +40,11 @@ final class UsageStore: ObservableObject {
     private let storeURL: URL?
 
     private init() {
-        if let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier
-        ) {
-            storeURL = container.appendingPathComponent("usage_snapshots.json")
+        if let sharedStoreURL = Self.sharedStoreURL() {
+            storeURL = sharedStoreURL
         } else {
             // Fall back to app's Documents directory (widget won't see this).
-            storeURL = FileManager.default
-                .urls(for: .documentDirectory, in: .userDomainMask)
-                .first?
-                .appendingPathComponent("usage_snapshots.json")
+            storeURL = Self.documentsStoreURL()
         }
         load()
     }
@@ -92,7 +102,13 @@ final class UsageStore: ObservableObject {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         if let data = try? encoder.encode(snapshots) {
-            try? data.write(to: url, options: .atomicWrite)
+            do {
+                try data.write(to: url, options: .atomicWrite)
+                WidgetCenter.shared.reloadAllTimelines()
+            } catch {
+                // Persist failures are intentionally ignored for now so usage
+                // refreshes do not break the dashboard UI.
+            }
         }
     }
 }
@@ -100,17 +116,30 @@ final class UsageStore: ObservableObject {
 // MARK: - Widget read-only access
 
 extension UsageStore {
+    nonisolated static func sharedContainerURL() -> URL? {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        )
+    }
+
+    private nonisolated static func sharedStoreURL() -> URL? {
+        sharedContainerURL()?.appendingPathComponent(snapshotsFilename)
+    }
+
+    private nonisolated static func documentsStoreURL() -> URL? {
+        FileManager.default
+            .urls(for: .documentDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent(snapshotsFilename)
+    }
+
     /// Loads snapshots directly from the shared container without needing a
     /// live `UsageStore` instance. Intended for use by the widget extension's
     /// timeline provider.
     /// This method is nonisolated so it can be called from any context, including
     /// WidgetKit's TimelineProvider callbacks.
     nonisolated static func loadSnapshotsFromSharedContainer() -> [UsageSnapshot] {
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) else { return [] }
-
-        let url = container.appendingPathComponent("usage_snapshots.json")
+        guard let url = sharedStoreURL() else { return [] }
         guard let data = try? Data(contentsOf: url) else { return [] }
 
         let decoder = JSONDecoder()

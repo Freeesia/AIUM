@@ -11,7 +11,7 @@ struct DashboardView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // GitHub Copilot section
-                    sectionHeader("GitHub Copilot", systemImage: "person.crop.circle")
+                    sectionHeader(provider: .githubCopilot)
                     if githubAuthenticated {
                         if viewModel.githubSnapshots.isEmpty {
                             placeholderCard(provider: .githubCopilot)
@@ -25,7 +25,7 @@ struct DashboardView: View {
                     }
 
                     // OpenAI Codex section
-                    sectionHeader("OpenAI Codex", systemImage: "cpu.fill")
+                    sectionHeader(provider: .codex)
                     if codexAuthenticated {
                         if viewModel.codexSnapshots.isEmpty {
                             placeholderCard(provider: .codex)
@@ -76,11 +76,14 @@ struct DashboardView: View {
                 guard !isPresented else { return }
                 Task {
                     await updateAuthStatus()
+                    viewModel.restartPeriodicRefresh()
                     viewModel.refresh()
                 }
             }
             .task {
                 await updateAuthStatus()
+                viewModel.refreshIfNeeded()
+                viewModel.startPeriodicRefresh()
             }
             .refreshable {
                 viewModel.refresh()
@@ -96,9 +99,13 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func sectionHeader(_ title: String, systemImage: String) -> some View {
+    private func sectionHeader(provider: Provider) -> some View {
         HStack {
-            Label(title, systemImage: systemImage)
+            Label {
+                Text(provider.displayName)
+            } icon: {
+                ProviderIconView(provider: provider, size: 22)
+            }
                 .font(.title3.bold())
             Spacer()
         }
