@@ -13,7 +13,7 @@ struct GitHubOAuthConfig {
     static let deviceCodeURL = URL(string: "https://github.com/login/device/code")!
     static let tokenURL = URL(string: "https://github.com/login/oauth/access_token")!
 
-    static let keychainService = "io.github.freeesia.aium"
+    static let keychainService = "com.studiofreesia.aium"
     static let keychainAccount = "github_app_user_token"
 
     static func resolvedClientId(from rawValue: String?) -> String? {
@@ -33,14 +33,14 @@ protocol GitHubAuthProviding: Actor {
 }
 
 protocol GitHubTokenStoring: Sendable {
-    func load() -> GitHubTokenBundle?
+    func load() throws -> GitHubTokenBundle?
     func save(_ bundle: GitHubTokenBundle) throws
     func delete()
 }
 
 struct KeychainGitHubTokenStore: GitHubTokenStoring {
-    func load() -> GitHubTokenBundle? {
-        try? KeychainHelper.loadCodable(
+    func load() throws -> GitHubTokenBundle? {
+        try KeychainHelper.loadCodable(
             GitHubTokenBundle.self,
             service: GitHubOAuthConfig.keychainService,
             account: GitHubOAuthConfig.keychainAccount
@@ -56,7 +56,7 @@ struct KeychainGitHubTokenStore: GitHubTokenStoring {
     }
 
     func delete() {
-        KeychainHelper.delete(
+        try? KeychainHelper.delete(
             service: GitHubOAuthConfig.keychainService,
             account: GitHubOAuthConfig.keychainAccount
         )
@@ -134,11 +134,11 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     }
 
     var isAuthenticated: Bool {
-        get async { tokenStore.load()?.hasUsableCredentials() == true }
+        get async { (try? tokenStore.load())?.hasUsableCredentials() == true }
     }
 
     func validAccessToken() async throws -> String? {
-        guard let bundle = tokenStore.load() else { return nil }
+        guard let bundle = try tokenStore.load() else { return nil }
         guard let expiresAt = bundle.accessTokenExpiresAt,
               expiresAt <= Date().addingTimeInterval(60)
         else { return bundle.accessToken }
