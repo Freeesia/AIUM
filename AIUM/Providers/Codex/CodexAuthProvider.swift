@@ -4,10 +4,9 @@ import Foundation
 
 /// Codex OIDC / device-code flow configuration.
 /// These values match the current Codex app-server login flow and can be overridden
-/// from the app target's build settings when OpenAI changes the private API.
+/// from the app target's build settings when OpenAI changes the endpoint configuration.
 ///
-/// ⚠️ WARNING: These are private / undocumented endpoints. They may change at any time.
-/// Do not use this in a public App Store release until official APIs are available.
+/// ⚠️ These endpoints are not part of an officially published API specification and may change at any time.
 struct CodexOAuthConfig {
     private static let clientIdInfoPlistKey = "CodexOAuthClientID"
     private static let placeholderClientId = "YOUR_CODEX_CLIENT_ID"
