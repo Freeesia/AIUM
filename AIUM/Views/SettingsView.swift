@@ -70,30 +70,6 @@ struct SettingsView: View {
                     Text("Refresh")
                 }
 
-                // App Group info
-                Section("App Group") {
-                    HStack {
-                        Text("Identifier")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(UsageStore.appGroupIdentifier)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack {
-                        Text("Status")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(UsageStore.isSharedContainerAvailable ? "Shared" : "Fallback")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(UsageStore.isSharedContainerAvailable ? .green : .orange)
-                    }
-                    Text(UsageStore.isSharedContainerAvailable
-                         ? "Usage snapshots are saved in the App Group container and can be read by widgets."
-                         : "The App Group container is unavailable. The app falls back to app-only Documents storage, so widgets cannot read the saved snapshots.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
