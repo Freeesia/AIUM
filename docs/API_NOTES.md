@@ -68,11 +68,9 @@ GitHub App user access tokens do not use OAuth scopes. Their access is limited b
 
 ## OpenAI / Codex APIs
 
-> ⚠️ **WARNING: The Codex API details below describe PRIVATE, UNDOCUMENTED endpoints.**
+> **Note:** The Codex API details below describe endpoints that are not part of an officially published API specification.
 >
-> - These endpoints are not officially supported by OpenAI.
-> - They may change or be removed at any time without notice.
-> - They should NOT be used in a public/commercial product.
+> - These endpoints may change or be removed at any time without notice.
 > - All Codex API details are isolated in `PrivateCodexUsageProvider.swift` and `CodexAuthProvider.swift` so they can be replaced when official APIs are released.
 
 ### Authentication: Codex Device Code Flow
@@ -169,7 +167,7 @@ Legacy snake_case windows are still accepted:
 - Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
 - `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
 
-**Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so private API changes are visible in the app UI.
+**Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so API changes are visible in the app UI.
 
 ---
 
