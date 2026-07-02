@@ -29,14 +29,17 @@ final class UsageRefreshServiceTests: XCTestCase {
 
         let store = UsageStore(testingStoreURL: storeURL)
         store.upsert(snapshot(provider: .githubCopilot))
+        let githubProvider = StubUsageProvider(
+            provider: .githubCopilot,
+            isAuthenticated: false,
+            error: StubRefreshError.credentialsUnavailable
+        )
         let service = UsageRefreshService(
             usageStore: store,
-            githubProvider: StubUsageProvider(
-                provider: .githubCopilot,
-                isAuthenticated: false,
-                error: StubRefreshError.credentialsUnavailable
-            ),
-            codexProvider: StubUsageProvider(provider: .codex, isAuthenticated: false)
+            resolver: StubUsageProviderResolver(
+                githubProvider: githubProvider,
+                codexProvider: StubUsageProvider(provider: .codex, isAuthenticated: false)
+            )
         )
 
         let result = await service.refreshUsage()
@@ -58,8 +61,10 @@ final class UsageRefreshServiceTests: XCTestCase {
         )
         let service = UsageRefreshService(
             usageStore: store,
-            githubProvider: githubProvider,
-            codexProvider: StubUsageProvider(provider: .codex, isAuthenticated: false)
+            resolver: StubUsageProviderResolver(
+                githubProvider: githubProvider,
+                codexProvider: StubUsageProvider(provider: .codex, isAuthenticated: false)
+            )
         )
 
         let result = await service.refreshUsage()
@@ -68,6 +73,107 @@ final class UsageRefreshServiceTests: XCTestCase {
         XCTAssertTrue(result.isSuccess)
         XCTAssertEqual(fetchCount, 0)
     }
+
+    // MARK: - Demo Mode Tests
+
+    func testDemoModeUsesOnlyDemoProviders() async {
+        let storeURL = temporaryStoreURL()
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        let store = UsageStore(testingStoreURL: storeURL)
+        let realGithub = StubUsageProvider(
+            provider: .githubCopilot,
+            isAuthenticated: true,
+            snapshots: [snapshot(provider: .githubCopilot)]
+        )
+        let realCodex = StubUsageProvider(
+            provider: .codex,
+            isAuthenticated: true,
+            snapshots: [snapshot(provider: .codex)]
+        )
+
+        let suiteName = "test-demo-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(true, forKey: DemoModeStore.enabledKey)
+        let demoStore = DemoModeStore(defaults: defaults)
+        let resolver = AppUsageProviderResolver(
+            demoModeStore: demoStore,
+            githubProvider: realGithub,
+            codexProvider: realCodex
+        )
+
+        let service = UsageRefreshService(usageStore: store, resolver: resolver)
+        let _ = await service.refreshUsage()
+
+        let githubFetchCount = await realGithub.fetchCount
+        let codexFetchCount = await realCodex.fetchCount
+        XCTAssertEqual(githubFetchCount, 0, "Real GitHub provider should not be called in demo mode")
+        XCTAssertEqual(codexFetchCount, 0, "Real Codex provider should not be called in demo mode")
+    }
+
+    func testDemoModeStorePopulatedWithDemoSnapshots() async {
+        let storeURL = temporaryStoreURL()
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        let store = UsageStore(testingStoreURL: storeURL)
+        let suiteName = "test-demo-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(true, forKey: DemoModeStore.enabledKey)
+        let demoStore = DemoModeStore(defaults: defaults)
+        let resolver = AppUsageProviderResolver(
+            demoModeStore: demoStore,
+            githubProvider: StubUsageProvider(provider: .githubCopilot, isAuthenticated: false),
+            codexProvider: StubUsageProvider(provider: .codex, isAuthenticated: false)
+        )
+
+        let service = UsageRefreshService(usageStore: store, resolver: resolver)
+        let _ = await service.refreshUsage()
+
+        let githubSnapshots = store.snapshots(for: .githubCopilot)
+        let codexSnapshots = store.snapshots(for: .codex)
+        XCTAssertTrue(githubSnapshots.allSatisfy { $0.source == "demo" })
+        XCTAssertTrue(codexSnapshots.allSatisfy { $0.source == "demo" })
+    }
+
+    func testDemoModeOffUsesRealProviders() async {
+        let storeURL = temporaryStoreURL()
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        let store = UsageStore(testingStoreURL: storeURL)
+        let realGithub = StubUsageProvider(
+            provider: .githubCopilot,
+            isAuthenticated: true,
+            snapshots: [snapshot(provider: .githubCopilot)]
+        )
+        let realCodex = StubUsageProvider(
+            provider: .codex,
+            isAuthenticated: true,
+            snapshots: [snapshot(provider: .codex)]
+        )
+
+        let suiteName = "test-demo-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(false, forKey: DemoModeStore.enabledKey)
+        let demoStore = DemoModeStore(defaults: defaults)
+        let resolver = AppUsageProviderResolver(
+            demoModeStore: demoStore,
+            githubProvider: realGithub,
+            codexProvider: realCodex
+        )
+
+        let service = UsageRefreshService(usageStore: store, resolver: resolver)
+        let _ = await service.refreshUsage()
+
+        let githubFetchCount = await realGithub.fetchCount
+        let codexFetchCount = await realCodex.fetchCount
+        XCTAssertEqual(githubFetchCount, 1, "Real GitHub provider should be called when demo mode is off")
+        XCTAssertEqual(codexFetchCount, 1, "Real Codex provider should be called when demo mode is off")
+    }
+
+    // MARK: - Helpers
 
     private func temporaryStoreURL() -> URL {
         FileManager.default.temporaryDirectory
@@ -103,6 +209,8 @@ final class UsageRefreshServiceTests: XCTestCase {
     }
 }
 
+// MARK: - Stubs
+
 private actor StubUsageProvider: UsageProvider {
     let provider: Provider
     let authenticated: Bool
@@ -130,6 +238,23 @@ private actor StubUsageProvider: UsageProvider {
         fetchCount += 1
         if let error { throw error }
         return snapshots
+    }
+}
+
+private final class StubUsageProviderResolver: UsageProviderResolving {
+    private let githubProvider: any UsageProvider
+    private let codexProvider: any UsageProvider
+
+    init(githubProvider: any UsageProvider, codexProvider: any UsageProvider) {
+        self.githubProvider = githubProvider
+        self.codexProvider = codexProvider
+    }
+
+    func provider(for provider: Provider) -> any UsageProvider {
+        switch provider {
+        case .githubCopilot: return githubProvider
+        case .codex: return codexProvider
+        }
     }
 }
 

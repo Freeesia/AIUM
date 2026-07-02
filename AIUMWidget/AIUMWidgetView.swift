@@ -42,7 +42,14 @@ struct AIUMSmallWidgetView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
-                if snapshot.isStale {
+                if snapshot.source == "demo" {
+                    Text("DEMO")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.blue)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
+                } else if snapshot.isStale {
                     Image(systemName: "clock.badge.exclamationmark")
                         .font(.caption2)
                         .foregroundStyle(.orange)
@@ -195,6 +202,16 @@ struct AIUMAccessoryCircularView: View {
                     systemImage: "exclamationmark.triangle.fill",
                     accessibilityValue: errorMessage
                 )
+            } else if snapshot.source == "demo" {
+                Gauge(value: snapshot.usedPercent / 100) {
+                    ProviderIconView(provider: snapshot.provider, size: 20)
+                } currentValueLabel: {
+                    Text("D")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .gaugeStyle(.accessoryCircular)
+                .accessibilityLabel(snapshot.provider.displayName)
+                .accessibilityValue("Demo: \(Int(snapshot.usedPercent)) percent used")
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
                     ProviderIconView(provider: snapshot.provider, size: 20)
@@ -248,9 +265,15 @@ struct AIUMAccessoryRectangularView: View {
                     Text(snapshot.provider.displayName)
                         .font(.caption2.bold())
                         .lineLimit(1)
-                    Text("\(Int(snapshot.usedPercent))% used")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                    HStack(spacing: 4) {
+                        Text("\(Int(snapshot.usedPercent))% used")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        if snapshot.source == "demo" {
+                            Text("DEMO")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                    }
                     if let resetAt = snapshot.resetAt {
                         resetSummary(resetAt: resetAt)
                     }

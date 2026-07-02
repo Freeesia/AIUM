@@ -14,24 +14,21 @@ struct UsageRefreshResult {
 @MainActor
 final class UsageRefreshService {
     private let usageStore: UsageStore
-    private let githubProvider: any UsageProvider
-    private let codexProvider: any UsageProvider
+    private let resolver: any UsageProviderResolving
 
     init(
         usageStore: UsageStore? = nil,
-        githubProvider: any UsageProvider = GitHubUsageProvider(),
-        codexProvider: any UsageProvider = PrivateCodexUsageProvider()
+        resolver: any UsageProviderResolving = AppUsageProviderResolver()
     ) {
         self.usageStore = usageStore ?? .shared
-        self.githubProvider = githubProvider
-        self.codexProvider = codexProvider
+        self.resolver = resolver
     }
 
     func refreshUsage() async -> UsageRefreshResult {
         let previousSnapshots = usageStore.snapshots
         let errors = [
-            await refreshGitHub(),
-            await refreshCodex(),
+            await refreshProvider(.githubCopilot),
+            await refreshProvider(.codex),
         ].compactMap { $0 }
 
         let currentSnapshots = usageStore.snapshots
@@ -49,31 +46,17 @@ final class UsageRefreshService {
         )
     }
 
-    private func refreshGitHub() async -> String? {
-        let hasCachedUsage = !usageStore.snapshots(for: .githubCopilot).isEmpty
-        guard await githubProvider.isAuthenticated || hasCachedUsage else { return nil }
+    private func refreshProvider(_ providerKind: Provider) async -> String? {
+        let usageProvider = resolver.provider(for: providerKind)
+        let hasCachedUsage = !usageStore.snapshots(for: providerKind).isEmpty
+        guard await usageProvider.isAuthenticated || hasCachedUsage else { return nil }
 
         do {
-            let snapshots = try await githubProvider.fetchUsage()
-            usageStore.replace(provider: .githubCopilot, with: snapshots)
+            let snapshots = try await usageProvider.fetchUsage()
+            usageStore.replace(provider: providerKind, with: snapshots)
             return nil
         } catch {
-            let errSnapshot = UsageSnapshot.error(provider: .githubCopilot, message: error.localizedDescription)
-            usageStore.upsert(errSnapshot)
-            return error.localizedDescription
-        }
-    }
-
-    private func refreshCodex() async -> String? {
-        let hasCachedUsage = !usageStore.snapshots(for: .codex).isEmpty
-        guard await codexProvider.isAuthenticated || hasCachedUsage else { return nil }
-
-        do {
-            let snapshots = try await codexProvider.fetchUsage()
-            usageStore.replace(provider: .codex, with: snapshots)
-            return nil
-        } catch {
-            let errSnapshot = UsageSnapshot.error(provider: .codex, message: error.localizedDescription)
+            let errSnapshot = UsageSnapshot.error(provider: providerKind, message: error.localizedDescription)
             usageStore.upsert(errSnapshot)
             return error.localizedDescription
         }

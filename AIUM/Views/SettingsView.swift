@@ -19,38 +19,48 @@ struct SettingsView: View {
             Form {
                 // GitHub section
                 Section {
-                    if !viewModel.isGitHubClientIdConfigured {
-                        clientIdWarning
-                    }
-                    githubAuthRow
-                    if viewModel.isGitHubAuthenticated {
-                        limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
-                                 placeholder: "e.g. 1000")
-                        limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
-                                 placeholder: "e.g. 300")
+                    if viewModel.isDemoMode {
+                        demoModeAuthMessage
+                    } else {
+                        if !viewModel.isGitHubClientIdConfigured {
+                            clientIdWarning
+                        }
+                        githubAuthRow
+                        if viewModel.isGitHubAuthenticated {
+                            limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
+                                     placeholder: "e.g. 1000")
+                            limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
+                                     placeholder: "e.g. 300")
+                        }
                     }
                 } header: {
                     Text("GitHub Copilot")
                 } footer: {
-                    githubFooter
+                    if !viewModel.isDemoMode {
+                        githubFooter
+                    }
                 }
 
                 // Codex section
                 Section {
-                    if !viewModel.isCodexClientIdConfigured {
-                        codexClientIdWarning
-                    }
-                    codexAuthRow
-                    if viewModel.isCodexAuthenticated,
-                       let account = viewModel.codexAccountDisplayName {
-                        HStack {
-                            Text("Account")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(account)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
+                    if viewModel.isDemoMode {
+                        demoModeAuthMessage
+                    } else {
+                        if !viewModel.isCodexClientIdConfigured {
+                            codexClientIdWarning
+                        }
+                        codexAuthRow
+                        if viewModel.isCodexAuthenticated,
+                           let account = viewModel.codexAccountDisplayName {
+                            HStack {
+                                Text("Account")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(account)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.trailing)
+                            }
                         }
                     }
                 } header: {
@@ -107,6 +117,14 @@ struct SettingsView: View {
                 Text(viewModel.authError ?? "")
             }
         }
+    }
+
+    // MARK: - Demo mode message
+
+    private var demoModeAuthMessage: some View {
+        Text("Demo Mode is active. Sign-in is disabled while sample data is shown.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 
     // MARK: - GitHub auth row
