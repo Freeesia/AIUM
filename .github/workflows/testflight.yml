@@ -128,6 +128,7 @@ jobs:
             AIUM_PROVISIONING_PROFILE_SPECIFIER="AIUM App Store" \
             AIUM_WIDGET_PROVISIONING_PROFILE_SPECIFIER="AIUM Widget App Store" \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
+            CURRENT_PROJECT_VERSION="$(( GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT ))" \
             GITHUB_OAUTH_CLIENT_ID="$GITHUB_OAUTH_CLIENT_ID"
 
       - name: Upload to TestFlight
