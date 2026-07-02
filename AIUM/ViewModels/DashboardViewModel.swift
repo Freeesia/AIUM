@@ -19,7 +19,7 @@ final class DashboardViewModel: ObservableObject {
     private let refreshService: UsageRefreshService
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
-    private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
+    private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.storedAutomaticIntervalMinutes()
 
     // MARK: - Init
 
