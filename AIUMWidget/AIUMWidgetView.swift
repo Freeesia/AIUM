@@ -120,20 +120,35 @@ struct AIUMMediumWidgetView: View {
     private var codexSnapshot: UsageSnapshot? {
         entry.snapshots.first { $0.provider == .codex }
     }
+    private var isDemoData: Bool {
+        entry.snapshots.contains { $0.source == "demo" }
+    }
 
     var body: some View {
-        HStack(spacing: 0) {
-            providerPane(
-                provider: .githubCopilot,
-                snapshot: githubSnapshot
-            )
-            Divider()
-            providerPane(
-                provider: .codex,
-                snapshot: codexSnapshot
-            )
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 0) {
+                providerPane(
+                    provider: .githubCopilot,
+                    snapshot: githubSnapshot
+                )
+                Divider()
+                providerPane(
+                    provider: .codex,
+                    snapshot: codexSnapshot
+                )
+            }
+            .padding(12)
+
+            if isDemoData {
+                Text("DEMO")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.blue)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
+                    .padding(6)
+            }
         }
-        .padding(12)
     }
 
     @ViewBuilder
