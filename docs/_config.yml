@@ -1,0 +1,9 @@
+title: AIUM
+description: GitHub Copilot and OpenAI Codex usage at a glance.
+url: https://aium.studiofreesia.com
+baseurl: ""
+theme: minima
+header_pages:
+  - index.md
+  - privacy/index.md
+  - support/index.md
