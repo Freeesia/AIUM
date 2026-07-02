@@ -1,4 +1,6 @@
 GITHUB_OAUTH_CLIENT_ID = YOUR_GITHUB_CLIENT_ID
 CODEX_OAUTH_CLIENT_ID = app_EMoamEEZ73f0CkXaXp7hrann
 
+#include "Version.xcconfig"
+#include? "Version.generated.xcconfig"
 #include? "AIUM.local.xcconfig"
