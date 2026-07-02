@@ -10,6 +10,11 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Demo mode banner
+                    if viewModel.isDemoMode {
+                        demoBanner
+                    }
+
                     // GitHub Copilot section
                     sectionHeader(provider: .githubCopilot)
                     if githubAuthenticated {
@@ -74,6 +79,7 @@ struct DashboardView: View {
             }
             .onChange(of: showSettings) { _, isPresented in
                 guard !isPresented else { return }
+                viewModel.reloadDemoMode()
                 Task {
                     await updateAuthStatus()
                     viewModel.restartPeriodicRefresh()
@@ -81,9 +87,18 @@ struct DashboardView: View {
                 }
             }
             .task {
+                viewModel.reloadDemoMode()
                 await updateAuthStatus()
                 viewModel.refreshIfNeeded()
                 viewModel.startPeriodicRefresh()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification
+                )
+            ) { _ in
+                viewModel.reloadDemoMode()
+                Task { await updateAuthStatus() }
             }
             .refreshable {
                 viewModel.refresh()
@@ -96,6 +111,20 @@ struct DashboardView: View {
     private func updateAuthStatus() async {
         githubAuthenticated = await viewModel.githubIsAuthenticated
         codexAuthenticated = await viewModel.codexIsAuthenticated
+    }
+
+    @ViewBuilder
+    private var demoBanner: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.blue)
+            Text("Demo Mode — sample data is shown. No account is required.")
+                .font(.caption)
+                .foregroundStyle(.blue)
+            Spacer()
+        }
+        .padding()
+        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder

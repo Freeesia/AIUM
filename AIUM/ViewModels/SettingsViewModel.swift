@@ -4,6 +4,7 @@ import Foundation
 final class SettingsViewModel: ObservableObject {
     // MARK: - Published state
 
+    @Published var isDemoMode = false
     @Published var isGitHubAuthenticated = false
     @Published var isCodexAuthenticated = false
     @Published var isAuthenticatingGitHub = false
@@ -42,17 +43,20 @@ final class SettingsViewModel: ObservableObject {
     private let githubAuth: GitHubAuthProvider
     private let codexAuth: CodexAuthProvider
     private let usageStore: UsageStore
+    private let demoModeStore: DemoModeStore
 
     // MARK: - Init
 
     init(
         githubAuth: GitHubAuthProvider = GitHubAuthProvider(),
         codexAuth: CodexAuthProvider = CodexAuthProvider(),
-        usageStore: UsageStore? = nil
+        usageStore: UsageStore? = nil,
+        demoModeStore: DemoModeStore = DemoModeStore()
     ) {
         self.githubAuth = githubAuth
         self.codexAuth = codexAuth
         self.usageStore = usageStore ?? .shared
+        self.demoModeStore = demoModeStore
 
         let defaults = UserDefaults.standard
         let aiLimit = defaults.double(forKey: "github_ai_credit_monthly_limit")
@@ -64,9 +68,16 @@ final class SettingsViewModel: ObservableObject {
         self.refreshSetting = UsageRefreshSetting(storedValue: interval)
     }
 
+    // MARK: - Demo Mode
+
+    func checkDemoMode() {
+        isDemoMode = demoModeStore.isEnabled
+    }
+
     // MARK: - Auth status
 
     func checkAuthStatus() {
+        checkDemoMode()
         Task {
             isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
             isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil

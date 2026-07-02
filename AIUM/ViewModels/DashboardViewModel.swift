@@ -10,13 +10,15 @@ final class DashboardViewModel: ObservableObject {
     @Published var lastError: String?
     @Published var activeRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
     @Published var nextRefreshAt: Date?
+    @Published var isDemoMode = false
 
     // MARK: - Dependencies
 
     private let usageStore: UsageStore
+    private let refreshService: UsageRefreshService
+    private let demoModeStore: DemoModeStore
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
-    private let refreshService: UsageRefreshService
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
     private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.storedAutomaticIntervalMinutes()
@@ -25,17 +27,22 @@ final class DashboardViewModel: ObservableObject {
 
     init(
         usageStore: UsageStore? = nil,
+        demoModeStore: DemoModeStore = DemoModeStore(),
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
         codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider()
     ) {
         let resolvedUsageStore = usageStore ?? .shared
         self.usageStore = resolvedUsageStore
+        self.demoModeStore = demoModeStore
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
         self.refreshService = UsageRefreshService(
             usageStore: resolvedUsageStore,
-            githubProvider: githubProvider,
-            codexProvider: codexProvider
+            resolver: AppUsageProviderResolver(
+                demoModeStore: demoModeStore,
+                githubProvider: githubProvider,
+                codexProvider: codexProvider
+            )
         )
         loadFromStore()
     }
@@ -95,11 +102,43 @@ final class DashboardViewModel: ObservableObject {
     }
 
     var githubIsAuthenticated: Bool {
-        get async { await githubProvider.isAuthenticated }
+        get async {
+            if isDemoMode { return true }
+            return await githubProvider.isAuthenticated
+        }
     }
 
     var codexIsAuthenticated: Bool {
-        get async { await codexProvider.isAuthenticated }
+        get async {
+            if isDemoMode { return true }
+            return await codexProvider.isAuthenticated
+        }
+    }
+
+    /// Reads the current demo mode flag and applies any state changes needed.
+    func reloadDemoMode() {
+        let wasEnabled = isDemoMode
+        let isEnabled = demoModeStore.isEnabled
+        isDemoMode = isEnabled
+
+        if !wasEnabled && isEnabled {
+            // Demo mode turned ON: populate store with demo snapshots
+            let now = Date()
+            usageStore.replace(
+                provider: .githubCopilot,
+                with: DemoUsageDataFactory.snapshots(for: .githubCopilot, now: now)
+            )
+            usageStore.replace(
+                provider: .codex,
+                with: DemoUsageDataFactory.snapshots(for: .codex, now: now)
+            )
+            loadFromStore()
+        } else if wasEnabled && !isEnabled {
+            // Demo mode turned OFF: clear the demo cache
+            usageStore.clear(provider: .githubCopilot)
+            usageStore.clear(provider: .codex)
+            loadFromStore()
+        }
     }
 
     // MARK: - Private
