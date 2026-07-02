@@ -1,59 +1,61 @@
 ---
 layout: page
-title: Privacy Policy
+title: プライバシーポリシー
 permalink: /privacy/
 ---
 
-Effective date: July 3, 2026
+[English version]({% link privacy/index.en.md %})
 
-AIUM is an iOS app for individuals to view their GitHub Copilot and OpenAI Codex usage. This policy explains how AIUM handles information.
+施行日: 2026年7月3日
 
-## Information AIUM handles
+AIUMは、GitHub CopilotおよびOpenAI Codexの利用状況を個人が確認するためのiOSアプリです。本ポリシーでは、AIUMにおける情報の取り扱いについて説明します。
 
-AIUM handles only the information needed to authenticate with the services you choose and display usage information:
+## AIUMが取り扱う情報
 
-- Authentication credentials, including access and refresh tokens
-- Account identifiers and display names returned by GitHub or OpenAI
-- Usage, allowance, and rate-limit information returned by GitHub or OpenAI
-- App preferences, including refresh settings, manually entered usage limits, and the Demo Mode setting
+AIUMは、ユーザーが選択したサービスでの認証と利用状況の表示に必要な、以下の情報のみを取り扱います。
 
-AIUM does not include advertising or analytics SDKs and does not collect location, contacts, photos, advertising identifiers, or diagnostic data for the developer.
+- アクセストークンおよびリフレッシュトークンを含む認証情報
+- GitHubまたはOpenAIから返されるアカウント識別子および表示名
+- GitHubまたはOpenAIから返される利用量、利用上限およびレート制限に関する情報
+- 更新設定、手動で入力した利用上限、デモモード設定などのアプリ設定
 
-## How information is used and stored
+AIUMは広告SDKや解析SDKを含まず、位置情報、連絡先、写真、広告識別子、または開発者向けの診断データを収集しません。
 
-Authentication credentials are stored in the iOS Keychain. Usage snapshots are stored on your device or in the app's local App Group container so the AIUM widget can display them. Preferences are stored locally on your device.
+## 情報の利用目的と保存場所
 
-AIUM does not operate a developer-controlled backend and does not upload this information to the developer or synchronize it through a developer cloud service.
+認証情報はiOSのKeychainに保存されます。利用状況のスナップショットは、AIUMウィジェットで表示できるよう、端末内またはアプリのローカルApp Group領域に保存されます。アプリ設定は端末内に保存されます。
 
-## Communication with GitHub and OpenAI
+AIUMは開発者が管理するバックエンドを運用しておらず、これらの情報を開発者へ送信したり、開発者が提供するクラウドサービスと同期したりしません。
 
-When you sign in or refresh usage, AIUM communicates directly from your device with the service you selected. Automatic background refresh may also make these requests based on your refresh setting. The requests include the credentials and account information required by that service to authenticate you and return usage data.
+## GitHubおよびOpenAIとの通信
 
-Information processed by these services is governed by their respective policies:
+サインインまたは利用状況の更新を行うと、AIUMはユーザーが選択したサービスと端末から直接通信します。更新設定に応じて、バックグラウンドで自動的に通信する場合もあります。リクエストには、各サービスでの認証および利用状況の取得に必要な認証情報とアカウント情報が含まれます。
 
-- [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
-- [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy/)
+各サービスが処理する情報には、それぞれのポリシーが適用されます。
 
-AIUM does not sell your information or share it with advertising, analytics, or data-broker services.
+- [GitHubプライバシーステートメント](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
+- [OpenAIプライバシーポリシー](https://openai.com/policies/privacy-policy/)
 
-## Retention, deletion, and revoking access
+AIUMはユーザーの情報を販売せず、広告、解析、またはデータ仲介サービスと共有しません。
 
-AIUM retains credentials, cached usage information, and preferences on your device until you remove them.
+## 保存期間、削除およびアクセスの取り消し
 
-- Signing out of GitHub or Codex in AIUM deletes that service's credentials and cached usage information from the app.
-- You can revoke AIUM's access separately from the relevant GitHub or OpenAI account settings.
-- Deleting AIUM removes its locally stored app data from the device. Remove any remaining widget before deletion if iOS still displays it.
+AIUMは、ユーザーが削除するまで、認証情報、利用状況のキャッシュおよびアプリ設定を端末内に保持します。
 
-The developer does not hold a server-side copy of AIUM data and therefore has no developer-hosted account data to delete.
+- AIUMでGitHubまたはCodexからサインアウトすると、そのサービスの認証情報と利用状況のキャッシュがアプリから削除されます。
+- GitHubまたはOpenAIのアカウント設定から、AIUMによるアクセスを個別に取り消すこともできます。
+- AIUMを削除すると、端末内に保存されたアプリデータが削除されます。iOS上にウィジェットが残っている場合は、ウィジェットも削除してください。
 
-## Website hosting
+開発者はAIUMのデータをサーバーに保管しないため、削除対象となる開発者管理のアカウントデータはありません。
 
-This policy and the AIUM support site are hosted by GitHub Pages. GitHub may process standard web request information when you visit these pages under the GitHub Privacy Statement linked above.
+## ウェブサイトのホスティング
 
-## Changes
+本ポリシーおよびAIUMのサポートサイトはGitHub Pagesでホストされています。これらのページを閲覧した際、GitHubは上記のGitHubプライバシーステートメントに基づき、通常のウェブリクエスト情報を処理する場合があります。
 
-This policy may be updated when AIUM's data handling changes. The effective date at the top of this page will be updated when a revision is published.
+## ポリシーの変更
 
-## Contact
+AIUMにおける情報の取り扱いが変更された場合、本ポリシーを更新することがあります。変更を公開した際は、ページ上部の施行日を更新します。
 
-For privacy questions, open a [GitHub issue](https://github.com/Freeesia/AIUM/issues). Do not include access tokens, credentials, or personal information in a public issue.
+## お問い合わせ
+
+プライバシーに関するお問い合わせは、[GitHub Issue](https://github.com/Freeesia/AIUM/issues)を作成してください。公開Issueには、アクセストークン、認証情報、個人情報を記載しないでください。
