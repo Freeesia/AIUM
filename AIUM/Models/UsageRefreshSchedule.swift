@@ -75,6 +75,17 @@ enum UsageRefreshSchedule {
         defaults.set(max(minimumAutomaticIntervalMinutes, interval), forKey: automaticIntervalStorageKey)
     }
 
+    static func scheduledIntervalMinutes(
+        automaticIntervalMinutes: Int? = nil,
+        defaults: UserDefaults = .standard
+    ) -> Int {
+        intervalMinutes(
+            for: refreshSetting(defaults: defaults),
+            automaticIntervalMinutes: automaticIntervalMinutes
+                ?? storedAutomaticIntervalMinutes(defaults: defaults)
+        )
+    }
+
     static func intervalMinutes(
         for setting: UsageRefreshSetting,
         automaticIntervalMinutes: Int

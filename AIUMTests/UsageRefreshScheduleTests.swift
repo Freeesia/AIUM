@@ -31,6 +31,44 @@ final class UsageRefreshScheduleTests: XCTestCase {
         )
     }
 
+    func testScheduledAutomaticIntervalUsesLatestCalculatedValue() throws {
+        let defaults = try makeDefaults()
+        defaults.set(UsageRefreshSetting.automatic.rawValue, forKey: UsageRefreshSetting.storageKey)
+        defaults.set(60, forKey: UsageRefreshSchedule.automaticIntervalStorageKey)
+
+        XCTAssertEqual(
+            UsageRefreshSchedule.scheduledIntervalMinutes(
+                automaticIntervalMinutes: 5,
+                defaults: defaults
+            ),
+            5
+        )
+    }
+
+    func testScheduledAutomaticIntervalFallsBackToStoredValue() throws {
+        let defaults = try makeDefaults()
+        defaults.set(UsageRefreshSetting.automatic.rawValue, forKey: UsageRefreshSetting.storageKey)
+        defaults.set(15, forKey: UsageRefreshSchedule.automaticIntervalStorageKey)
+
+        XCTAssertEqual(
+            UsageRefreshSchedule.scheduledIntervalMinutes(defaults: defaults),
+            15
+        )
+    }
+
+    func testScheduledFixedIntervalIgnoresCalculatedAutomaticValue() throws {
+        let defaults = try makeDefaults()
+        defaults.set(UsageRefreshSetting.thirtyMinutes.rawValue, forKey: UsageRefreshSetting.storageKey)
+
+        XCTAssertEqual(
+            UsageRefreshSchedule.scheduledIntervalMinutes(
+                automaticIntervalMinutes: 5,
+                defaults: defaults
+            ),
+            30
+        )
+    }
+
     func testAutomaticIntervalDefaultsToOneHourWithoutLargeIncrease() {
         let previous = [snapshot(used: 100, limit: 1_000)]
         let current = [snapshot(used: 140, limit: 1_000)]
@@ -105,5 +143,14 @@ final class UsageRefreshScheduleTests: XCTestCase {
             fetchedAt: Date(timeIntervalSince1970: 1_700_000_000),
             windowDurationMins: 300
         )
+    }
+
+    private func makeDefaults() throws -> UserDefaults {
+        let suiteName = "UsageRefreshScheduleTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        return defaults
     }
 }

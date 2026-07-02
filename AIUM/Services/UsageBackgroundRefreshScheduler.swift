@@ -28,17 +28,20 @@ final class UsageBackgroundRefreshScheduler {
         }
     }
 
-    func scheduleNextRefresh() {
+    func scheduleNextRefresh(automaticIntervalMinutes: Int? = nil) {
         guard isRegistered, !Self.isRunningTests else { return }
 
+        let intervalMinutes = UsageRefreshSchedule.scheduledIntervalMinutes(
+            automaticIntervalMinutes: automaticIntervalMinutes
+        )
         let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         request.earliestBeginDate = Date().addingTimeInterval(
-            TimeInterval(Self.currentIntervalMinutes() * 60)
+            TimeInterval(intervalMinutes * 60)
         )
 
         do {
             try BGTaskScheduler.shared.submit(request)
-            Self.logger.debug("Scheduled background refresh")
+            Self.logger.info("Scheduled background refresh in \(intervalMinutes) minutes")
         } catch {
             Self.logger.error("Failed to schedule background refresh: \(error.localizedDescription)")
         }
@@ -57,6 +60,13 @@ final class UsageBackgroundRefreshScheduler {
         let refreshTask = Task {
             let result = await UsageRefreshService().refreshUsage()
             let success = result.isSuccess && !Task.isCancelled
+            if !Task.isCancelled {
+                // Replace the fallback request with one based on the interval
+                // calculated from the usage data fetched by this run.
+                scheduleNextRefresh(
+                    automaticIntervalMinutes: result.automaticIntervalMinutes
+                )
+            }
             if let errorMessage = result.errorMessage {
                 Self.logger.error("Background usage refresh failed: \(errorMessage)")
             } else {
@@ -69,13 +79,6 @@ final class UsageBackgroundRefreshScheduler {
             Self.logger.error("Background usage refresh expired")
             refreshTask.cancel()
         }
-    }
-
-    private static func currentIntervalMinutes() -> Int {
-        UsageRefreshSchedule.intervalMinutes(
-            for: UsageRefreshSchedule.refreshSetting(),
-            automaticIntervalMinutes: UsageRefreshSchedule.storedAutomaticIntervalMinutes()
-        )
     }
 
     private static var isRunningTests: Bool {
