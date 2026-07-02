@@ -99,7 +99,7 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_ENTITLEMENTS: AIUM/AIUM.entitlements
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         DEVELOPMENT_ASSET_PATHS: ""
         ENABLE_PREVIEWS: "YES"
         GENERATE_INFOPLIST_FILE: "NO"
@@ -107,7 +107,7 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - "@executable_path/Frameworks"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium
         PRODUCT_NAME: $(TARGET_NAME)
         SWIFT_EMIT_LOC_STRINGS: "YES"
@@ -120,6 +120,9 @@ targets:
     type: app-extension
     platform: iOS
     deploymentTarget: "18.0"
+    configFiles:
+      Debug: Config/AIUM.xcconfig
+      Release: Config/AIUM.xcconfig
     sources:
       - path: AIUMWidget
       - path: AIUM/Models/UsageSnapshot.swift
@@ -129,14 +132,14 @@ targets:
       base:
         CODE_SIGN_ENTITLEMENTS: AIUMWidget/AIUMWidget.entitlements
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         GENERATE_INFOPLIST_FILE: "NO"
         INFOPLIST_FILE: AIUMWidget/Info.plist
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - "@executable_path/Frameworks"
           - "@executable_path/../../Frameworks"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.widget
         PRODUCT_NAME: $(TARGET_NAME)
         SKIP_INSTALL: "YES"
@@ -158,9 +161,9 @@ targets:
       base:
         BUNDLE_LOADER: $(TEST_HOST)
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         GENERATE_INFOPLIST_FILE: "YES"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.tests
         PRODUCT_NAME: $(TARGET_NAME)
         SWIFT_EMIT_LOC_STRINGS: "NO"

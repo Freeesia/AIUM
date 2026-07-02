@@ -1,0 +1,4 @@
+// Fallback version values for local Debug builds.
+// Overridden by Config/Version.generated.xcconfig when present (CI builds).
+AIUM_MARKETING_VERSION = 0.0.0
+AIUM_CURRENT_PROJECT_VERSION = 1
