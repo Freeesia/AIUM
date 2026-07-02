@@ -55,8 +55,6 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("OpenAI Codex")
-                } footer: {
-                    codexWarningFooter
                 }
 
                 // Refresh interval
@@ -238,13 +236,6 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Codex warning footer
-
-    private var codexWarningFooter: some View {
-        Text("⚠️ The OpenAI/Codex endpoints used by AIUM are not part of an officially published API specification and may change or stop working at any time.")
-            .font(.caption)
-            .foregroundStyle(.orange)
-    }
 }
 
 // MARK: - Preview
