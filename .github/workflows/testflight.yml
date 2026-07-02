@@ -53,7 +53,7 @@ jobs:
           mkdir -p Config
 
           MARKETING_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}"
-          BUILD_NUMBER=$(( GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT ))
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
 
           printf 'AIUM_MARKETING_VERSION = %s\nAIUM_CURRENT_PROJECT_VERSION = %s\n' \
             "${MARKETING_VERSION}" "${BUILD_NUMBER}" \
@@ -128,12 +128,12 @@ jobs:
             AIUM_PROVISIONING_PROFILE_SPECIFIER="AIUM App Store" \
             AIUM_WIDGET_PROVISIONING_PROFILE_SPECIFIER="AIUM Widget App Store" \
             OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
-            CURRENT_PROJECT_VERSION="$(( GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT ))" \
+            CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" \
             GITHUB_OAUTH_CLIENT_ID="$GITHUB_OAUTH_CLIENT_ID"
 
       - name: Upload to TestFlight
         run: |
-          echo "Uploading MARKETING_VERSION=${{ steps.gitversion.outputs.majorMinorPatch }} CURRENT_PROJECT_VERSION=$(( GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT ))"
+          echo "Uploading MARKETING_VERSION=${{ steps.gitversion.outputs.majorMinorPatch }} CURRENT_PROJECT_VERSION=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/AIUM.xcarchive" \
             -exportPath "$RUNNER_TEMP/TestFlightExport" \

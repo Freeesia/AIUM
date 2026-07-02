@@ -145,12 +145,12 @@ AIUM は、利用状況の表示に必要な情報を端末内に保存します
 
 | ビルド種別 | `MARKETING_VERSION` | `CURRENT_PROJECT_VERSION` |
 |---|---|---|
-| 通常 CI ビルド（`main` ブランチ等） | GitVersion の `MajorMinorPatch` | `GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT` |
+| 通常 CI ビルド（`main` ブランチ等） | GitVersion の `MajorMinorPatch` | `GITHUB_RUN_NUMBER.GITHUB_RUN_ATTEMPT` |
 | タグ付きリリース（`vX.Y.Z`） | タグのバージョン（例: `1.2.0`） | 同上 |
 | ローカル Debug ビルド | `0.0.0`（フォールバック） | `1`（フォールバック） |
 
 - `MARKETING_VERSION` は prerelease label を含まない `MajorMinorPatch` 形式です（例: `1.2.0`）。
-- `CURRENT_PROJECT_VERSION` は rerun 時も衝突しません（run attempt を加算するため）。
+- `CURRENT_PROJECT_VERSION` は rerun 時も衝突しません（run attempt が異なるため）。
 
 ### リリースタグの打ち方
 
