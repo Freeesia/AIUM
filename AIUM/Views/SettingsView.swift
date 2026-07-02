@@ -68,6 +68,19 @@ struct SettingsView: View {
                     Text("Refresh")
                 }
 
+                Section("About") {
+                    externalLinkRow(
+                        title: "Privacy Policy",
+                        systemImage: "hand.raised",
+                        url: AppLinks.privacyPolicy
+                    )
+                    externalLinkRow(
+                        title: "Support",
+                        systemImage: "questionmark.circle",
+                        url: AppLinks.support
+                    )
+                }
+
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -234,6 +247,23 @@ struct SettingsView: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: 100)
         }
+    }
+
+    private func externalLinkRow(title: String, systemImage: String, url: URL) -> some View {
+        Button {
+            browserDestination = BrowserDestination(url: url)
+        } label: {
+            HStack {
+                Label(title, systemImage: systemImage)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens in the in-app browser")
     }
 
 }
