@@ -35,10 +35,6 @@ Include the AIUM version, iOS version, affected provider, and the steps that rep
 
 App Group configuration is required only for development builds. The AIUM app and AIUMWidget targets must both use `group.com.studiofreesia.aium`. A missing or mismatched entitlement prevents the widget from reading the app's cached data.
 
-### Demo Mode
-
-AIUM does not currently provide a user-selectable Demo Mode. Provider usage requires signing in to that provider. App Review access, when applicable, is documented separately in App Store Connect review notes.
-
 ## Privacy
 
 See the [AIUM Privacy Policy]({% link privacy/index.md %}) for details about local storage, service communication, and deletion.

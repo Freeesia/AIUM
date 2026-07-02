@@ -15,7 +15,7 @@ AIUM handles only the information needed to authenticate with the services you c
 - Authentication credentials, including access and refresh tokens
 - Account identifiers and display names returned by GitHub or OpenAI
 - Usage, allowance, and rate-limit information returned by GitHub or OpenAI
-- App preferences, including refresh settings and manually entered usage limits
+- App preferences, including refresh settings, manually entered usage limits, and the Demo Mode setting
 
 AIUM does not include advertising or analytics SDKs and does not collect location, contacts, photos, advertising identifiers, or diagnostic data for the developer.
 
