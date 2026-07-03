@@ -1,10 +1,12 @@
 ---
 layout: page
 title: プライバシーポリシー
+description: AIUMにおける情報の取り扱いについて説明します。
+lang: ja
 permalink: /privacy/
+alternate_url: /privacy/en/
+alternate_label: English
 ---
-
-[English version]({% link privacy/index.en.md %})
 
 施行日: 2026年7月3日
 

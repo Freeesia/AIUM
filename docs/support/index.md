@@ -1,40 +1,44 @@
 ---
 layout: page
-title: Support
+title: サポート
+description: AIUMの利用に関するサポート情報です。
+lang: ja
 permalink: /support/
+alternate_url: /support/en/
+alternate_label: English
 ---
 
-For help with AIUM, search the [existing GitHub issues](https://github.com/Freeesia/AIUM/issues) or [open a new issue](https://github.com/Freeesia/AIUM/issues/new/choose).
+AIUMに関するサポートが必要な場合は、[既存のGitHub Issue](https://github.com/Freeesia/AIUM/issues)を検索するか、[新しいIssueを作成](https://github.com/Freeesia/AIUM/issues/new/choose)してください。
 
-GitHub Issues are public. Do not post access tokens, authorization codes, credentials, account identifiers, screenshots containing private information, or other personal information.
+GitHub Issueは公開されます。アクセストークン、認証コード、認証情報、アカウント識別子、個人情報が含まれるスクリーンショット、その他の個人情報を投稿しないでください。
 
-## Before opening an issue
+## Issueを作成する前に
 
-Include the AIUM version, iOS version, affected provider, and the steps that reproduce the problem. Remove private information from screenshots and logs.
+AIUMのバージョン、iOSのバージョン、問題が発生したサービス、問題を再現する手順を記載してください。スクリーンショットやログから個人情報を削除してください。
 
-### GitHub sign-in
+### GitHubへのサインイン
 
-- Confirm the GitHub device-code page completed successfully.
-- If the session expired, sign out in AIUM Settings and sign in again.
-- AIUM can only display usage data that the GitHub API makes available for your account and plan.
+- GitHubのデバイスコード認証が完了していることを確認してください。
+- セッションの有効期限が切れた場合は、AIUMの設定画面でサインアウトしてから、再度サインインしてください。
+- AIUMで表示できるのは、GitHub APIが対象のアカウントおよびプランに対して提供する利用状況のみです。
 
-### Codex sign-in
+### Codexへのサインイン
 
-- Confirm the Codex device-code page completed successfully.
-- If the session expired, sign out in AIUM Settings and sign in again.
-- Codex usage availability and response formats can change with the service.
+- Codexのデバイスコード認証が完了していることを確認してください。
+- セッションの有効期限が切れた場合は、AIUMの設定画面でサインアウトしてから、再度サインインしてください。
+- Codexの利用状況データおよびレスポンス形式は、サービス側の変更によって利用できなくなる場合があります。
 
-### Widget display
+### ウィジェットの表示
 
-- Open AIUM and refresh usage before adding or troubleshooting the widget.
-- Confirm the main app shows current data.
-- Remove and add the widget again if it remains stale after the app refreshes.
-- Widget refresh timing is controlled by iOS and may not be immediate.
+- ウィジェットを追加または調査する前に、AIUMを開いて利用状況を更新してください。
+- メインアプリに最新のデータが表示されていることを確認してください。
+- アプリで更新した後も古い表示が残る場合は、ウィジェットを一度削除してから再度追加してください。
+- ウィジェットの更新タイミングはiOSが制御するため、すぐに反映されない場合があります。
 
-### App Group configuration
+### App Groupの設定
 
-App Group configuration is required only for development builds. The AIUM app and AIUMWidget targets must both use `group.com.studiofreesia.aium`. A missing or mismatched entitlement prevents the widget from reading the app's cached data.
+App Groupの設定が必要なのは開発用ビルドのみです。AIUMターゲットとAIUMWidgetターゲットの両方で`group.com.studiofreesia.aium`を使用する必要があります。entitlementが未設定または一致していない場合、ウィジェットはアプリのキャッシュを読み取れません。
 
-## Privacy
+## プライバシー
 
-See the [AIUM Privacy Policy]({% link privacy/index.md %}) for details about local storage, service communication, and deletion.
+端末内の保存データ、外部サービスとの通信、データの削除については、[AIUMのプライバシーポリシー]({% link privacy/index.md %})を確認してください。

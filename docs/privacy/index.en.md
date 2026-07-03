@@ -1,10 +1,12 @@
 ---
 layout: page
 title: Privacy Policy
+description: Learn how AIUM handles information.
+lang: en
 permalink: /privacy/en/
+alternate_url: /privacy/
+alternate_label: 日本語
 ---
-
-[日本語版]({% link privacy/index.md %})
 
 Effective date: July 3, 2026
 

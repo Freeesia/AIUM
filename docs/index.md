@@ -1,11 +1,15 @@
 ---
 layout: home
 title: AIUM
+description: GitHub CopilotとOpenAI Codexの利用状況をひとつの画面で確認できます。
+lang: ja
 permalink: /
+alternate_url: /en/
+alternate_label: English
 ---
 
-AIUM is an iOS app and widget that show your GitHub Copilot and OpenAI Codex usage in one place.
+AIUMは、GitHub CopilotとOpenAI Codexの利用状況をひとつの画面で確認できるiOSアプリおよびウィジェットです。
 
-- [Privacy Policy]({% link privacy/index.md %})
-- [Support]({% link support/index.md %})
-- [Source code](https://github.com/Freeesia/AIUM)
+- [プライバシーポリシー]({% link privacy/index.md %})
+- [サポート]({% link support/index.md %})
+- [ソースコード](https://github.com/Freeesia/AIUM)
