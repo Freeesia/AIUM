@@ -6,7 +6,8 @@ This document describes the GitHub and Codex API endpoints used by AIUM.
 
 ## GitHub APIs
 
-All GitHub API requests use the `Authorization: ****** header and target `https://api.github.com`.
+All GitHub API requests use the `Authorization: Bearer ******` header and target `https://api.github.com`.
+Usage requests send `X-GitHub-Api-Version: 2026-03-10` because the billing usage endpoints are available in the current GitHub REST API version.
 
 ### Authenticated User
 
@@ -30,39 +31,36 @@ GET /users/{username}/settings/billing/ai_credit/usage
 Returns usage for the newer "AI Credits" billing model used by GitHub Copilot.
 
 **Response fields used:**
-- `used_in_current_period` — credits consumed so far this month
-- `total_allowance` — total monthly credit allowance (may be null; use manual override in Settings)
-- `current_period_end` — ISO 8601 timestamp for when the period resets
+- `usageItems[].grossQuantity` — credits consumed so far this month
+- `timePeriod` — period metadata used to estimate the reset time
 
-> **Note:** This endpoint may require a specific Copilot plan tier and may not be available to all users.
+> **Note:** User-level billing endpoints only include usage billed directly to an individual user's personal account. AIUM authenticates with a GitHub App user access token whose account permission includes `Plan: Read-only`.
 
-### GitHub Copilot Legacy Premium Requests
+### GitHub Copilot Premium Requests
 
 ```
 GET /users/{username}/settings/billing/premium_request/usage
 ```
 
-Returns usage for the older "Premium Requests" billing model.
+Returns GitHub Copilot Premium Request usage.
 
 **Response fields used:**
-- `used_premium_requests` — requests used so far
-- `included_premium_requests` — included monthly allowance (may be null; use manual override)
-- `last_updated_at` — when the usage data was last updated
+- `usageItems[].grossQuantity` — requests used so far
+- `timePeriod` — period/update metadata
 
-> **Note:** This endpoint may be deprecated in the future as GitHub transitions to the AI Credits model.
+### Authentication: GitHub App Device Flow
 
-### Authentication: GitHub Device Flow
+AIUM uses the [GitHub App Device Flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app#using-the-device-flow-to-generate-a-user-access-token) to avoid requiring a custom URL callback.
 
-AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow) to avoid requiring a custom URL callback.
-
-1. App POSTs to `https://github.com/login/device/code` with `client_id` and `scope`
+1. App POSTs to `https://github.com/login/device/code` with the GitHub App `client_id`
 2. User visits `verification_uri` and enters `user_code`
 3. App polls `https://github.com/login/oauth/access_token` with `device_code`
-4. Access token is stored in the Keychain
+4. User access token and refresh token are stored in the Keychain
+5. The user access token is refreshed before expiration
 
-**Required scopes:** `read:user`, `read:org`
+GitHub App user access tokens do not use OAuth scopes. Their access is limited by the permissions shared by the app and user. AIUM requires the GitHub App account permission `Plan: Read-only`.
 
-**Setup:** Create an OAuth App at https://github.com/settings/developers and enable device flow under the app settings. Set the Client ID through the AIUM target build setting `GITHUB_OAUTH_CLIENT_ID`; `AIUM/Info.plist` exposes it to the app as `GitHubOAuthClientID`. Local builds should put the real value in ignored `Config/AIUM.local.xcconfig`; leave the tracked placeholder `YOUR_GITHUB_CLIENT_ID` in place to disable GitHub login.
+**Setup:** Create a GitHub App, enable Device Flow, and grant `Plan: Read-only`. Set its Client ID through the AIUM target build setting `GITHUB_OAUTH_CLIENT_ID`; `AIUM/Info.plist` exposes it to the app as `GitHubOAuthClientID`. Local builds should put the real value in ignored `Config/AIUM.local.xcconfig`; leave the tracked placeholder `YOUR_GITHUB_CLIENT_ID` in place to disable GitHub login.
 
 **Failure diagnostics:** AIUM preserves GitHub usage failures as plan-specific error snapshots. HTTP failures include the status code and response body preview. Decode failures include the endpoint name so plan unsupported cases, endpoint changes, and response-shape changes can be distinguished in the UI.
 
@@ -70,11 +68,9 @@ AIUM uses the [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/bu
 
 ## OpenAI / Codex APIs
 
-> ⚠️ **WARNING: The Codex API details below describe PRIVATE, UNDOCUMENTED endpoints.**
+> **Note:** The Codex API details below describe endpoints that are not part of an officially published API specification.
 >
-> - These endpoints are not officially supported by OpenAI.
-> - They may change or be removed at any time without notice.
-> - They should NOT be used in a public/commercial product.
+> - These endpoints may change or be removed at any time without notice.
 > - All Codex API details are isolated in `PrivateCodexUsageProvider.swift` and `CodexAuthProvider.swift` so they can be replaced when official APIs are released.
 
 ### Authentication: Codex Device Code Flow
@@ -167,11 +163,11 @@ Legacy snake_case windows are still accepted:
 **Normalization logic:**
 - If `used` is present, use it directly.
 - Else if `limit` and `remaining` are present, `used = limit - remaining`.
-- Else if `usedPercent` / `used_percent` is present with a limit, `used = limit * usedPercent / 100`.
+- Else if `usedPercent` / `used_percent` (0...100) is present with a limit, `used = limit * usedPercent / 100`.
 - Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
 - `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
 
-**Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so private API changes are visible in the app UI.
+**Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so API changes are visible in the app UI.
 
 ---
 

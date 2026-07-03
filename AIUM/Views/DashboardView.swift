@@ -10,8 +10,13 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Demo mode banner
+                    if viewModel.isDemoMode {
+                        demoBanner
+                    }
+
                     // GitHub Copilot section
-                    sectionHeader("GitHub Copilot", systemImage: "person.crop.circle")
+                    sectionHeader(provider: .githubCopilot)
                     if githubAuthenticated {
                         if viewModel.githubSnapshots.isEmpty {
                             placeholderCard(provider: .githubCopilot)
@@ -25,7 +30,7 @@ struct DashboardView: View {
                     }
 
                     // OpenAI Codex section
-                    sectionHeader("OpenAI Codex", systemImage: "cpu.fill")
+                    sectionHeader(provider: .codex)
                     if codexAuthenticated {
                         if viewModel.codexSnapshots.isEmpty {
                             placeholderCard(provider: .codex)
@@ -74,13 +79,26 @@ struct DashboardView: View {
             }
             .onChange(of: showSettings) { _, isPresented in
                 guard !isPresented else { return }
+                viewModel.reloadDemoMode()
                 Task {
                     await updateAuthStatus()
+                    viewModel.restartPeriodicRefresh()
                     viewModel.refresh()
                 }
             }
             .task {
+                viewModel.reloadDemoMode()
                 await updateAuthStatus()
+                viewModel.refreshIfNeeded()
+                viewModel.startPeriodicRefresh()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification
+                )
+            ) { _ in
+                viewModel.reloadDemoMode()
+                Task { await updateAuthStatus() }
             }
             .refreshable {
                 viewModel.refresh()
@@ -96,9 +114,27 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func sectionHeader(_ title: LocalizedStringKey, systemImage: String) -> some View {
+    private var demoBanner: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.blue)
+            Text("Demo Mode — sample data is shown. No account is required.")
+                .font(.caption)
+                .foregroundStyle(.blue)
+            Spacer()
+        }
+        .padding()
+        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private func sectionHeader(provider: Provider) -> some View {
         HStack {
-            Label(title, systemImage: systemImage)
+            Label {
+                Text(provider.displayName)
+            } icon: {
+                ProviderIconView(provider: provider, size: 22)
+            }
                 .font(.title3.bold())
             Spacer()
         }

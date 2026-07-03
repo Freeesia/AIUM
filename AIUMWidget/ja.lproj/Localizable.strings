@@ -1,6 +1,8 @@
 /* Widget configuration */
 "AIUM — Usage" = "AIUM — 利用状況";
 "Shows your primary usage at a glance." = "主な利用状況をひと目で確認できます。";
+"AIUM — Lock Screen Usage" = "AIUM — ロック画面の利用状況";
+"Shows the highest usage for your selected provider." = "選択したプロバイダーの最大利用状況を表示します。";
 "AIUM — Copilot & Codex" = "AIUM — CopilotとCodex";
 "Shows GitHub Copilot and Codex usage side by side." = "GitHub CopilotとCodexの利用状況を並べて表示します。";
 
@@ -8,6 +10,26 @@
 "used" = "使用済み";
 "Not signed in" = "サインインしていません";
 "%lld%% used" = "%lld%%使用済み";
+"Usage unavailable" = "利用状況を取得できません";
+"Demo: %lld percent used" = "デモ：%lldパーセント使用済み";
+"%lld percent used" = "%lldパーセント使用済み";
+"Resets in %@" = "%@後にリセット";
+"At %@" = "時刻：%@";
+"%@ · %@" = "%@ · %@";
+"now" = "今";
+"%lldd %lldh" = "%lld日 %lld時間";
+"%lldd" = "%lld日";
+"%lldh %lldm" = "%lld時間 %lld分";
+"%lldh" = "%lld時間";
+"%lldm" = "%lld分";
+
+/* Widget configuration intent */
+"Provider" = "プロバイダー";
+"GitHub Copilot" = "GitHub Copilot";
+"OpenAI Codex" = "OpenAI Codex";
+"Usage Provider" = "利用状況プロバイダー";
+"Choose the provider whose highest usage is shown." = "最大利用状況を表示するプロバイダーを選択します。";
+"Provider: ${provider}" = "プロバイダー：${provider}";
 
 /* Units */
 "AI credits" = "AIクレジット";

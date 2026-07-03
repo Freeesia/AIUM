@@ -37,44 +37,64 @@ final class GitHubParsingTests: XCTestCase {
 
     // MARK: - GitHubAICreditUsageResponse
 
-    func testDecodeAICreditUsage() throws {
+    func testDecodeAICreditUsageReport() throws {
         let json = """
         {
-          "used_in_current_period": 250.5,
-          "total_allowance": 1000.0,
-          "current_period_end": "2024-02-01T00:00:00Z"
+          "timePeriod": { "year": 2026, "month": 6 },
+          "user": "octocat",
+          "usageItems": [
+            {
+              "product": "Copilot",
+              "sku": "copilot_ai_credit",
+              "unitType": "credits",
+              "grossQuantity": 125.5,
+              "netQuantity": 100.0
+            },
+            {
+              "product": "Copilot",
+              "sku": "copilot_ai_credit",
+              "unitType": "credits",
+              "grossQuantity": 24.5,
+              "netQuantity": 20.0
+            }
+          ]
         }
         """.data(using: .utf8)!
 
         let response = try decoder.decode(GitHubAICreditUsageResponse.self, from: json)
-        XCTAssertEqual(try XCTUnwrap(response.usedInCurrentPeriod), 250.5, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(response.totalAllowance), 1000.0, accuracy: 0.001)
-        XCTAssertNotNil(response.currentPeriodEnd)
+        XCTAssertEqual(response.usedQuantity, 150.0, accuracy: 0.001)
+        XCTAssertEqual(response.usageItems.count, 2)
+        XCTAssertNotNil(response.timePeriod?.periodEndDate())
     }
 
-    func testDecodeAICreditUsageAllNulls() throws {
+    func testDecodeAICreditUsageWithoutItemsFails() throws {
         let json = "{}".data(using: .utf8)!
-        let response = try decoder.decode(GitHubAICreditUsageResponse.self, from: json)
-        XCTAssertNil(response.usedInCurrentPeriod)
-        XCTAssertNil(response.totalAllowance)
-        XCTAssertNil(response.currentPeriodEnd)
+        XCTAssertThrowsError(try decoder.decode(GitHubAICreditUsageResponse.self, from: json))
     }
 
     // MARK: - GitHubPremiumRequestUsageResponse
 
-    func testDecodePremiumRequestUsage() throws {
+    func testDecodePremiumRequestUsageReport() throws {
         let json = """
         {
-          "used_premium_requests": 5,
-          "included_premium_requests": 300,
-          "last_updated_at": "2024-01-15T12:00:00Z"
+          "timePeriod": { "year": 2026, "month": 6 },
+          "user": "octocat",
+          "usageItems": [
+            {
+              "product": "Copilot",
+              "sku": "copilot_premium_request",
+              "unitType": "requests",
+              "grossQuantity": 5,
+              "netQuantity": 5
+            }
+          ]
         }
         """.data(using: .utf8)!
 
         let response = try decoder.decode(GitHubPremiumRequestUsageResponse.self, from: json)
-        XCTAssertEqual(try XCTUnwrap(response.usedPremiumRequests), 5, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(response.includedPremiumRequests), 300, accuracy: 0.001)
-        XCTAssertNotNil(response.lastUpdatedAt)
+        XCTAssertEqual(response.usedQuantity, 5, accuracy: 0.001)
+        XCTAssertEqual(response.usageItems.count, 1)
+        XCTAssertNotNil(response.timePeriod?.periodEndDate())
     }
 
     // MARK: - Normalization tests (using GitHubUsageProvider via mock)
@@ -146,6 +166,65 @@ final class GitHubParsingTests: XCTestCase {
         }
     }
 
+    func testGitHubAppDeviceFlowDoesNotRequestOAuthScopes() async throws {
+        MockURLProtocol.requestHandler = { request in
+            let body = try self.requestBodyString(request)
+            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
+            XCTAssertFalse(body.contains("scope="))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"device_code":"device","user_code":"CODE-1234","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" }
+        )
+
+        let response = try await provider.startDeviceFlow()
+        XCTAssertEqual(response.userCode, "CODE-1234")
+    }
+
+    func testExpiredGitHubAppTokenIsUsableWithValidRefreshToken() {
+        let bundle = GitHubTokenBundle(
+            accessToken: "ghu_expired",
+            accessTokenExpiresAt: Date(timeIntervalSince1970: 100),
+            refreshToken: "ghr_valid",
+            refreshTokenExpiresAt: Date(timeIntervalSince1970: 300)
+        )
+
+        XCTAssertTrue(bundle.hasUsableCredentials(now: Date(timeIntervalSince1970: 200)))
+        XCTAssertFalse(bundle.hasUsableCredentials(now: Date(timeIntervalSince1970: 400)))
+    }
+
+    func testAuthProviderReadsTokenSavedByAnotherInstance() async throws {
+        let store = InMemoryGitHubTokenStore()
+        let dashboardProvider = GitHubAuthProvider(tokenStore: store)
+
+        let initiallyAuthenticated = await dashboardProvider.isAuthenticated
+        XCTAssertFalse(initiallyAuthenticated)
+
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_access",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_refresh",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        let authenticatedAfterSave = await dashboardProvider.isAuthenticated
+        let accessToken = try await dashboardProvider.validAccessToken()
+        XCTAssertTrue(authenticatedAfterSave)
+        XCTAssertEqual(accessToken, "ghu_access")
+    }
+
     // MARK: - API errors
 
     func testAPIClientClassifiesAuthError() async throws {
@@ -190,15 +269,44 @@ final class GitHubParsingTests: XCTestCase {
         }
     }
 
+    func testAPIClientUsesCurrentBillingAPIVersionAndBearerToken() async throws {
+        MockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/vnd.github+json")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-GitHub-Api-Version"), "2026-03-10")
+            XCTAssertEqual(request.url?.path, "/users/octocat/settings/billing/ai_credit/usage")
+
+            let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
+            let queryNames = Set((components.queryItems ?? []).map(\.name))
+            XCTAssertTrue(queryNames.contains("year"))
+            XCTAssertTrue(queryNames.contains("month"))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let body = #"{"usageItems":[{"grossQuantity":42}]}"#
+            return (response, Data(body.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let client = GitHubAPIClient(session: URLSession(configuration: configuration))
+
+        let response = try await client.fetchAICreditUsage(username: "octocat", token: "token")
+        XCTAssertEqual(response.usedQuantity, 42, accuracy: 0.001)
+    }
+
     // MARK: - Partial usage failures
 
     func testUsageProviderReturnsSuccessAndPlanSpecificErrorForPartialFailure() async throws {
         let auth = FakeGitHubAuthProvider(token: "token")
         let api = FakeGitHubAPIClient(
             aiResponse: GitHubAICreditUsageResponse(
-                usedInCurrentPeriod: 20,
-                totalAllowance: 100,
-                currentPeriodEnd: nil
+                timePeriod: nil,
+                usageItems: [.mock(quantity: 20)]
             ),
             premiumError: GitHubAPIError.httpError(statusCode: 404, body: #"{"message":"Not Found"}"#)
         )
@@ -212,9 +320,14 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(ai.used, 20, accuracy: 0.001)
 
         let premium = try XCTUnwrap(snapshots.first { $0.planKind == .premiumRequests })
-        XCTAssertEqual(premium.source, "GitHub Billing API (legacy)")
-        XCTAssertNotNil(premium.errorMessage)
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("404"))
+        XCTAssertEqual(premium.source, "GitHub Billing API")
+        let errorMessage = try XCTUnwrap(premium.errorMessage)
+        XCTAssertTrue(errorMessage.contains("404"))
+        XCTAssertTrue(
+            errorMessage.contains(
+                String(localized: "This account does not expose personally billed Copilot usage to the GitHub App.")
+            )
+        )
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {
@@ -247,6 +360,26 @@ final class GitHubParsingTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         return GitHubAPIClient(session: URLSession(configuration: configuration))
     }
+
+    private func requestBodyString(_ request: URLRequest) throws -> String {
+        if let body = request.httpBody {
+            return try XCTUnwrap(String(data: body, encoding: .utf8))
+        }
+
+        let stream = try XCTUnwrap(request.httpBodyStream)
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 1024)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            guard count >= 0 else { throw try XCTUnwrap(stream.streamError) }
+            if count == 0 { break }
+            data.append(buffer, count: count)
+        }
+        return try XCTUnwrap(String(data: data, encoding: .utf8))
+    }
 }
 
 private actor FakeGitHubAuthProvider: GitHubAuthProviding {
@@ -256,8 +389,8 @@ private actor FakeGitHubAuthProvider: GitHubAuthProviding {
         self.token = token
     }
 
-    var accessToken: String? {
-        get async { token }
+    func validAccessToken() async throws -> String? {
+        token
     }
 
     var isAuthenticated: Bool {
@@ -293,19 +426,23 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
     func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
         if let aiError { throw aiError }
         return aiResponse ?? GitHubAICreditUsageResponse(
-            usedInCurrentPeriod: 10,
-            totalAllowance: 100,
-            currentPeriodEnd: nil
+            timePeriod: nil,
+            usageItems: [.mock(quantity: 10)]
         )
     }
 
     func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
         if let premiumError { throw premiumError }
         return premiumResponse ?? GitHubPremiumRequestUsageResponse(
-            usedPremiumRequests: 5,
-            includedPremiumRequests: 50,
-            lastUpdatedAt: nil
+            timePeriod: nil,
+            usageItems: [.mock(quantity: 5)]
         )
+    }
+}
+
+private extension GitHubBillingUsageItem {
+    static func mock(quantity: Double) -> GitHubBillingUsageItem {
+        GitHubBillingUsageItem(grossQuantity: quantity)
     }
 }
 
@@ -337,6 +474,23 @@ private final class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private final class InMemoryGitHubTokenStore: GitHubTokenStoring, @unchecked Sendable {
+    private let lock = NSLock()
+    private var bundle: GitHubTokenBundle?
+
+    func load() throws -> GitHubTokenBundle? {
+        lock.withLock { bundle }
+    }
+
+    func save(_ bundle: GitHubTokenBundle) throws {
+        lock.withLock { self.bundle = bundle }
+    }
+
+    func delete() {
+        lock.withLock { bundle = nil }
+    }
 }
 
 private struct DecodingFailure: LocalizedError {

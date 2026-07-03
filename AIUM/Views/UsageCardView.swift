@@ -1,5 +1,30 @@
 import SwiftUI
 
+enum UsageRelativeTimeText {
+    static func reset(at resetAt: Date, relativeTo referenceDate: Date, locale: Locale = .autoupdatingCurrent) -> String {
+        let interval = resetAt.timeIntervalSince(referenceDate)
+        let roundedMinutes = interval >= 0
+            ? ceil(interval / 60)
+            : floor(interval / 60)
+        let roundedDate = referenceDate.addingTimeInterval(roundedMinutes * 60)
+        return format(roundedDate, relativeTo: referenceDate, locale: locale)
+    }
+
+    static func fetched(at fetchedAt: Date, relativeTo referenceDate: Date, locale: Locale = .autoupdatingCurrent) -> String {
+        let elapsedMinutes = max(0, floor(referenceDate.timeIntervalSince(fetchedAt) / 60))
+        let roundedDate = referenceDate.addingTimeInterval(-elapsedMinutes * 60)
+        return format(roundedDate, relativeTo: referenceDate, locale: locale)
+    }
+
+    private static func format(_ date: Date, relativeTo referenceDate: Date, locale: Locale) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
+        formatter.unitsStyle = .abbreviated
+        formatter.dateTimeStyle = date == referenceDate ? .named : .numeric
+        return formatter.localizedString(for: date, relativeTo: referenceDate)
+    }
+}
+
 struct UsageCardView: View {
     let snapshot: UsageSnapshot
 
@@ -10,14 +35,14 @@ struct UsageCardView: View {
         return .blue
     }
 
-    private var resetText: String {
-        guard let resetAt = snapshot.resetAt else { return "—" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: resetAt, relativeTo: Date())
+    var body: some View {
+        TimelineView(.everyMinute) { context in
+            cardContent(relativeTo: context.date)
+        }
     }
 
-    var body: some View {
+    @ViewBuilder
+    private func cardContent(relativeTo referenceDate: Date) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
@@ -34,7 +59,7 @@ struct UsageCardView: View {
                         .foregroundStyle(.tertiary)
                 }
                 Spacer()
-                if snapshot.isStale {
+                if referenceDate.timeIntervalSince(snapshot.fetchedAt) > 3600 {
                     Image(systemName: "clock.badge.exclamationmark")
                         .foregroundStyle(.orange)
                         .help("Data may be stale")
@@ -80,11 +105,19 @@ struct UsageCardView: View {
 
             // Footer
             HStack {
-                Label(resetText, systemImage: "arrow.clockwise")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Label {
+                    if let resetAt = snapshot.resetAt {
+                        Text(UsageRelativeTimeText.reset(at: resetAt, relativeTo: referenceDate))
+                    } else {
+                        Text(verbatim: "—")
+                    }
+                } icon: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
                 Spacer()
-                Text(fetchedAtText)
+                Text("Updated \(UsageRelativeTimeText.fetched(at: snapshot.fetchedAt, relativeTo: referenceDate))")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -109,15 +142,6 @@ struct UsageCardView: View {
             case .custom: return "Custom"
             }
         }
-    }
-
-    private var fetchedAtText: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return String(
-            format: String(localized: "Updated %@"),
-            formatter.localizedString(for: snapshot.fetchedAt, relativeTo: Date())
-        )
     }
 
     private func formatCount(_ value: Double) -> String {

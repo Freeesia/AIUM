@@ -68,6 +68,9 @@ AuthKey_*.p8
 Config/*.local.xcconfig
 buildServer.json
 
+# Generated version file (produced by CI from GitVersion)
+Config/Version.generated.xcconfig
+
 # Archive
 *.xcarchive/
 

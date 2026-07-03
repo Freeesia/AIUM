@@ -6,7 +6,7 @@ options:
   createIntermediateGroups: true
   developmentLanguage: en
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
 configs:
   Debug: debug
   Release: release
@@ -55,7 +55,7 @@ settings:
     GCC_WARN_UNINITIALIZED_AUTOS: YES_AGGRESSIVE
     GCC_WARN_UNUSED_FUNCTION: "YES"
     GCC_WARN_UNUSED_VARIABLE: "YES"
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
     MTL_FAST_MATH: "YES"
     SDKROOT: iphoneos
     STRING_CATALOG_GENERATE_SYMBOLS: "YES"
@@ -84,12 +84,13 @@ targets:
   AIUM:
     type: application
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     configFiles:
       Debug: Config/AIUM.xcconfig
       Release: Config/AIUM.xcconfig
     sources:
       - path: AIUM
+      - path: Shared
     dependencies:
       - target: AIUMWidget
     settings:
@@ -98,7 +99,7 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_ENTITLEMENTS: AIUM/AIUM.entitlements
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         DEVELOPMENT_ASSET_PATHS: ""
         ENABLE_PREVIEWS: "YES"
         GENERATE_INFOPLIST_FILE: "NO"
@@ -106,7 +107,7 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - "@executable_path/Frameworks"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium
         PRODUCT_NAME: $(TARGET_NAME)
         SWIFT_EMIT_LOC_STRINGS: "YES"
@@ -118,23 +119,27 @@ targets:
   AIUMWidget:
     type: app-extension
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
+    configFiles:
+      Debug: Config/AIUM.xcconfig
+      Release: Config/AIUM.xcconfig
     sources:
       - path: AIUMWidget
       - path: AIUM/Models/UsageSnapshot.swift
       - path: AIUM/Storage/UsageStore.swift
+      - path: Shared
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: AIUMWidget/AIUMWidget.entitlements
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         GENERATE_INFOPLIST_FILE: "NO"
         INFOPLIST_FILE: AIUMWidget/Info.plist
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - "@executable_path/Frameworks"
           - "@executable_path/../../Frameworks"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.widget
         PRODUCT_NAME: $(TARGET_NAME)
         SKIP_INSTALL: "YES"
@@ -147,7 +152,7 @@ targets:
   AIUMTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: AIUMTests
     dependencies:
@@ -156,9 +161,9 @@ targets:
       base:
         BUNDLE_LOADER: $(TEST_HOST)
         CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
         GENERATE_INFOPLIST_FILE: "YES"
-        MARKETING_VERSION: "0.0.0"
+        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
         PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.tests
         PRODUCT_NAME: $(TARGET_NAME)
         SWIFT_EMIT_LOC_STRINGS: "NO"

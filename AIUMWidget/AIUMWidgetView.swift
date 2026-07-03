@@ -1,6 +1,25 @@
 import WidgetKit
 import SwiftUI
 
+// MARK: - Configurable Widget View
+
+struct AIUMConfigurableWidgetView: View {
+    @Environment(\.widgetFamily) private var widgetFamily
+    var entry: AIUMWidgetEntry
+
+    @ViewBuilder
+    var body: some View {
+        switch widgetFamily {
+        case .accessoryCircular:
+            AIUMAccessoryCircularView(entry: entry)
+        case .accessoryRectangular:
+            AIUMAccessoryRectangularView(entry: entry)
+        default:
+            AIUMSmallWidgetView(entry: entry)
+        }
+    }
+}
+
 // MARK: - Small Widget View
 
 struct AIUMSmallWidgetView: View {
@@ -23,7 +42,14 @@ struct AIUMSmallWidgetView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
-                if snapshot.isStale {
+                if snapshot.source == "demo" {
+                    Text(verbatim: "DEMO")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.blue)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
+                } else if snapshot.isStale {
                     Image(systemName: "clock.badge.exclamationmark")
                         .font(.caption2)
                         .foregroundStyle(.orange)
@@ -62,16 +88,7 @@ struct AIUMSmallWidgetView: View {
             Spacer(minLength: 0)
 
             if let resetAt = snapshot.resetAt {
-                Label {
-                    Text(resetAt, style: .relative)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } icon: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                resetInfo(resetAt: resetAt, style: .compact)
             }
         }
         .padding(12)
@@ -103,28 +120,45 @@ struct AIUMMediumWidgetView: View {
     private var codexSnapshot: UsageSnapshot? {
         entry.snapshots.first { $0.provider == .codex }
     }
+    private var isDemoData: Bool {
+        entry.snapshots.contains { $0.source == "demo" }
+    }
 
     var body: some View {
-        HStack(spacing: 0) {
-            providerPane(
-                provider: .githubCopilot,
-                snapshot: githubSnapshot,
-                icon: "person.crop.circle"
-            )
-            Divider()
-            providerPane(
-                provider: .codex,
-                snapshot: codexSnapshot,
-                icon: "cpu.fill"
-            )
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 0) {
+                providerPane(
+                    provider: .githubCopilot,
+                    snapshot: githubSnapshot
+                )
+                Divider()
+                providerPane(
+                    provider: .codex,
+                    snapshot: codexSnapshot
+                )
+            }
+            .padding(12)
+
+            if isDemoData {
+                Text(verbatim: "DEMO")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.blue)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 3))
+                    .padding(6)
+            }
         }
-        .padding(12)
     }
 
     @ViewBuilder
-    private func providerPane(provider: Provider, snapshot: UsageSnapshot?, icon: String) -> some View {
+    private func providerPane(provider: Provider, snapshot: UsageSnapshot?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(provider.displayName, systemImage: icon)
+            Label {
+                Text(provider.displayName)
+            } icon: {
+                ProviderIconView(provider: provider, size: 28)
+            }
                 .font(.caption2.bold())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -152,15 +186,7 @@ struct AIUMMediumWidgetView: View {
                         .foregroundStyle(.secondary)
 
                     if let resetAt = snapshot.resetAt {
-                        Label {
-                            Text(resetAt, style: .relative)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        } icon: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.caption2)
-                        }
-                        .foregroundStyle(.secondary)
+                        resetInfo(resetAt: resetAt, style: .stacked)
                     }
                 }
             } else {
@@ -186,16 +212,64 @@ struct AIUMAccessoryCircularView: View {
 
     var body: some View {
         if let snapshot = entry.displaySnapshot {
-            Gauge(value: snapshot.usedPercent / 100) {
-                Image(systemName: "gauge.medium")
-            } currentValueLabel: {
-                Text(verbatim: "\(Int(snapshot.usedPercent))%")
-                    .font(.system(size: 12, weight: .bold))
+            if let errorMessage = snapshot.errorMessage {
+                unavailableGauge(
+                    systemImage: "exclamationmark.triangle.fill",
+                    accessibilityValue: errorMessage
+                )
+            } else if snapshot.source == "demo" {
+                Gauge(value: snapshot.usedPercent / 100) {
+                    ProviderIconView(provider: snapshot.provider, size: 20)
+                } currentValueLabel: {
+                    Text(verbatim: "D")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .gaugeStyle(.accessoryCircular)
+                .accessibilityLabel(snapshot.provider.displayName)
+                .accessibilityValue(
+                    String.localizedStringWithFormat(
+                        String(localized: "Demo: %lld percent used"),
+                        Int64(snapshot.usedPercent)
+                    )
+                )
+            } else {
+                Gauge(value: snapshot.usedPercent / 100) {
+                    ProviderIconView(provider: snapshot.provider, size: 20)
+                } currentValueLabel: {
+                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .gaugeStyle(.accessoryCircular)
+                .accessibilityLabel(snapshot.provider.displayName)
+                .accessibilityValue(
+                    String.localizedStringWithFormat(
+                        String(localized: "%lld percent used"),
+                        Int64(snapshot.usedPercent)
+                    )
+                )
             }
-            .gaugeStyle(.accessoryCircular)
         } else {
-            Image(systemName: "person.crop.circle.badge.questionmark")
+            unavailableGauge(
+                systemImage: "person.crop.circle.badge.exclamationmark",
+                accessibilityValue: String(localized: "Not signed in")
+            )
         }
+    }
+
+    private func unavailableGauge(systemImage: String, accessibilityValue: String) -> some View {
+        Gauge(value: 0) {
+            ProviderIconView(provider: entry.provider, size: 20)
+        } currentValueLabel: {
+            VStack(spacing: 0) {
+                Text(providerAbbreviation(entry.provider))
+                    .font(.system(size: 9, weight: .bold))
+                Image(systemName: systemImage)
+                    .font(.system(size: 9))
+            }
+        }
+        .gaugeStyle(.accessoryCircular)
+        .accessibilityLabel(entry.provider.displayName)
+        .accessibilityValue(accessibilityValue)
     }
 }
 
@@ -204,28 +278,45 @@ struct AIUMAccessoryRectangularView: View {
 
     var body: some View {
         if let snapshot = entry.displaySnapshot {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(snapshot.provider.displayName)
-                    .font(.caption2.bold())
-                    .lineLimit(1)
-                Text(
-                    String.localizedStringWithFormat(
-                        String(localized: "%lld%% used"),
-                        Int64(snapshot.usedPercent)
-                    )
-                )
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                if let resetAt = snapshot.resetAt {
-                    Text(resetAt, style: .relative)
+            if snapshot.errorMessage != nil {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(snapshot.provider.displayName)
+                        .font(.caption2.bold())
+                    Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
                 }
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(snapshot.provider.displayName)
+                        .font(.caption2.bold())
+                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(
+                            String.localizedStringWithFormat(
+                                String(localized: "%lld%% used"),
+                                Int64(snapshot.usedPercent)
+                            )
+                        )
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        if snapshot.source == "demo" {
+                            Text(verbatim: "DEMO")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                    }
+                    if let resetAt = snapshot.resetAt {
+                        resetSummary(resetAt: resetAt)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Text("Not signed in")
-                .font(.caption2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.provider.displayName)
+                    .font(.caption2.bold())
+                Label("Not signed in", systemImage: "person.crop.circle.badge.exclamationmark")
+                    .font(.caption2)
+            }
         }
     }
 }
@@ -236,6 +327,102 @@ private func progressColor(for percent: Double) -> Color {
     if percent >= 90 { return .red }
     if percent >= 70 { return .orange }
     return .blue
+}
+
+private func providerAbbreviation(_ provider: Provider) -> String {
+    switch provider {
+    case .githubCopilot: "GH"
+    case .codex: "CX"
+    }
+}
+
+private enum ResetInfoStyle {
+    case compact
+    case stacked
+}
+
+@ViewBuilder
+private func resetInfo(resetAt: Date, style: ResetInfoStyle) -> some View {
+    TimelineView(.everyMinute) { context in
+        HStack(alignment: style == .compact ? .center : .top, spacing: 4) {
+            Image(systemName: "arrow.clockwise")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            switch style {
+            case .compact:
+                Text(resetSummaryText(resetAt: resetAt, referenceDate: context.date))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            case .stacked:
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Resets in \(remainingTimeText(until: resetAt, from: context.date))")
+                    Text("At \(resetTimeText(resetAt, relativeTo: context.date))")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+        }
+    }
+}
+
+@ViewBuilder
+private func resetSummary(resetAt: Date) -> some View {
+    TimelineView(.everyMinute) { context in
+        Text(resetSummaryText(resetAt: resetAt, referenceDate: context.date))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+    }
+}
+
+private func resetSummaryText(resetAt: Date, referenceDate: Date) -> String {
+    String.localizedStringWithFormat(
+        String(localized: "%@ · %@"),
+        remainingTimeText(until: resetAt, from: referenceDate),
+        resetTimeText(resetAt, relativeTo: referenceDate)
+    )
+}
+
+private func remainingTimeText(until resetAt: Date, from referenceDate: Date) -> String {
+    let seconds = resetAt.timeIntervalSince(referenceDate)
+    guard seconds > 0 else { return String(localized: "now") }
+
+    let totalMinutes = max(1, Int(ceil(seconds / 60)))
+    let days = totalMinutes / (24 * 60)
+    let hours = (totalMinutes % (24 * 60)) / 60
+    let minutes = totalMinutes % 60
+
+    if days > 0 {
+        if hours > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lldd %lldh"),
+                Int64(days),
+                Int64(hours)
+            )
+        }
+        return String.localizedStringWithFormat(String(localized: "%lldd"), Int64(days))
+    }
+    if hours > 0 {
+        if minutes > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lldh %lldm"),
+                Int64(hours),
+                Int64(minutes)
+            )
+        }
+        return String.localizedStringWithFormat(String(localized: "%lldh"), Int64(hours))
+    }
+    return String.localizedStringWithFormat(String(localized: "%lldm"), Int64(minutes))
+}
+
+private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = Calendar.current.isDate(resetAt, inSameDayAs: referenceDate) ? .none : .medium
+    formatter.timeStyle = .short
+    return formatter.string(from: resetAt)
 }
 
 // MARK: - Previews
@@ -258,7 +445,51 @@ private func progressColor(for percent: Double) -> Color {
                 source: "preview"
             )
         ],
-        provider: nil
+        provider: .githubCopilot
+    )
+}
+
+#Preview("Lock Screen Circular", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [
+            UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexPro,
+                windowKind: .hourly,
+                used: 42,
+                limit: 50,
+                resetAt: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
+                unit: "requests",
+                source: "preview"
+            ),
+        ],
+        provider: .codex
+    )
+}
+
+#Preview("Lock Screen Rectangular", as: .accessoryRectangular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [
+            UsageSnapshot(
+                provider: .githubCopilot,
+                displayName: "octocat",
+                planKind: .aiCredits,
+                windowKind: .monthly,
+                used: 750,
+                limit: 1000,
+                resetAt: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
+                unit: "AI credits",
+                source: "preview"
+            ),
+        ],
+        provider: .githubCopilot
     )
 }
 
@@ -291,6 +522,6 @@ private func progressColor(for percent: Double) -> Color {
                 source: "preview"
             ),
         ],
-        provider: nil
+        provider: .githubCopilot
     )
 }

@@ -1,6 +1,8 @@
 /* Widget configuration */
 "AIUM — Usage" = "AIUM — Usage";
 "Shows your primary usage at a glance." = "Shows your primary usage at a glance.";
+"AIUM — Lock Screen Usage" = "AIUM — Lock Screen Usage";
+"Shows the highest usage for your selected provider." = "Shows the highest usage for your selected provider.";
 "AIUM — Copilot & Codex" = "AIUM — Copilot & Codex";
 "Shows GitHub Copilot and Codex usage side by side." = "Shows GitHub Copilot and Codex usage side by side.";
 
@@ -8,6 +10,26 @@
 "used" = "used";
 "Not signed in" = "Not signed in";
 "%lld%% used" = "%lld%% used";
+"Usage unavailable" = "Usage unavailable";
+"Demo: %lld percent used" = "Demo: %lld percent used";
+"%lld percent used" = "%lld percent used";
+"Resets in %@" = "Resets in %@";
+"At %@" = "At %@";
+"%@ · %@" = "%@ · %@";
+"now" = "now";
+"%lldd %lldh" = "%lldd %lldh";
+"%lldd" = "%lldd";
+"%lldh %lldm" = "%lldh %lldm";
+"%lldh" = "%lldh";
+"%lldm" = "%lldm";
+
+/* Widget configuration intent */
+"Provider" = "Provider";
+"GitHub Copilot" = "GitHub Copilot";
+"OpenAI Codex" = "OpenAI Codex";
+"Usage Provider" = "Usage Provider";
+"Choose the provider whose highest usage is shown." = "Choose the provider whose highest usage is shown.";
+"Provider: ${provider}" = "Provider: ${provider}";
 
 /* Units */
 "AI credits" = "AI credits";

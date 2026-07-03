@@ -42,7 +42,7 @@ actor GitHubUsageProvider: UsageProvider {
     }
 
     func fetchUsage() async throws -> [UsageSnapshot] {
-        guard let token = await authProvider.accessToken else {
+        guard let token = try await authProvider.validAccessToken() else {
             throw GitHubUsageError.notAuthenticated
         }
 
@@ -50,14 +50,22 @@ actor GitHubUsageProvider: UsageProvider {
         var snapshots: [UsageSnapshot] = []
 
         do {
-            let aiSnapshot = try await fetchAICreditSnapshot(username: user.login, token: token, user: user)
+            let aiSnapshot = try await fetchAICreditSnapshot(
+                username: user.login,
+                token: token,
+                user: user
+            )
             snapshots.append(aiSnapshot)
         } catch {
             snapshots.append(errorSnapshot(for: .aiCredits, error: error, user: user))
         }
 
         do {
-            let prSnapshot = try await fetchPremiumRequestSnapshot(username: user.login, token: token, user: user)
+            let prSnapshot = try await fetchPremiumRequestSnapshot(
+                username: user.login,
+                token: token,
+                user: user
+            )
             snapshots.append(prSnapshot)
         } catch {
             snapshots.append(errorSnapshot(for: .premiumRequests, error: error, user: user))
@@ -79,13 +87,13 @@ actor GitHubUsageProvider: UsageProvider {
     ) async throws -> UsageSnapshot {
         let response = try await apiClient.fetchAICreditUsage(username: username, token: token)
 
-        let used = response.usedInCurrentPeriod ?? 0
-        // Use manual override if set, otherwise fall back to API value
+        let used = response.usedQuantity
+        // The current billing report exposes usage, not plan allowance.
         let limit: Double
         if aiCreditMonthlyLimit > 0 {
             limit = aiCreditMonthlyLimit
         } else {
-            limit = response.totalAllowance ?? 0
+            limit = 0
         }
 
         return UsageSnapshot(
@@ -96,7 +104,7 @@ actor GitHubUsageProvider: UsageProvider {
             windowKind: .monthly,
             used: used,
             limit: limit,
-            resetAt: response.currentPeriodEnd,
+            resetAt: response.timePeriod?.periodEndDate(),
             unit: "AI credits",
             source: "GitHub Billing API"
         )
@@ -109,12 +117,13 @@ actor GitHubUsageProvider: UsageProvider {
     ) async throws -> UsageSnapshot {
         let response = try await apiClient.fetchPremiumRequestUsage(username: username, token: token)
 
-        let used = response.usedPremiumRequests ?? 0
+        let used = response.usedQuantity
+        // The current billing report exposes usage, not plan allowance.
         let limit: Double
         if premiumRequestMonthlyLimit > 0 {
             limit = premiumRequestMonthlyLimit
         } else {
-            limit = response.includedPremiumRequests ?? 0
+            limit = 0
         }
 
         return UsageSnapshot(
@@ -125,9 +134,9 @@ actor GitHubUsageProvider: UsageProvider {
             windowKind: .monthly,
             used: used,
             limit: limit,
-            resetAt: nil,
+            resetAt: response.timePeriod?.periodEndDate(),
             unit: "premium requests",
-            source: "GitHub Billing API (legacy)"
+            source: "GitHub Billing API"
         )
     }
 
@@ -144,7 +153,7 @@ actor GitHubUsageProvider: UsageProvider {
             windowKind: .monthly,
             unit: endpoint.unit,
             source: endpoint.source,
-            message: "\(endpoint.displayName): \(error.localizedDescription)"
+            message: endpoint.errorMessage(for: error)
         )
     }
 }
@@ -177,8 +186,15 @@ private enum GitHubUsageEndpoint {
     var source: String {
         switch self {
         case .aiCredits: return "GitHub Billing API"
-        case .premiumRequests: return "GitHub Billing API (legacy)"
+        case .premiumRequests: return "GitHub Billing API"
         }
+    }
+
+    func errorMessage(for error: Error) -> String {
+        if case GitHubAPIError.httpError(let statusCode, _) = error, statusCode == 404 {
+            return "\(displayName): GitHub API HTTP 404. \(String(localized: "This account does not expose personally billed Copilot usage to the GitHub App."))"
+        }
+        return "\(displayName): \(error.localizedDescription)"
     }
 }
 

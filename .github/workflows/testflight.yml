@@ -36,6 +36,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Write version xcconfig
+        run: |
+          mkdir -p Config
+
+          MARKETING_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}"
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+
+          printf 'AIUM_MARKETING_VERSION = %s\nAIUM_CURRENT_PROJECT_VERSION = %s\n' \
+            "${MARKETING_VERSION}" "${BUILD_NUMBER}" \
+            > Config/Version.generated.xcconfig
+
+          echo "MARKETING_VERSION=${MARKETING_VERSION}"
+          echo "CURRENT_PROJECT_VERSION=${BUILD_NUMBER}"
 
       - name: Install signing assets
         run: |
@@ -108,6 +133,7 @@ jobs:
 
       - name: Upload to TestFlight
         run: |
+          echo "Uploading MARKETING_VERSION=${{ steps.gitversion.outputs.majorMinorPatch }} CURRENT_PROJECT_VERSION=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/AIUM.xcarchive" \
             -exportPath "$RUNNER_TEMP/TestFlightExport" \

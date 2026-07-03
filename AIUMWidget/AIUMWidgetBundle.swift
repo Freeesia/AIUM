@@ -5,6 +5,7 @@ import SwiftUI
 struct AIUMWidgetBundle: WidgetBundle {
     var body: some Widget {
         AIUMSmallWidget()
+        AIUMLockScreenWidget()
         AIUMMediumWidget()
     }
 }

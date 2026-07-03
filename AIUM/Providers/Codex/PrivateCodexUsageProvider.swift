@@ -351,12 +351,12 @@ private struct CodexUsageParser {
             "currentUsage",
             "current_usage",
         ])
-        let usedPercent = normalizedPercent(firstDouble(window, keys: [
+        let usedPercent = firstDouble(window, keys: [
             "usedPercent",
             "used_percent",
             "usagePercent",
             "usage_percent",
-        ]))
+        ])
 
         let limit: Double
         let used: Double
@@ -495,14 +495,6 @@ private struct CodexUsageParser {
         }
 
         return ISO8601DateFormatter().date(from: string)
-    }
-
-    private func normalizedPercent(_ value: Double?) -> Double? {
-        guard let value else { return nil }
-        if value <= 1 {
-            return value * 100
-        }
-        return value
     }
 
     private func normalizedLabel(_ value: String) -> String? {

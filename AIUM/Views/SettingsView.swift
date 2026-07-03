@@ -1,79 +1,83 @@
 import SwiftUI
+import UIKit
+
+private struct BrowserDestination: Identifiable {
+    let url: URL
+
+    var id: String {
+        url.absoluteString
+    }
+}
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var browserDestination: BrowserDestination?
 
     var body: some View {
         NavigationStack {
             Form {
                 // GitHub section
                 Section {
-                    if !viewModel.isGitHubClientIdConfigured {
-                        clientIdWarning
-                    }
-                    githubAuthRow
-                    if viewModel.isGitHubAuthenticated {
-                        limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
-                                 placeholder: "e.g. 1000")
-                        limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
-                                 placeholder: "e.g. 300")
+                    if viewModel.isDemoMode {
+                        demoModeAuthMessage
+                    } else {
+                        if !viewModel.isGitHubClientIdConfigured {
+                            clientIdWarning
+                        }
+                        githubAuthRow
+                        if viewModel.isGitHubAuthenticated {
+                            limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
+                                     placeholder: "e.g. 1000")
+                            limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
+                                     placeholder: "e.g. 300")
+                        }
                     }
                 } header: {
                     Text("GitHub Copilot")
                 } footer: {
-                    githubFooter
+                    if !viewModel.isDemoMode {
+                        githubFooter
+                    }
                 }
 
                 // Codex section
                 Section {
-                    if !viewModel.isCodexClientIdConfigured {
-                        codexClientIdWarning
-                    }
-                    codexAuthRow
-                    if viewModel.isCodexAuthenticated,
-                       let account = viewModel.codexAccountDisplayName {
-                        HStack {
-                            Text("Account")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(account)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
+                    if viewModel.isDemoMode {
+                        demoModeAuthMessage
+                    } else {
+                        if !viewModel.isCodexClientIdConfigured {
+                            codexClientIdWarning
+                        }
+                        codexAuthRow
+                        if viewModel.isCodexAuthenticated,
+                           let account = viewModel.codexAccountDisplayName {
+                            HStack {
+                                Text("Account")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(account)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.trailing)
+                            }
                         }
                     }
                 } header: {
                     Text("OpenAI Codex")
-                } footer: {
-                    codexWarningFooter
                 }
 
                 // Refresh interval
-                Section("Refresh") {
-                    Picker("Interval", selection: $viewModel.refreshIntervalMinutes) {
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
-                        Text("1 hour").tag(60)
-                        Text("2 hours").tag(120)
-                        Text("6 hours").tag(360)
+                Section {
+                    Picker("Interval", selection: $viewModel.refreshSetting) {
+                        ForEach(UsageRefreshSetting.allCases) { setting in
+                            Text(setting.displayName).tag(setting)
+                        }
                     }
+                } header: {
+                    Text("Refresh")
                 }
 
-                // App Group info
-                Section("App Group") {
-                    HStack {
-                        Text("Identifier")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(UsageStore.appGroupIdentifier)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("The App Group must be configured in both the AIUM target and the AIUMWidget target.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -85,6 +89,25 @@ struct SettingsView: View {
             .onAppear {
                 viewModel.checkAuthStatus()
             }
+            .sheet(item: $browserDestination) { destination in
+                SafariBrowserView(url: destination.url)
+                    .ignoresSafeArea()
+            }
+            .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    browserDestination = nil
+                }
+            }
+            .onChange(of: viewModel.authError) { _, authError in
+                if authError != nil {
+                    browserDestination = nil
+                }
+            }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },
                 set: { if !$0 { viewModel.authError = nil } }
@@ -94,6 +117,14 @@ struct SettingsView: View {
                 Text(viewModel.authError ?? "")
             }
         }
+    }
+
+    // MARK: - Demo mode message
+
+    private var demoModeAuthMessage: some View {
+        Text("Demo Mode is active. Sign-in is disabled while sample data is shown.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 
     // MARK: - GitHub auth row
@@ -123,6 +154,7 @@ struct SettingsView: View {
             } label: {
                 Label("Sign in with GitHub", systemImage: "person.badge.plus")
             }
+            .disabled(!viewModel.isGitHubClientIdConfigured)
         }
     }
 
@@ -137,7 +169,7 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login.")
+        Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
     }
 
     // MARK: - Codex auth row
@@ -197,8 +229,15 @@ struct SettingsView: View {
                 .font(.title2.monospaced().bold())
                 .textSelection(.enabled)
             if let verificationURL = URL(string: url) {
-                Link("Open in Browser", destination: verificationURL)
-                    .font(.caption)
+                Button {
+                    UIPasteboard.general.string = userCode
+                    browserDestination = BrowserDestination(url: verificationURL)
+                } label: {
+                    Label("Copy Code and Open Browser", systemImage: "safari")
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             ProgressView("Waiting for authorization…")
                 .controlSize(.small)
@@ -224,13 +263,6 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Codex warning footer
-
-    private var codexWarningFooter: some View {
-        Text("⚠️ AIUM uses private OpenAI/Codex API endpoints that are not officially supported. These may change or stop working at any time. Do NOT use this app commercially or submit it to the App Store until official APIs are available.")
-            .font(.caption)
-            .foregroundStyle(.orange)
-    }
 }
 
 // MARK: - Preview

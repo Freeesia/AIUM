@@ -4,10 +4,9 @@ import Foundation
 
 /// Codex OIDC / device-code flow configuration.
 /// These values match the current Codex app-server login flow and can be overridden
-/// from the app target's build settings when OpenAI changes the private API.
+/// from the app target's build settings when OpenAI changes the endpoint configuration.
 ///
-/// ⚠️ WARNING: These are private / undocumented endpoints. They may change at any time.
-/// Do not use this in a public App Store release until official APIs are available.
+/// ⚠️ These endpoints are not part of an officially published API specification and may change at any time.
 struct CodexOAuthConfig {
     private static let clientIdInfoPlistKey = "CodexOAuthClientID"
     private static let placeholderClientId = "YOUR_CODEX_CLIENT_ID"
@@ -22,7 +21,7 @@ struct CodexOAuthConfig {
     static let backendBaseURL = URL(string: "https://chatgpt.com/backend-api")!
     static let usageEndpointPath = "/wham/usage"
 
-    static let keychainService = "io.github.freeesia.aium"
+    static let keychainService = "com.studiofreesia.aium"
     static let keychainAccount = "codex_token_bundle"
 
     static var clientId: String? {
@@ -72,13 +71,13 @@ struct CodexTokenBundle: Codable, Sendable {
 }
 
 struct CodexTokenPersistence: Sendable {
-    let load: @Sendable () -> CodexTokenBundle?
+    let load: @Sendable () throws -> CodexTokenBundle?
     let save: @Sendable (CodexTokenBundle) throws -> Void
     let delete: @Sendable () -> Void
 
     static let keychain = CodexTokenPersistence(
         load: {
-            try? KeychainHelper.loadCodable(
+            try KeychainHelper.loadCodable(
                 CodexTokenBundle.self,
                 service: CodexOAuthConfig.keychainService,
                 account: CodexOAuthConfig.keychainAccount
@@ -92,7 +91,7 @@ struct CodexTokenPersistence: Sendable {
             )
         },
         delete: {
-            KeychainHelper.delete(
+            try? KeychainHelper.delete(
                 service: CodexOAuthConfig.keychainService,
                 account: CodexOAuthConfig.keychainAccount
             )
@@ -297,15 +296,15 @@ actor CodexAuthProvider: CodexAuthProviding {
         self.sleep = sleep
         self.persistence = persistence
         synchronizesPersistedBundle = initialTokenBundle == nil
-        _tokenBundle = initialTokenBundle ?? persistence.load()
+        _tokenBundle = initialTokenBundle ?? (try? persistence.load())
     }
 
     var tokenBundle: CodexTokenBundle? {
-        synchronizedTokenBundle()
+        try? synchronizedTokenBundle()
     }
 
     var isAuthenticated: Bool {
-        synchronizedTokenBundle() != nil
+        (try? synchronizedTokenBundle()) != nil
     }
 
     // MARK: - Device Code Flow
@@ -376,7 +375,7 @@ actor CodexAuthProvider: CodexAuthProviding {
     /// Returns a valid access token, refreshing if necessary.
     /// Uses single-flight to prevent concurrent refresh races.
     func validAccessToken() async throws -> String {
-        guard var bundle = synchronizedTokenBundle() else {
+        guard var bundle = try synchronizedTokenBundle() else {
             throw CodexAuthError.notAuthenticated
         }
 
@@ -501,7 +500,7 @@ actor CodexAuthProvider: CodexAuthProviding {
     }
 
     func updateAccount(accountId: String?, email: String?) throws {
-        guard var bundle = synchronizedTokenBundle() else { return }
+        guard var bundle = try synchronizedTokenBundle() else { return }
 
         let resolvedAccountId = accountId ?? bundle.accountId
         let resolvedEmail = email ?? bundle.email
@@ -517,9 +516,9 @@ actor CodexAuthProvider: CodexAuthProviding {
         _tokenBundle = bundle
     }
 
-    private func synchronizedTokenBundle() -> CodexTokenBundle? {
+    private func synchronizedTokenBundle() throws -> CodexTokenBundle? {
         guard synchronizesPersistedBundle else { return _tokenBundle }
-        _tokenBundle = persistence.load()
+        _tokenBundle = try persistence.load()
         return _tokenBundle
     }
 
