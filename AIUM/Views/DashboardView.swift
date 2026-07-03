@@ -96,7 +96,7 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func sectionHeader(_ title: String, systemImage: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, systemImage: String) -> some View {
         HStack {
             Label(title, systemImage: systemImage)
                 .font(.title3.bold())

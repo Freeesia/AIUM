@@ -63,7 +63,7 @@ struct UsageCardView: View {
                             .trim(from: 0, to: CGFloat(snapshot.usedPercent / 100))
                             .stroke(progressColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                             .rotationEffect(.degrees(-90))
-                        Text("\(Int(snapshot.usedPercent))%")
+                        Text(verbatim: "\(Int(snapshot.usedPercent))%")
                             .font(.system(.body, design: .rounded, weight: .bold))
                     }
                     .frame(width: 72, height: 72)
@@ -95,20 +95,29 @@ struct UsageCardView: View {
 
     // MARK: - Helpers
 
-    private var planLabel: String {
+    private var planLabel: LocalizedStringKey {
         switch snapshot.planKind {
         case .aiCredits: return "AI Credits"
         case .premiumRequests: return "Premium Requests"
         case .codexFree: return "Free Plan"
         case .codexPro: return "Pro Plan"
-        case .unknown: return snapshot.windowKind.rawValue.capitalized
+        case .unknown:
+            switch snapshot.windowKind {
+            case .monthly: return "Monthly"
+            case .daily: return "Daily"
+            case .hourly: return "Hourly"
+            case .custom: return "Custom"
+            }
         }
     }
 
     private var fetchedAtText: String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        return "Updated \(formatter.localizedString(for: snapshot.fetchedAt, relativeTo: Date()))"
+        return String(
+            format: String(localized: "Updated %@"),
+            formatter.localizedString(for: snapshot.fetchedAt, relativeTo: Date())
+        )
     }
 
     private func formatCount(_ value: Double) -> String {
@@ -119,9 +128,9 @@ struct UsageCardView: View {
     }
 
     @ViewBuilder
-    private func usageStat(label: String, value: String, color: Color) -> some View {
+    private func usageStat(label: LocalizedStringKey, value: String, color: Color) -> some View {
         HStack(spacing: 4) {
-            Text(label + ":")
+            (Text(label) + Text(verbatim: ":"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(value)

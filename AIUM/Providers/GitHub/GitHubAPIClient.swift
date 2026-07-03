@@ -128,16 +128,29 @@ enum GitHubAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .authenticationFailed(let code, let body):
-            return "GitHub API auth error \(code): \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "GitHub API auth error %lld: %@"),
+                Int64(code),
+                Self.preview(body)
+            )
         case .httpError(let code, let body):
-            return "GitHub API HTTP \(code): \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "GitHub API HTTP %lld: %@"),
+                Int64(code),
+                Self.preview(body)
+            )
         case .decodeError(let endpoint, let body, let underlying):
-            return "GitHub API decode error for \(endpoint): \(underlying.localizedDescription). Body: \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "GitHub API decode error for %@: %@. Body: %@"),
+                endpoint,
+                underlying.localizedDescription,
+                Self.preview(body)
+            )
         }
     }
 
     private static func preview(_ body: String?) -> String {
-        guard let body, !body.isEmpty else { return "no body" }
+        guard let body, !body.isEmpty else { return String(localized: "no body") }
         let singleLine = body.replacingOccurrences(of: "\n", with: " ")
         if singleLine.count <= 300 { return singleLine }
         return String(singleLine.prefix(300)) + "..."

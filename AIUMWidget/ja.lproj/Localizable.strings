@@ -1,0 +1,16 @@
+/* Widget configuration */
+"AIUM — Usage" = "AIUM — 利用状況";
+"Shows your primary usage at a glance." = "主な利用状況をひと目で確認できます。";
+"AIUM — Copilot & Codex" = "AIUM — CopilotとCodex";
+"Shows GitHub Copilot and Codex usage side by side." = "GitHub CopilotとCodexの利用状況を並べて表示します。";
+
+/* Widget content */
+"used" = "使用済み";
+"Not signed in" = "サインインしていません";
+"%lld%% used" = "%lld%%使用済み";
+
+/* Units */
+"AI credits" = "AIクレジット";
+"premium requests" = "プレミアムリクエスト";
+"requests" = "リクエスト";
+"percent" = "パーセント";

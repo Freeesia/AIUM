@@ -214,7 +214,7 @@ final class GitHubParsingTests: XCTestCase {
         let premium = try XCTUnwrap(snapshots.first { $0.planKind == .premiumRequests })
         XCTAssertEqual(premium.source, "GitHub Billing API (legacy)")
         XCTAssertNotNil(premium.errorMessage)
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
+        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("404"))
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {

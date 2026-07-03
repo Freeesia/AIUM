@@ -1,0 +1,87 @@
+/* Dashboard */
+"AIUM" = "AIUM";
+"GitHub Copilot" = "GitHub Copilot";
+"OpenAI Codex" = "OpenAI Codex";
+"Loading…" = "読み込み中…";
+
+/* Usage cards */
+"Data may be stale" = "データが古い可能性があります";
+"Used" = "使用済み";
+"Remaining" = "残り";
+"Limit" = "上限";
+"AI Credits" = "AIクレジット";
+"Premium Requests" = "プレミアムリクエスト";
+"Free Plan" = "無料プラン";
+"Pro Plan" = "Proプラン";
+"Monthly" = "月次";
+"Daily" = "日次";
+"Hourly" = "時間単位";
+"Custom" = "カスタム";
+"Updated %@" = "%@に更新";
+"Not signed in" = "サインインしていません";
+"Open Settings to sign in" = "設定を開いてサインイン";
+
+/* Settings */
+"GitHub" = "GitHub";
+"Codex" = "Codex";
+"AI Credit Limit" = "AIクレジット上限";
+"Premium Request Limit" = "プレミアムリクエスト上限";
+"e.g. 1000" = "例：1000";
+"e.g. 300" = "例：300";
+"Account" = "アカウント";
+"Refresh" = "更新";
+"Interval" = "間隔";
+"15 min" = "15分";
+"30 min" = "30分";
+"1 hour" = "1時間";
+"2 hours" = "2時間";
+"6 hours" = "6時間";
+"App Group" = "App Group";
+"Identifier" = "識別子";
+"The App Group must be configured in both the AIUM target and the AIUMWidget target." = "App GroupはAIUMターゲットとAIUMWidgetターゲットの両方に設定する必要があります。";
+"Settings" = "設定";
+"Done" = "完了";
+"Auth Error" = "認証エラー";
+"OK" = "OK";
+"Sign Out" = "サインアウト";
+"Connecting to GitHub…" = "GitHubに接続中…";
+"Sign in with GitHub" = "GitHubでサインイン";
+"Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings before signing in." = "サインインする前に、AIUMターゲットのビルド設定でGITHUB_OAUTH_CLIENT_IDを設定してください。";
+"Set monthly limits manually if the GitHub API does not return your plan allowance. Leave GITHUB_OAUTH_CLIENT_ID as the placeholder to disable GitHub login." = "GitHub APIからプランの上限を取得できない場合は、月間上限を手動で設定してください。GitHubログインを無効にするには、GITHUB_OAUTH_CLIENT_IDをプレースホルダーのままにします。";
+"Connecting to Codex…" = "Codexに接続中…";
+"Sign in with Codex" = "Codexでサインイン";
+"Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings before signing in." = "サインインする前に、AIUMターゲットのビルド設定でCODEX_OAUTH_CLIENT_IDを設定してください。";
+"Open %@ in your browser and enter:" = "ブラウザで%@を開き、次のコードを入力してください：";
+"Open in Browser" = "ブラウザで開く";
+"Waiting for authorization…" = "認証を待っています…";
+"⚠️ AIUM uses private OpenAI/Codex API endpoints that are not officially supported. These may change or stop working at any time. Do NOT use this app commercially or submit it to the App Store until official APIs are available." = "⚠️ AIUMは、公式にサポートされていないOpenAI/Codexの非公開APIエンドポイントを使用しています。これらは予告なく変更されたり、利用できなくなったりする可能性があります。公式APIが提供されるまで、このアプリを商用利用したりApp Storeに提出したりしないでください。";
+
+/* Units */
+"AI credits" = "AIクレジット";
+"premium requests" = "プレミアムリクエスト";
+"requests" = "リクエスト";
+"percent" = "パーセント";
+
+/* Errors */
+"GitHub OAuth Client ID is not configured. Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings." = "GitHub OAuthクライアントIDが設定されていません。AIUMターゲットのビルド設定でGITHUB_OAUTH_CLIENT_IDを設定してください。";
+"Codex OAuth Client ID is not configured. Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings." = "Codex OAuthクライアントIDが設定されていません。AIUMターゲットのビルド設定でCODEX_OAUTH_CLIENT_IDを設定してください。";
+"Device code expired. Please try again." = "デバイスコードの有効期限が切れました。もう一度お試しください。";
+"Access denied." = "アクセスが拒否されました。";
+"Access was denied." = "アクセスが拒否されました。";
+"Timed out waiting for GitHub authorization." = "GitHubの認証待ちがタイムアウトしました。";
+"Authentication timed out." = "認証がタイムアウトしました。";
+"Not signed in to GitHub." = "GitHubにサインインしていません。";
+"Not signed in to Codex." = "Codexにサインインしていません。";
+"No usage data available from GitHub." = "GitHubから利用状況データを取得できませんでした。";
+"No refresh token available." = "利用可能な更新トークンがありません。";
+"GitHub auth error %lld: %@" = "GitHub認証エラー %lld：%@";
+"GitHub API auth error %lld: %@" = "GitHub API認証エラー %lld：%@";
+"GitHub API HTTP %lld: %@" = "GitHub API HTTPエラー %lld：%@";
+"GitHub API decode error for %@: %@. Body: %@" = "GitHub APIの%@の解析エラー：%@。レスポンス：%@";
+"Codex auth error %lld: %@" = "Codex認証エラー %lld：%@";
+"Token refresh failed: %@" = "トークンの更新に失敗しました：%@";
+"Codex usage response was not a JSON object." = "Codexの利用状況レスポンスがJSONオブジェクトではありません。";
+"%@ HTTP %lld: %@" = "%@のHTTPエラー %lld：%@";
+"%@ decode error: %@. Body: %@" = "%@の解析エラー：%@。レスポンス：%@";
+"Codex usage response did not include rate-limit data. Body: %@" = "Codexの利用状況レスポンスにレート制限データが含まれていません。レスポンス：%@";
+"no body" = "レスポンス本文なし";

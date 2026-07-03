@@ -1,0 +1,16 @@
+/* Widget configuration */
+"AIUM — Usage" = "AIUM — Usage";
+"Shows your primary usage at a glance." = "Shows your primary usage at a glance.";
+"AIUM — Copilot & Codex" = "AIUM — Copilot & Codex";
+"Shows GitHub Copilot and Codex usage side by side." = "Shows GitHub Copilot and Codex usage side by side.";
+
+/* Widget content */
+"used" = "used";
+"Not signed in" = "Not signed in";
+"%lld%% used" = "%lld%% used";
+
+/* Units */
+"AI credits" = "AI credits";
+"premium requests" = "premium requests";
+"requests" = "requests";
+"percent" = "percent";

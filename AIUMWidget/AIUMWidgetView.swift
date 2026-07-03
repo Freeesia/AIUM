@@ -48,7 +48,7 @@ struct AIUMSmallWidgetView: View {
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 0) {
-                        Text("\(Int(snapshot.usedPercent))%")
+                        Text(verbatim: "\(Int(snapshot.usedPercent))%")
                             .font(.system(.callout, design: .rounded, weight: .bold))
                         Text("used")
                             .font(.system(size: 9))
@@ -140,14 +140,14 @@ struct AIUMMediumWidgetView: View {
                 } else {
                     Spacer(minLength: 0)
 
-                    Text("\(Int(snapshot.usedPercent))%")
+                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(progressColor(for: snapshot.usedPercent))
 
                     ProgressView(value: snapshot.usedPercent / 100)
                         .tint(progressColor(for: snapshot.usedPercent))
 
-                    Text("\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.unit)")
+                    Text(verbatim: "\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.localizedUnit)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -189,7 +189,7 @@ struct AIUMAccessoryCircularView: View {
             Gauge(value: snapshot.usedPercent / 100) {
                 Image(systemName: "gauge.medium")
             } currentValueLabel: {
-                Text("\(Int(snapshot.usedPercent))%")
+                Text(verbatim: "\(Int(snapshot.usedPercent))%")
                     .font(.system(size: 12, weight: .bold))
             }
             .gaugeStyle(.accessoryCircular)
@@ -208,7 +208,12 @@ struct AIUMAccessoryRectangularView: View {
                 Text(snapshot.provider.displayName)
                     .font(.caption2.bold())
                     .lineLimit(1)
-                Text("\(Int(snapshot.usedPercent))% used")
+                Text(
+                    String.localizedStringWithFormat(
+                        String(localized: "%lld%% used"),
+                        Int64(snapshot.usedPercent)
+                    )
+                )
                     .font(.caption)
                     .fontWeight(.semibold)
                 if let resetAt = snapshot.resetAt {

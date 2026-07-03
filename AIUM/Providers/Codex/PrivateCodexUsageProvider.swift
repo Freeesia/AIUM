@@ -596,7 +596,7 @@ private struct WindowMetadata {
 
 private struct CodexUsageDecodeFailure: LocalizedError {
     var errorDescription: String? {
-        "Codex usage response was not a JSON object."
+        String(localized: "Codex usage response was not a JSON object.")
     }
 }
 
@@ -620,16 +620,29 @@ enum CodexUsageError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .httpError(let endpoint, let code, let body):
-            return "\(endpoint) HTTP \(code): \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "%@ HTTP %lld: %@"),
+                endpoint,
+                Int64(code),
+                Self.preview(body)
+            )
         case .decodeError(let endpoint, let body, let underlying):
-            return "\(endpoint) decode error: \(underlying.localizedDescription). Body: \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "%@ decode error: %@. Body: %@"),
+                endpoint,
+                underlying.localizedDescription,
+                Self.preview(body)
+            )
         case .noUsageData(let body):
-            return "Codex usage response did not include rate-limit data. Body: \(Self.preview(body))"
+            return String.localizedStringWithFormat(
+                String(localized: "Codex usage response did not include rate-limit data. Body: %@"),
+                Self.preview(body)
+            )
         }
     }
 
     private static func preview(_ body: String?) -> String {
-        guard let body, !body.isEmpty else { return "no body" }
+        guard let body, !body.isEmpty else { return String(localized: "no body") }
         let singleLine = body.replacingOccurrences(of: "\n", with: " ")
         if singleLine.count <= 300 { return singleLine }
         return String(singleLine.prefix(300)) + "..."

@@ -186,7 +186,12 @@ struct SettingsView: View {
     @ViewBuilder
     private func deviceCodePrompt(userCode: String, url: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Open \(url) in your browser and enter:")
+            Text(
+                String(
+                    format: String(localized: "Open %@ in your browser and enter:"),
+                    url
+                )
+            )
                 .font(.caption)
             Text(userCode)
                 .font(.title2.monospaced().bold())
@@ -204,7 +209,11 @@ struct SettingsView: View {
     // MARK: - Limit input row
 
     @ViewBuilder
-    private func limitRow(label: String, value: Binding<String>, placeholder: String) -> some View {
+    private func limitRow(
+        label: LocalizedStringKey,
+        value: Binding<String>,
+        placeholder: LocalizedStringKey
+    ) -> some View {
         HStack {
             Text(label)
             Spacer()

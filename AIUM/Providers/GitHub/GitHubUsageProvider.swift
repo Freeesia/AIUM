@@ -155,8 +155,8 @@ private enum GitHubUsageEndpoint {
 
     var displayName: String {
         switch self {
-        case .aiCredits: return "AI Credits"
-        case .premiumRequests: return "Premium Requests"
+        case .aiCredits: return String(localized: "AI Credits")
+        case .premiumRequests: return String(localized: "Premium Requests")
         }
     }
 
@@ -190,8 +190,8 @@ enum GitHubUsageError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notAuthenticated: return "Not signed in to GitHub."
-        case .noDataAvailable: return "No usage data available from GitHub."
+        case .notAuthenticated: return String(localized: "Not signed in to GitHub.")
+        case .noDataAvailable: return String(localized: "No usage data available from GitHub.")
         }
     }
 }
