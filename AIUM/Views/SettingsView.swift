@@ -13,12 +13,16 @@ struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var browserDestination: BrowserDestination?
+    @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
+    @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
 
     var body: some View {
         NavigationStack {
             Form {
                 // GitHub section
                 Section {
+                    Toggle("Show AI Credits", isOn: $showsGitHubAICredits)
+                    Toggle("Show Premium Requests", isOn: $showsGitHubPremiumRequests)
                     if viewModel.isDemoMode {
                         demoModeAuthMessage
                     } else {
@@ -182,7 +186,10 @@ struct SettingsView: View {
     }
 
     private var githubFooter: some View {
-        Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Choose which usage cards appear on the dashboard.")
+            Text("GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.")
+        }
     }
 
     // MARK: - Codex auth row
