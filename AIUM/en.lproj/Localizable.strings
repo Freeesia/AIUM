@@ -60,6 +60,13 @@
 "Copy Code and Open Browser" = "Copy Code and Open Browser";
 "Demo Mode is active. Sign-in is disabled while sample data is shown." = "Demo Mode is active. Sign-in is disabled while sample data is shown.";
 "GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance." = "GitHub opens with the device code copied. The configured GitHub App requests read-only access to your billing plan. Set monthly limits manually because the usage report does not return your plan allowance.";
+"Show AI Credits" = "Show AI Credits";
+"Show Premium Requests" = "Show Premium Requests";
+"Choose which usage cards appear on the dashboard." = "Choose which usage cards appear on the dashboard.";
+"All Copilot usage displays are turned off" = "All Copilot usage displays are turned off";
+"5 hours" = "5 hours";
+"1 week" = "1 week";
+"No data" = "No data";
 "⚠️ AIUM uses private OpenAI/Codex API endpoints that are not officially supported. These may change or stop working at any time. Do NOT use this app commercially or submit it to the App Store until official APIs are available." = "⚠️ AIUM uses private OpenAI/Codex API endpoints that are not officially supported. These may change or stop working at any time. Do NOT use this app commercially or submit it to the App Store until official APIs are available.";
 
 /* Units */

@@ -5,6 +5,8 @@ struct DashboardView: View {
     @State private var showSettings = false
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
+    @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
+    @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
 
     var body: some View {
         NavigationStack {
@@ -18,10 +20,12 @@ struct DashboardView: View {
                     // GitHub Copilot section
                     sectionHeader(provider: .githubCopilot)
                     if githubAuthenticated {
-                        if viewModel.githubSnapshots.isEmpty {
+                        if !showsGitHubAICredits && !showsGitHubPremiumRequests {
+                            hiddenUsageCard
+                        } else if visibleGitHubSnapshots.isEmpty {
                             placeholderCard(provider: .githubCopilot)
                         } else {
-                            ForEach(viewModel.githubSnapshots) { snapshot in
+                            ForEach(visibleGitHubSnapshots) { snapshot in
                                 UsageCardView(snapshot: snapshot)
                             }
                         }
@@ -35,9 +39,7 @@ struct DashboardView: View {
                         if viewModel.codexSnapshots.isEmpty {
                             placeholderCard(provider: .codex)
                         } else {
-                            ForEach(viewModel.codexSnapshots) { snapshot in
-                                UsageCardView(snapshot: snapshot)
-                            }
+                            CodexUsageCardView(snapshots: viewModel.codexSnapshots)
                         }
                     } else {
                         NotSignedInCardView(provider: .codex)
@@ -108,6 +110,19 @@ struct DashboardView: View {
 
     // MARK: - Helpers
 
+    private var visibleGitHubSnapshots: [UsageSnapshot] {
+        viewModel.githubSnapshots.filter { snapshot in
+            switch snapshot.planKind {
+            case .aiCredits:
+                return showsGitHubAICredits
+            case .premiumRequests:
+                return showsGitHubPremiumRequests
+            default:
+                return true
+            }
+        }
+    }
+
     private func updateAuthStatus() async {
         githubAuthenticated = await viewModel.githubIsAuthenticated
         codexAuthenticated = await viewModel.codexIsAuthenticated
@@ -151,6 +166,15 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity)
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var hiddenUsageCard: some View {
+        Label("All Copilot usage displays are turned off", systemImage: "eye.slash")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder
