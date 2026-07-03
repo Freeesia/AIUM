@@ -304,17 +304,21 @@ enum GitHubAuthError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .clientIdNotConfigured:
-            return "GitHub App Client ID is not configured. Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings."
+            return String(localized: "GitHub App Client ID is not configured. Set GITHUB_OAUTH_CLIENT_ID in the AIUM target build settings.")
         case .deviceCodeExpired:
-            return "Device code expired. Please try again."
+            return String(localized: "Device code expired. Please try again.")
         case .accessDenied:
-            return "Access denied."
+            return String(localized: "Access denied.")
         case .timeout:
-            return "Timed out waiting for GitHub authorization."
+            return String(localized: "Timed out waiting for GitHub authorization.")
         case .sessionExpired:
-            return "Your GitHub session expired. Sign in again."
+            return String(localized: "Your GitHub session expired. Sign in again.")
         case .httpError(let code, let body):
-            return "GitHub auth error \(code): \(body ?? "no body")"
+            return String.localizedStringWithFormat(
+                String(localized: "GitHub auth error %lld: %@"),
+                Int64(code),
+                body ?? String(localized: "no body")
+            )
         case .unknown(let message):
             return message
         }

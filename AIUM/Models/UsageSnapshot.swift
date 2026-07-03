@@ -88,6 +88,23 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
         max(0, 100 - usedPercent)
     }
 
+    /// Localizes the provider-supplied unit at presentation time so persisted
+    /// snapshots follow the user's current app language.
+    public var localizedUnit: String {
+        switch unit.lowercased() {
+        case "ai credits", "ai credit":
+            return String(localized: "AI credits")
+        case "premium requests", "premium request":
+            return String(localized: "premium requests")
+        case "requests", "request":
+            return String(localized: "requests")
+        case "percent":
+            return String(localized: "percent")
+        default:
+            return unit
+        }
+    }
+
     // MARK: Init
 
     public init(

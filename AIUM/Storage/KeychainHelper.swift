@@ -103,12 +103,26 @@ enum KeychainError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .encodingFailed:
-            return "Could not encode credentials for Keychain storage."
+            return String(localized: "Could not encode credentials for Keychain storage.")
         case .decodingFailed:
-            return "Could not decode credentials from Keychain storage."
+            return String(localized: "Could not decode credentials from Keychain storage.")
         case .unexpectedStatus(let operation, let status):
-            let message = SecCopyErrorMessageString(status, nil) as String? ?? "Unknown Keychain error"
-            return "Keychain \(operation) failed (\(status)): \(message)"
+            let localizedOperation: String
+            switch operation {
+            case "update": localizedOperation = String(localized: "update")
+            case "save": localizedOperation = String(localized: "save")
+            case "load": localizedOperation = String(localized: "load")
+            case "delete": localizedOperation = String(localized: "delete")
+            default: localizedOperation = operation
+            }
+            let message = SecCopyErrorMessageString(status, nil) as String?
+                ?? String(localized: "Unknown Keychain error")
+            return String.localizedStringWithFormat(
+                String(localized: "Keychain %@ failed (%lld): %@"),
+                localizedOperation,
+                Int64(status),
+                message
+            )
         }
     }
 }

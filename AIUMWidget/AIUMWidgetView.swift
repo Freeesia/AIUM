@@ -43,7 +43,7 @@ struct AIUMSmallWidgetView: View {
                     .lineLimit(1)
                 Spacer()
                 if snapshot.source == "demo" {
-                    Text("DEMO")
+                    Text(verbatim: "DEMO")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.blue)
                         .padding(.horizontal, 4)
@@ -74,7 +74,7 @@ struct AIUMSmallWidgetView: View {
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 0) {
-                        Text("\(Int(snapshot.usedPercent))%")
+                        Text(verbatim: "\(Int(snapshot.usedPercent))%")
                             .font(.system(.callout, design: .rounded, weight: .bold))
                         Text("used")
                             .font(.system(size: 9))
@@ -140,7 +140,7 @@ struct AIUMMediumWidgetView: View {
             .padding(12)
 
             if isDemoData {
-                Text("DEMO")
+                Text(verbatim: "DEMO")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.blue)
                     .padding(.horizontal, 4)
@@ -174,14 +174,14 @@ struct AIUMMediumWidgetView: View {
                 } else {
                     Spacer(minLength: 0)
 
-                    Text("\(Int(snapshot.usedPercent))%")
+                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(progressColor(for: snapshot.usedPercent))
 
                     ProgressView(value: snapshot.usedPercent / 100)
                         .tint(progressColor(for: snapshot.usedPercent))
 
-                    Text("\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.unit)")
+                    Text(verbatim: "\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.localizedUnit)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -221,27 +221,37 @@ struct AIUMAccessoryCircularView: View {
                 Gauge(value: snapshot.usedPercent / 100) {
                     ProviderIconView(provider: snapshot.provider, size: 20)
                 } currentValueLabel: {
-                    Text("D")
+                    Text(verbatim: "D")
                         .font(.system(size: 12, weight: .bold))
                 }
                 .gaugeStyle(.accessoryCircular)
                 .accessibilityLabel(snapshot.provider.displayName)
-                .accessibilityValue("Demo: \(Int(snapshot.usedPercent)) percent used")
+                .accessibilityValue(
+                    String.localizedStringWithFormat(
+                        String(localized: "Demo: %lld percent used"),
+                        Int64(snapshot.usedPercent)
+                    )
+                )
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
                     ProviderIconView(provider: snapshot.provider, size: 20)
                 } currentValueLabel: {
-                    Text("\(Int(snapshot.usedPercent))%")
+                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
                         .font(.system(size: 12, weight: .bold))
                 }
                 .gaugeStyle(.accessoryCircular)
                 .accessibilityLabel(snapshot.provider.displayName)
-                .accessibilityValue("\(Int(snapshot.usedPercent)) percent used")
+                .accessibilityValue(
+                    String.localizedStringWithFormat(
+                        String(localized: "%lld percent used"),
+                        Int64(snapshot.usedPercent)
+                    )
+                )
             }
         } else {
             unavailableGauge(
                 systemImage: "person.crop.circle.badge.exclamationmark",
-                accessibilityValue: "Not signed in"
+                accessibilityValue: String(localized: "Not signed in")
             )
         }
     }
@@ -281,11 +291,16 @@ struct AIUMAccessoryRectangularView: View {
                         .font(.caption2.bold())
                         .lineLimit(1)
                     HStack(spacing: 4) {
-                        Text("\(Int(snapshot.usedPercent))% used")
+                        Text(
+                            String.localizedStringWithFormat(
+                                String(localized: "%lld%% used"),
+                                Int64(snapshot.usedPercent)
+                            )
+                        )
                             .font(.caption)
                             .fontWeight(.semibold)
                         if snapshot.source == "demo" {
-                            Text("DEMO")
+                            Text(verbatim: "DEMO")
                                 .font(.system(size: 9, weight: .bold))
                         }
                     }
@@ -364,12 +379,16 @@ private func resetSummary(resetAt: Date) -> some View {
 }
 
 private func resetSummaryText(resetAt: Date, referenceDate: Date) -> String {
-    "\(remainingTimeText(until: resetAt, from: referenceDate)) · \(resetTimeText(resetAt, relativeTo: referenceDate))"
+    String.localizedStringWithFormat(
+        String(localized: "%@ · %@"),
+        remainingTimeText(until: resetAt, from: referenceDate),
+        resetTimeText(resetAt, relativeTo: referenceDate)
+    )
 }
 
 private func remainingTimeText(until resetAt: Date, from referenceDate: Date) -> String {
     let seconds = resetAt.timeIntervalSince(referenceDate)
-    guard seconds > 0 else { return "now" }
+    guard seconds > 0 else { return String(localized: "now") }
 
     let totalMinutes = max(1, Int(ceil(seconds / 60)))
     let days = totalMinutes / (24 * 60)
@@ -377,12 +396,26 @@ private func remainingTimeText(until resetAt: Date, from referenceDate: Date) ->
     let minutes = totalMinutes % 60
 
     if days > 0 {
-        return hours > 0 ? "\(days)d \(hours)h" : "\(days)d"
+        if hours > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lldd %lldh"),
+                Int64(days),
+                Int64(hours)
+            )
+        }
+        return String.localizedStringWithFormat(String(localized: "%lldd"), Int64(days))
     }
     if hours > 0 {
-        return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+        if minutes > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lldh %lldm"),
+                Int64(hours),
+                Int64(minutes)
+            )
+        }
+        return String.localizedStringWithFormat(String(localized: "%lldh"), Int64(hours))
     }
-    return "\(minutes)m"
+    return String.localizedStringWithFormat(String(localized: "%lldm"), Int64(minutes))
 }
 
 private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> String {

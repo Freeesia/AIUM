@@ -26,17 +26,17 @@ enum UsageRefreshSetting: Int, CaseIterable, Identifiable, Sendable {
     var displayName: String {
         switch self {
         case .automatic:
-            return "Auto"
+            return String(localized: "Auto")
         case .fifteenMinutes:
-            return "15 min"
+            return String(localized: "15 min")
         case .thirtyMinutes:
-            return "30 min"
+            return String(localized: "30 min")
         case .oneHour:
-            return "1 hour"
+            return String(localized: "1 hour")
         case .twoHours:
-            return "2 hours"
+            return String(localized: "2 hours")
         case .sixHours:
-            return "6 hours"
+            return String(localized: "6 hours")
         }
     }
 

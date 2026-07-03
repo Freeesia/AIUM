@@ -580,21 +580,26 @@ enum CodexAuthError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .clientIdNotConfigured:
-            return "Codex OAuth Client ID is not configured. Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings."
-        case .notAuthenticated: return "Not signed in to Codex."
-        case .deviceCodeExpired: return "Device code expired. Please try again."
-        case .accessDenied: return "Access was denied."
-        case .timeout: return "Authentication timed out."
-        case .noRefreshToken: return "No refresh token available."
+            return String(localized: "Codex OAuth Client ID is not configured. Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings.")
+        case .notAuthenticated: return String(localized: "Not signed in to Codex.")
+        case .deviceCodeExpired: return String(localized: "Device code expired. Please try again.")
+        case .accessDenied: return String(localized: "Access was denied.")
+        case .timeout: return String(localized: "Authentication timed out.")
+        case .noRefreshToken: return String(localized: "No refresh token available.")
         case .httpError(let code, let body):
-            return "Codex auth error \(code): \(Self.preview(body))"
-        case .refreshFailed(let msg): return "Token refresh failed: \(msg)"
+            return String.localizedStringWithFormat(
+                String(localized: "Codex auth error %lld: %@"),
+                Int64(code),
+                Self.preview(body)
+            )
+        case .refreshFailed(let msg):
+            return String.localizedStringWithFormat(String(localized: "Token refresh failed: %@"), msg)
         case .unknown(let msg): return msg
         }
     }
 
     private static func preview(_ body: String?) -> String {
-        guard let body, !body.isEmpty else { return "no body" }
+        guard let body, !body.isEmpty else { return String(localized: "no body") }
         let singleLine = body.replacingOccurrences(of: "\n", with: " ")
         if singleLine.count <= 300 { return singleLine }
         return String(singleLine.prefix(300)) + "..."

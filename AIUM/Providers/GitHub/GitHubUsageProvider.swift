@@ -164,8 +164,8 @@ private enum GitHubUsageEndpoint {
 
     var displayName: String {
         switch self {
-        case .aiCredits: return "AI Credits"
-        case .premiumRequests: return "Premium Requests"
+        case .aiCredits: return String(localized: "AI Credits")
+        case .premiumRequests: return String(localized: "Premium Requests")
         }
     }
 
@@ -192,7 +192,7 @@ private enum GitHubUsageEndpoint {
 
     func errorMessage(for error: Error) -> String {
         if case GitHubAPIError.httpError(let statusCode, _) = error, statusCode == 404 {
-            return "\(displayName): GitHub API HTTP 404. This account does not expose personally billed Copilot usage to the GitHub App."
+            return "\(displayName): GitHub API HTTP 404. \(String(localized: "This account does not expose personally billed Copilot usage to the GitHub App."))"
         }
         return "\(displayName): \(error.localizedDescription)"
     }
@@ -206,8 +206,8 @@ enum GitHubUsageError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notAuthenticated: return "Not signed in to GitHub."
-        case .noDataAvailable: return "No usage data available from GitHub."
+        case .notAuthenticated: return String(localized: "Not signed in to GitHub.")
+        case .noDataAvailable: return String(localized: "No usage data available from GitHub.")
         }
     }
 }

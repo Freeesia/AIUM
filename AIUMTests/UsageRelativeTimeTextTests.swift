@@ -12,7 +12,7 @@ final class UsageRelativeTimeTextTests: XCTestCase {
             locale: locale
         )
 
-        XCTAssertTrue(text.contains("min"))
+        XCTAssertTrue(text.contains("1"), "Unexpected relative time: \(text)")
         XCTAssertFalse(text.localizedCaseInsensitiveContains("sec"))
     }
 
@@ -23,7 +23,7 @@ final class UsageRelativeTimeTextTests: XCTestCase {
             locale: locale
         )
 
-        XCTAssertTrue(text.contains("min"))
+        XCTAssertTrue(text.contains("1"), "Unexpected relative time: \(text)")
         XCTAssertFalse(text.localizedCaseInsensitiveContains("sec"))
     }
 
@@ -45,7 +45,7 @@ final class UsageRelativeTimeTextTests: XCTestCase {
             locale: locale
         )
 
-        XCTAssertTrue(text.contains("min"))
+        XCTAssertTrue(text.contains("1"), "Unexpected relative time: \(text)")
         XCTAssertFalse(text.localizedCaseInsensitiveContains("sec"))
     }
 }

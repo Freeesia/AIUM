@@ -25,7 +25,7 @@ enum DemoUsageDataFactory {
             UsageSnapshot(
                 provider: .githubCopilot,
                 accountId: "demo-github",
-                displayName: "Demo GitHub Account",
+                displayName: String(localized: "Demo GitHub Account"),
                 planKind: .aiCredits,
                 windowKind: .monthly,
                 used: 620,
@@ -38,7 +38,7 @@ enum DemoUsageDataFactory {
             UsageSnapshot(
                 provider: .githubCopilot,
                 accountId: "demo-github",
-                displayName: "Demo GitHub Account",
+                displayName: String(localized: "Demo GitHub Account"),
                 planKind: .premiumRequests,
                 windowKind: .monthly,
                 used: 184,

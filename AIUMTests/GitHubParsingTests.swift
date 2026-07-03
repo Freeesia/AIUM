@@ -321,9 +321,13 @@ final class GitHubParsingTests: XCTestCase {
 
         let premium = try XCTUnwrap(snapshots.first { $0.planKind == .premiumRequests })
         XCTAssertEqual(premium.source, "GitHub Billing API")
-        XCTAssertNotNil(premium.errorMessage)
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("HTTP 404"))
-        XCTAssertTrue(try XCTUnwrap(premium.errorMessage).contains("personally billed Copilot usage"))
+        let errorMessage = try XCTUnwrap(premium.errorMessage)
+        XCTAssertTrue(errorMessage.contains("404"))
+        XCTAssertTrue(
+            errorMessage.contains(
+                String(localized: "This account does not expose personally billed Copilot usage to the GitHub App.")
+            )
+        )
     }
 
     func testUsageProviderReturnsPlanSpecificErrorsWhenUsageEndpointsFail() async throws {
