@@ -94,6 +94,15 @@ If live sign-in is tested, the reviewer must use an account they are authorized 
 - iPhone の表示言語ごとに、日本語版と英語版をそれぞれ撮影する。
 - App Store Connect へアップロード後、並び順と各ローカライゼーションへの割り当てを確認する。
 
+起動済みの 6.9-inch iPhone Simulator が1台ある状態で、次のコマンドを実行するとデモモードのダッシュボードと設定画面を撮影できる。ステータスバーを固定し、生成画像が App Store Connect の対応ピクセルサイズであることも検証する。
+
+```sh
+scripts/capture-app-store-screenshots.sh ja
+scripts/capture-app-store-screenshots.sh en
+```
+
+複数の Simulator が起動している場合は `SIMULATOR_UDID` を指定する。画像は `artifacts/app-store/screenshots/<language>/` に生成され、Git の管理対象には含めない。
+
 ## 実装監査メモ
 
 - Privacy Manifest: `AIUM/PrivacyInfo.xcprivacy`
