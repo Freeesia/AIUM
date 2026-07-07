@@ -10,23 +10,19 @@ Issue #40 の提出作業で App Store Connect へ転記する内容をまとめ
 - Developer's Advertising or Marketing: No
 - Analytics: No
 - Data Broker への共有: No
+- Data Collection: No（Data Not Collected）
 
-現在の実装は開発者管理サーバー、広告 SDK、解析 SDK を使用しない。ただし GitHub と OpenAI のアカウントへ端末から直接接続し、認証・利用状況取得を行うため、次の項目を保守的に申告する。
-
-| App Store Connect のデータ種別 | 用途 | ユーザーにリンク | Tracking |
-| --- | --- | --- | --- |
-| Contact Info > Email Address | App Functionality | Yes | No |
-| Identifiers > User ID | App Functionality | Yes | No |
-| Usage Data > Other Usage Data | App Functionality | Yes | No |
+現在の実装は開発者管理サーバー、広告 SDK、解析 SDK を使用しない。GitHub と OpenAI のアカウントへは端末から直接接続し、認証・利用状況取得を行う。認証情報、アカウント識別子、利用状況のキャッシュ、設定値は Keychain、端末内ストレージ、またはローカル App Group コンテナに保存され、開発者が管理するサーバーには送信しない。
 
 根拠:
 
-- Codex のトークン情報にはアカウント ID とメールアドレスが含まれ、Keychain に端末内保存される。
-- GitHub のユーザー ID、ユーザー名、Copilot 使用量と、Codex のアカウント ID、メールアドレス、レート制限情報を各サービスから取得する。
-- 認証情報は Keychain、利用状況は端末内またはローカル App Group コンテナ、設定値は UserDefaults に保存する。
-- 開発者管理サーバーへの送信、広告、解析、マーケティング、第三者への販売・共有は行わない。
+- Apple の定義では、端末内だけで処理されるデータは「収集」に当たらない。
+- Apple の定義では、リクエストをリアルタイムに処理するために必要な期間を超えて、開発者または組み込みサードパーティパートナーがアクセスできる形で端末外へ送信される場合に「収集」とみなされる。
+- AIUM は GitHub / OpenAI と端末から直接通信するが、開発者がその通信内容、認証情報、アカウント識別子、利用状況データへアクセスできるバックエンドを持たない。
+- GitHub / OpenAI 自体のデータ処理には、それぞれのプライバシーポリシーが適用される。
+- 広告、解析、マーケティング、データ仲介サービス、第三者 SDK への共有は行わない。
 
-注意: Apple の定義では、端末内だけで処理するデータは「収集」に当たらない。一方、AIUM はユーザーが選択した GitHub / OpenAI と継続的に直接通信するため、審査時の過少申告を避ける目的で上記を申告する。提出前に App Store Connect の最新設問と各サービスの処理内容を再確認する。
+注意: 実装が変更され、開発者管理サーバー、解析 SDK、広告 SDK、クラッシュ収集 SDK、またはその他の外部ベンダーにユーザーデータを送信・保存するようになった場合は、App Store Connect の App Privacy 回答と Privacy Manifest を更新する。
 
 ## 年齢レーティング
 
