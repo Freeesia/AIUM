@@ -214,7 +214,7 @@ final class GitHubParsingTests: XCTestCase {
 
         try store.save(GitHubTokenBundle(
             accessToken: "ghu_access",
-            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            accessTokenExpiresAt: Date().addingTimeInterval(3 * 3600),
             refreshToken: "ghr_refresh",
             refreshTokenExpiresAt: Date().addingTimeInterval(7200)
         ))
@@ -223,6 +223,90 @@ final class GitHubParsingTests: XCTestCase {
         let accessToken = try await dashboardProvider.validAccessToken()
         XCTAssertTrue(authenticatedAfterSave)
         XCTAssertEqual(accessToken, "ghu_access")
+    }
+
+    func testAuthProviderRefreshAccessTokenUpdatesStoredBundle() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_old",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_old",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        MockURLProtocol.requestHandler = { request in
+            let body = try self.requestBodyString(request)
+            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
+            XCTAssertTrue(body.contains("grant_type=refresh_token"))
+            XCTAssertTrue(body.contains("refresh_token=ghr_old"))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new","refresh_token_expires_in":15811200}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        let token = try await provider.refreshAccessToken()
+        let savedBundle = try XCTUnwrap(try store.load())
+
+        XCTAssertEqual(token, "ghu_new")
+        XCTAssertEqual(savedBundle.accessToken, "ghu_new")
+        XCTAssertEqual(savedBundle.refreshToken, "ghr_new")
+        XCTAssertNotNil(savedBundle.accessTokenExpiresAt)
+        XCTAssertNotNil(savedBundle.refreshTokenExpiresAt)
+    }
+
+    func testAuthProviderRefreshesAccessTokenInsideRefreshLeeway() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_old",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_old",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        MockURLProtocol.requestHandler = { request in
+            let body = try self.requestBodyString(request)
+            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
+            XCTAssertTrue(body.contains("grant_type=refresh_token"))
+            XCTAssertTrue(body.contains("refresh_token=ghr_old"))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new","refresh_token_expires_in":15811200}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        let token = try await provider.validAccessToken()
+        let savedBundle = try XCTUnwrap(try store.load())
+
+        XCTAssertEqual(token, "ghu_new")
+        XCTAssertEqual(savedBundle.accessToken, "ghu_new")
+        XCTAssertEqual(savedBundle.refreshToken, "ghr_new")
     }
 
     // MARK: - API errors
