@@ -7,6 +7,8 @@ LANGUAGE="${1:-ja}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/artifacts/app-store/screenshots/$LANGUAGE}"
 DERIVED_DATA_DIR="${DERIVED_DATA_DIR:-/private/tmp/AIUM-app-store-screenshots}"
 BUNDLE_ID="com.studiofreesia.aium"
+TARGET_WIDTH=1284
+TARGET_HEIGHT=2778
 
 case "$LANGUAGE" in
     ja)
@@ -25,7 +27,7 @@ if [[ -z "${SIMULATOR_UDID:-}" ]]; then
     BOOTED_IPHONES="$(xcrun simctl list devices booted | awk -F '[()]' '/iPhone .*\(Booted\)/ { print $2 }')"
     BOOTED_COUNT="$(printf '%s\n' "$BOOTED_IPHONES" | awk 'NF { count += 1 } END { print count + 0 }')"
     if [[ "$BOOTED_COUNT" -ne 1 ]]; then
-        echo "Start exactly one 6.9-inch iPhone Simulator, or set SIMULATOR_UDID." >&2
+        echo "Start exactly one supported high-resolution iPhone Simulator, or set SIMULATOR_UDID." >&2
         exit 1
     fi
     SIMULATOR_UDID="$BOOTED_IPHONES"
@@ -36,7 +38,7 @@ case "$DEVICE_LINE" in
     *"iPhone Air"*|*"iPhone 17 Pro Max"*|*"iPhone 16 Pro Max"*|*"iPhone 16 Plus"*|*"iPhone 15 Pro Max"*|*"iPhone 15 Plus"*|*"iPhone 14 Pro Max"*)
         ;;
     *)
-        echo "The selected Simulator is not an accepted 6.9-inch capture device: $DEVICE_LINE" >&2
+        echo "The selected Simulator is not an accepted high-resolution capture device: $DEVICE_LINE" >&2
         exit 1
         ;;
 esac
@@ -86,13 +88,23 @@ capture() {
     width="$(sips -g pixelWidth "$OUTPUT_DIR/$filename" | awk '/pixelWidth/ { print $2 }')"
     height="$(sips -g pixelHeight "$OUTPUT_DIR/$filename" | awk '/pixelHeight/ { print $2 }')"
     case "${width}x${height}" in
-        1260x2736|1290x2796|1320x2868)
+        1242x2688|1260x2736|1284x2778|1290x2796|1320x2868)
             ;;
         *)
             echo "Unexpected screenshot size for $filename: ${width}x${height}" >&2
             exit 1
             ;;
     esac
+
+    sips --resampleWidth "$TARGET_WIDTH" "$OUTPUT_DIR/$filename" >/dev/null
+    sips --cropToHeightWidth "$TARGET_HEIGHT" "$TARGET_WIDTH" "$OUTPUT_DIR/$filename" >/dev/null
+
+    width="$(sips -g pixelWidth "$OUTPUT_DIR/$filename" | awk '/pixelWidth/ { print $2 }')"
+    height="$(sips -g pixelHeight "$OUTPUT_DIR/$filename" | awk '/pixelHeight/ { print $2 }')"
+    if [[ "${width}x${height}" != "${TARGET_WIDTH}x${TARGET_HEIGHT}" ]]; then
+        echo "Unexpected final screenshot size for $filename: ${width}x${height}" >&2
+        exit 1
+    fi
 }
 
 capture "01-dashboard.png"

@@ -72,7 +72,7 @@ If live sign-in is tested, the reviewer must use an account they are authorized 
 
 ## スクリーンショット
 
-最高解像度の 6.9-inch iPhone 用 PNG を用意する。縦向きの対応サイズは `1260 x 2736`、`1290 x 2796`、`1320 x 2868` のいずれか。1〜10枚を登録できる。
+App Store Connect の 6.5-inch iPhone 枠向け PNG を用意する。縦向きの対応サイズは `1242 x 2688` または `1284 x 2778`。1〜10枚を登録できる。
 
 推奨順:
 
@@ -90,7 +90,7 @@ If live sign-in is tested, the reviewer must use an account they are authorized 
 - iPhone の表示言語ごとに、日本語版と英語版をそれぞれ撮影する。
 - App Store Connect へアップロード後、並び順と各ローカライゼーションへの割り当てを確認する。
 
-起動済みの 6.9-inch iPhone Simulator が1台ある状態で、次のコマンドを実行するとデモモードのダッシュボードと設定画面を撮影できる。ステータスバーを固定し、生成画像が App Store Connect の対応ピクセルサイズであることも検証する。
+起動済みの高解像度 iPhone Simulator が1台ある状態で、次のコマンドを実行するとデモモードのダッシュボードと設定画面を撮影できる。ステータスバーを固定し、生成画像を App Store Connect の 6.5-inch 枠で受け付けられる `1284 x 2778` に変換して検証する。
 
 ```sh
 scripts/capture-app-store-screenshots.sh ja
