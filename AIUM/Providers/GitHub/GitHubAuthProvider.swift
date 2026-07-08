@@ -119,6 +119,8 @@ private struct GitHubTokenResponse: Decodable {
 // MARK: - Auth Provider
 
 actor GitHubAuthProvider: GitHubAuthProviding {
+    private static let accessTokenRefreshLeeway: TimeInterval = 2 * 60 * 60
+
     private let session: URLSession
     private let clientIdProvider: @Sendable () -> String?
     private let tokenStore: any GitHubTokenStoring
@@ -140,7 +142,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     func validAccessToken() async throws -> String? {
         guard let bundle = try tokenStore.load() else { return nil }
         guard let expiresAt = bundle.accessTokenExpiresAt,
-              expiresAt <= Date().addingTimeInterval(60)
+              expiresAt <= Date().addingTimeInterval(Self.accessTokenRefreshLeeway)
         else { return bundle.accessToken }
 
         guard let refreshToken = bundle.refreshToken,
@@ -150,7 +152,19 @@ actor GitHubAuthProvider: GitHubAuthProviding {
             throw GitHubAuthError.sessionExpired
         }
 
-        return try await refreshAccessToken(refreshToken).accessToken
+        return try await requestAccessTokenRefresh(refreshToken).accessToken
+    }
+
+    func refreshAccessToken() async throws -> String? {
+        guard let bundle = try tokenStore.load() else { return nil }
+        guard let refreshToken = bundle.refreshToken,
+              bundle.refreshTokenExpiresAt.map({ $0 > Date() }) ?? true
+        else {
+            logout()
+            throw GitHubAuthError.sessionExpired
+        }
+
+        return try await requestAccessTokenRefresh(refreshToken).accessToken
     }
 
     func startDeviceFlow() async throws -> GitHubDeviceCodeResponse {
@@ -220,7 +234,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         tokenStore.delete()
     }
 
-    private func refreshAccessToken(_ refreshToken: String) async throws -> GitHubTokenBundle {
+    private func requestAccessTokenRefresh(_ refreshToken: String) async throws -> GitHubTokenBundle {
         guard let clientId = clientIdProvider() else {
             throw GitHubAuthError.clientIdNotConfigured
         }
