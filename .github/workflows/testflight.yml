@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -114,6 +115,21 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
+      - name: Prepare export options
+        run: |
+          export_options_path="$RUNNER_TEMP/TestFlightExportOptions.plist"
+          cp Config/TestFlightExportOptions.plist "$export_options_path"
+
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            /usr/libexec/PlistBuddy -c "Set :testFlightInternalTestingOnly false" "$export_options_path"
+            echo "Preparing public TestFlight upload for $GITHUB_REF_NAME"
+          else
+            /usr/libexec/PlistBuddy -c "Set :testFlightInternalTestingOnly true" "$export_options_path"
+            echo "Preparing internal TestFlight upload for $GITHUB_REF_NAME"
+          fi
+
+          echo "EXPORT_OPTIONS_PLIST=$export_options_path" >> "$GITHUB_ENV"
+
       - name: Archive
         run: |
           xcodebuild archive \
@@ -137,7 +153,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/AIUM.xcarchive" \
             -exportPath "$RUNNER_TEMP/TestFlightExport" \
-            -exportOptionsPlist Config/TestFlightExportOptions.plist \
+            -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
             -authenticationKeyPath "$API_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
