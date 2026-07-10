@@ -74,6 +74,9 @@ Config/Version.generated.xcconfig
 # Archive
 *.xcarchive/
 
+# Generated App Store screenshots
+artifacts/app-store/screenshots/
+
 # Editor swap files
 *.swp
 *~

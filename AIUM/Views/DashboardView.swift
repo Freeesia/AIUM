@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
-    @State private var showSettings = false
+    @State private var showSettings = ScreenshotLaunchConfiguration.showSettings
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
