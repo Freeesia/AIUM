@@ -29,6 +29,7 @@ struct GitHubOAuthConfig {
 
 protocol GitHubAuthProviding: Actor {
     func validAccessToken() async throws -> String?
+    func recoverAccessToken(rejectedAccessToken: String) async throws -> String?
     var isAuthenticated: Bool { get async }
 }
 
@@ -119,20 +120,32 @@ private struct GitHubTokenResponse: Decodable {
 // MARK: - Auth Provider
 
 actor GitHubAuthProvider: GitHubAuthProviding {
-    private static let accessTokenRefreshLeeway: TimeInterval = 2 * 60 * 60
+    static let shared = GitHubAuthProvider()
+
+    private static let defaultAccessTokenRefreshLeeway: TimeInterval = 60
+
+    private struct InFlightRefresh {
+        let id: UInt64
+        let task: Task<GitHubTokenBundle, Error>
+    }
 
     private let session: URLSession
     private let clientIdProvider: @Sendable () -> String?
     private let tokenStore: any GitHubTokenStoring
+    private let accessTokenRefreshLeeway: TimeInterval
+    private var inFlightRefresh: InFlightRefresh?
+    private var nextRefreshID: UInt64 = 0
 
     init(
         session: URLSession = .shared,
         clientIdProvider: @escaping @Sendable () -> String? = { GitHubOAuthConfig.clientId },
-        tokenStore: any GitHubTokenStoring = KeychainGitHubTokenStore()
+        tokenStore: any GitHubTokenStoring = KeychainGitHubTokenStore(),
+        accessTokenRefreshLeeway: TimeInterval = GitHubAuthProvider.defaultAccessTokenRefreshLeeway
     ) {
         self.session = session
         self.clientIdProvider = clientIdProvider
         self.tokenStore = tokenStore
+        self.accessTokenRefreshLeeway = accessTokenRefreshLeeway
     }
 
     var isAuthenticated: Bool {
@@ -141,30 +154,31 @@ actor GitHubAuthProvider: GitHubAuthProviding {
 
     func validAccessToken() async throws -> String? {
         guard let bundle = try tokenStore.load() else { return nil }
-        guard let expiresAt = bundle.accessTokenExpiresAt,
-              expiresAt <= Date().addingTimeInterval(Self.accessTokenRefreshLeeway)
-        else { return bundle.accessToken }
-
-        guard let refreshToken = bundle.refreshToken,
-              bundle.refreshTokenExpiresAt.map({ $0 > Date() }) ?? true
-        else {
-            logout()
-            throw GitHubAuthError.sessionExpired
-        }
-
-        return try await requestAccessTokenRefresh(refreshToken).accessToken
+        return try await accessToken(from: bundle)
     }
 
-    func refreshAccessToken() async throws -> String? {
-        guard let bundle = try tokenStore.load() else { return nil }
-        guard let refreshToken = bundle.refreshToken,
-              bundle.refreshTokenExpiresAt.map({ $0 > Date() }) ?? true
-        else {
-            logout()
-            throw GitHubAuthError.sessionExpired
+    func recoverAccessToken(rejectedAccessToken: String) async throws -> String? {
+        if let inFlightRefresh {
+            let refreshedBundle = try await waitForRefresh(inFlightRefresh)
+            if refreshedBundle.accessToken != rejectedAccessToken {
+                return refreshedBundle.accessToken
+            }
         }
 
-        return try await requestAccessTokenRefresh(refreshToken).accessToken
+        guard let bundle = try tokenStore.load() else { return nil }
+        if bundle.accessToken != rejectedAccessToken {
+            return try await accessToken(from: bundle)
+        }
+
+        if shouldRefreshAccessToken(in: bundle) {
+            return try await refreshAccessToken(using: bundle).accessToken
+        }
+
+        // A 401 for the current, unexpired credential indicates revocation or
+        // another permanent authentication failure. Refreshing every 401 would
+        // hide those conditions and can create a token-rotation loop.
+        logout()
+        throw GitHubAuthError.sessionExpired
     }
 
     func startDeviceFlow() async throws -> GitHubDeviceCodeResponse {
@@ -207,7 +221,7 @@ actor GitHubAuthProvider: GitHubAuthProviding {
             }
 
             if let bundle = tokenBundle(from: tokenResponse) {
-                try save(bundle)
+                try replaceCredentials(with: bundle)
                 return bundle.accessToken
             }
 
@@ -231,10 +245,57 @@ actor GitHubAuthProvider: GitHubAuthProviding {
     }
 
     func logout() {
+        inFlightRefresh?.task.cancel()
+        inFlightRefresh = nil
         tokenStore.delete()
     }
 
-    private func requestAccessTokenRefresh(_ refreshToken: String) async throws -> GitHubTokenBundle {
+    private func accessToken(from bundle: GitHubTokenBundle) async throws -> String {
+        guard shouldRefreshAccessToken(in: bundle) else {
+            return bundle.accessToken
+        }
+
+        return try await refreshAccessToken(using: bundle).accessToken
+    }
+
+    private func shouldRefreshAccessToken(in bundle: GitHubTokenBundle, now: Date = Date()) -> Bool {
+        guard let expiresAt = bundle.accessTokenExpiresAt else { return false }
+        return expiresAt <= now.addingTimeInterval(accessTokenRefreshLeeway)
+    }
+
+    private func refreshAccessToken(using bundle: GitHubTokenBundle) async throws -> GitHubTokenBundle {
+        if let inFlightRefresh {
+            return try await waitForRefresh(inFlightRefresh)
+        }
+
+        guard let refreshToken = bundle.refreshToken,
+              !refreshToken.isEmpty,
+              bundle.refreshTokenExpiresAt.map({ $0 > Date() }) ?? true
+        else {
+            logout()
+            throw GitHubAuthError.sessionExpired
+        }
+
+        nextRefreshID &+= 1
+        let refreshID = nextRefreshID
+        let task = Task {
+            try await self.rotateAccessToken(expectedRefreshToken: refreshToken)
+        }
+        let refresh = InFlightRefresh(id: refreshID, task: task)
+        inFlightRefresh = refresh
+        return try await waitForRefresh(refresh)
+    }
+
+    private func waitForRefresh(_ refresh: InFlightRefresh) async throws -> GitHubTokenBundle {
+        defer {
+            if inFlightRefresh?.id == refresh.id {
+                inFlightRefresh = nil
+            }
+        }
+        return try await refresh.task.value
+    }
+
+    private func rotateAccessToken(expectedRefreshToken: String) async throws -> GitHubTokenBundle {
         guard let clientId = clientIdProvider() else {
             throw GitHubAuthError.clientIdNotConfigured
         }
@@ -242,16 +303,43 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         let tokenResponse = try await requestToken([
             "client_id": clientId,
             "grant_type": "refresh_token",
-            "refresh_token": refreshToken,
+            "refresh_token": expectedRefreshToken,
         ])
 
-        if let bundle = tokenBundle(from: tokenResponse) {
-            try save(bundle)
-            return bundle
+        if let refreshedBundle = tokenBundle(from: tokenResponse) {
+            guard let currentBundle = try tokenStore.load() else {
+                throw GitHubAuthError.sessionExpired
+            }
+
+            // Do not overwrite credentials written by a newer login or token
+            // rotation while this network request was suspended.
+            guard currentBundle.refreshToken == expectedRefreshToken else {
+                guard currentBundle.hasUsableCredentials() else {
+                    throw GitHubAuthError.sessionExpired
+                }
+                return currentBundle
+            }
+
+            try save(refreshedBundle)
+            return refreshedBundle
         }
 
-        logout()
-        throw GitHubAuthError.sessionExpired
+        if tokenResponse.error == "bad_refresh_token" {
+            if let currentBundle = try tokenStore.load(),
+               currentBundle.refreshToken != expectedRefreshToken,
+               currentBundle.hasUsableCredentials() {
+                return currentBundle
+            }
+
+            tokenStore.delete()
+            throw GitHubAuthError.sessionExpired
+        }
+
+        if let error = tokenResponse.error {
+            throw GitHubAuthError.unknown(tokenResponse.errorDescription ?? error)
+        }
+
+        throw GitHubAuthError.unknown("GitHub token response did not contain an access token.")
     }
 
     private func requestToken(_ parameters: [String: String]) async throws -> GitHubTokenResponse {
@@ -262,7 +350,20 @@ actor GitHubAuthProvider: GitHubAuthProviding {
         request.httpBody = formBody(parameters)
 
         let (data, response) = try await session.data(for: request)
+        let decodedResponse = try? JSONDecoder().decode(GitHubTokenResponse.self, from: data)
+
+        // GitHub's OAuth endpoint can return a structured OAuth error body.
+        // Preserve it even when the HTTP response itself is unsuccessful so
+        // callers can distinguish an expired refresh token from transient or
+        // configuration failures.
+        if let decodedResponse, decodedResponse.error != nil {
+            return decodedResponse
+        }
+
         try validate(response: response, data: data)
+        if let decodedResponse {
+            return decodedResponse
+        }
         return try JSONDecoder().decode(GitHubTokenResponse.self, from: data)
     }
 
@@ -278,6 +379,12 @@ actor GitHubAuthProvider: GitHubAuthProviding {
 
     private func save(_ bundle: GitHubTokenBundle) throws {
         try tokenStore.save(bundle)
+    }
+
+    private func replaceCredentials(with bundle: GitHubTokenBundle) throws {
+        inFlightRefresh?.task.cancel()
+        inFlightRefresh = nil
+        try save(bundle)
     }
 
     private func validate(response: URLResponse, data: Data) throws {

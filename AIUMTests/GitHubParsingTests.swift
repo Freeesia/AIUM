@@ -8,6 +8,11 @@ final class GitHubParsingTests: XCTestCase {
         return d
     }()
 
+    override func tearDown() {
+        MockURLProtocol.requestHandler = nil
+        super.tearDown()
+    }
+
     // MARK: - GitHubUser
 
     func testDecodeGitHubUser() throws {
@@ -225,54 +230,11 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(accessToken, "ghu_access")
     }
 
-    func testAuthProviderRefreshAccessTokenUpdatesStoredBundle() async throws {
+    func testAuthProviderRefreshesExpiredAccessTokenAndUpdatesStoredBundle() async throws {
         let store = InMemoryGitHubTokenStore()
         try store.save(GitHubTokenBundle(
             accessToken: "ghu_old",
-            accessTokenExpiresAt: Date().addingTimeInterval(3600),
-            refreshToken: "ghr_old",
-            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
-        ))
-
-        MockURLProtocol.requestHandler = { request in
-            let body = try self.requestBodyString(request)
-            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
-            XCTAssertTrue(body.contains("grant_type=refresh_token"))
-            XCTAssertTrue(body.contains("refresh_token=ghr_old"))
-
-            let response = HTTPURLResponse(
-                url: try XCTUnwrap(request.url),
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!
-            let payload = #"{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new","refresh_token_expires_in":15811200}"#
-            return (response, Data(payload.utf8))
-        }
-
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [MockURLProtocol.self]
-        let provider = GitHubAuthProvider(
-            session: URLSession(configuration: configuration),
-            clientIdProvider: { "Iv23.test-client" },
-            tokenStore: store
-        )
-
-        let token = try await provider.refreshAccessToken()
-        let savedBundle = try XCTUnwrap(try store.load())
-
-        XCTAssertEqual(token, "ghu_new")
-        XCTAssertEqual(savedBundle.accessToken, "ghu_new")
-        XCTAssertEqual(savedBundle.refreshToken, "ghr_new")
-        XCTAssertNotNil(savedBundle.accessTokenExpiresAt)
-        XCTAssertNotNil(savedBundle.refreshTokenExpiresAt)
-    }
-
-    func testAuthProviderRefreshesAccessTokenInsideRefreshLeeway() async throws {
-        let store = InMemoryGitHubTokenStore()
-        try store.save(GitHubTokenBundle(
-            accessToken: "ghu_old",
-            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            accessTokenExpiresAt: Date().addingTimeInterval(-1),
             refreshToken: "ghr_old",
             refreshTokenExpiresAt: Date().addingTimeInterval(7200)
         ))
@@ -307,6 +269,220 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertEqual(token, "ghu_new")
         XCTAssertEqual(savedBundle.accessToken, "ghu_new")
         XCTAssertEqual(savedBundle.refreshToken, "ghr_new")
+        XCTAssertNotNil(savedBundle.accessTokenExpiresAt)
+        XCTAssertNotNil(savedBundle.refreshTokenExpiresAt)
+    }
+
+    func testAuthProviderRefreshesAccessTokenInsideRefreshLeeway() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_old",
+            accessTokenExpiresAt: Date().addingTimeInterval(30),
+            refreshToken: "ghr_old",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        MockURLProtocol.requestHandler = { request in
+            let body = try self.requestBodyString(request)
+            XCTAssertTrue(body.contains("client_id=Iv23.test-client"))
+            XCTAssertTrue(body.contains("grant_type=refresh_token"))
+            XCTAssertTrue(body.contains("refresh_token=ghr_old"))
+
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new","refresh_token_expires_in":15811200}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        let token = try await provider.validAccessToken()
+        let savedBundle = try XCTUnwrap(try store.load())
+
+        XCTAssertEqual(token, "ghu_new")
+        XCTAssertEqual(savedBundle.accessToken, "ghu_new")
+        XCTAssertEqual(savedBundle.refreshToken, "ghr_new")
+    }
+
+    func testAuthProviderKeepsValidAccessTokenOutsideRefreshLeeway() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_current",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_current",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        MockURLProtocol.requestHandler = { _ in
+            XCTFail("A valid access token must be reused until it nears expiration.")
+            throw URLError(.badServerResponse)
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        let token = try await provider.validAccessToken()
+
+        XCTAssertEqual(token, "ghu_current")
+        XCTAssertEqual(try store.load()?.refreshToken, "ghr_current")
+    }
+
+    func testAuthProviderCoalescesConcurrentRefreshRequests() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_old",
+            accessTokenExpiresAt: Date().addingTimeInterval(30),
+            refreshToken: "ghr_old",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+        let requestCounter = LockedCounter()
+
+        MockURLProtocol.requestHandler = { request in
+            requestCounter.increment()
+            Thread.sleep(forTimeInterval: 0.1)
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new","refresh_token_expires_in":15811200}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        async let firstToken = provider.validAccessToken()
+        async let secondToken = provider.validAccessToken()
+        let (first, second) = try await (firstToken, secondToken)
+
+        XCTAssertEqual(first, "ghu_new")
+        XCTAssertEqual(second, "ghu_new")
+        XCTAssertEqual(requestCounter.value, 1)
+    }
+
+    func testAuthProviderPreservesNewerCredentialsAfterStaleBadRefreshToken() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_old",
+            accessTokenExpiresAt: Date().addingTimeInterval(-1),
+            refreshToken: "ghr_old",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+        let newerBundle = GitHubTokenBundle(
+            accessToken: "ghu_newer",
+            accessTokenExpiresAt: Date().addingTimeInterval(8 * 3600),
+            refreshToken: "ghr_newer",
+            refreshTokenExpiresAt: Date().addingTimeInterval(180 * 24 * 3600)
+        )
+
+        MockURLProtocol.requestHandler = { request in
+            try store.save(newerBundle)
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 400,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"error":"bad_refresh_token","error_description":"The refresh token is invalid."}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        let token = try await provider.validAccessToken()
+
+        XCTAssertEqual(token, "ghu_newer")
+        XCTAssertEqual(try store.load()?.refreshToken, "ghr_newer")
+    }
+
+    func testAuthProviderEndsSessionForCurrentBadRefreshToken() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_expired",
+            accessTokenExpiresAt: Date().addingTimeInterval(-1),
+            refreshToken: "ghr_invalid",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 400,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            let payload = #"{"error":"bad_refresh_token","error_description":"The refresh token is invalid."}"#
+            return (response, Data(payload.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let provider = GitHubAuthProvider(
+            session: URLSession(configuration: configuration),
+            clientIdProvider: { "Iv23.test-client" },
+            tokenStore: store
+        )
+
+        do {
+            _ = try await provider.validAccessToken()
+            XCTFail("An invalid current refresh token must end the session.")
+        } catch GitHubAuthError.sessionExpired {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertNil(try store.load())
+    }
+
+    func testAuthProviderDoesNotRefreshCurrentUnexpiredTokenAfter401() async throws {
+        let store = InMemoryGitHubTokenStore()
+        try store.save(GitHubTokenBundle(
+            accessToken: "ghu_revoked",
+            accessTokenExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "ghr_current",
+            refreshTokenExpiresAt: Date().addingTimeInterval(7200)
+        ))
+        let provider = GitHubAuthProvider(tokenStore: store)
+
+        do {
+            _ = try await provider.recoverAccessToken(rejectedAccessToken: "ghu_revoked")
+            XCTFail("A 401 for the current unexpired token must not trigger a refresh loop.")
+        } catch GitHubAuthError.sessionExpired {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        XCTAssertNil(try store.load())
     }
 
     // MARK: - API errors
@@ -429,6 +605,21 @@ final class GitHubParsingTests: XCTestCase {
         XCTAssertNotNil(snapshots.first { $0.planKind == .premiumRequests }?.errorMessage)
     }
 
+    func testUsageProviderRetries401OnceWithRecoveredToken() async throws {
+        let auth = FakeGitHubAuthProvider(token: "ghu_old", recoveryToken: "ghu_new")
+        let api = FakeGitHubAPIClient(rejectedAccessToken: "ghu_old")
+        let provider = GitHubUsageProvider(authProvider: auth, apiClient: api)
+
+        let snapshots = try await provider.fetchUsage()
+        let receivedTokens = await api.receivedTokens
+        let recoveryCount = await auth.recoveryCount
+
+        XCTAssertEqual(snapshots.count, 2)
+        XCTAssertTrue(snapshots.allSatisfy { $0.errorMessage == nil })
+        XCTAssertEqual(recoveryCount, 1)
+        XCTAssertEqual(receivedTokens, ["ghu_old", "ghu_new", "ghu_new", "ghu_new"])
+    }
+
     private func makeAPIClient(statusCode: Int, body: String) -> GitHubAPIClient {
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(
@@ -467,14 +658,25 @@ final class GitHubParsingTests: XCTestCase {
 }
 
 private actor FakeGitHubAuthProvider: GitHubAuthProviding {
-    private let token: String?
+    private var token: String?
+    private let recoveryToken: String?
+    private(set) var recoveryCount = 0
 
-    init(token: String?) {
+    init(token: String?, recoveryToken: String? = nil) {
         self.token = token
+        self.recoveryToken = recoveryToken
     }
 
     func validAccessToken() async throws -> String? {
         token
+    }
+
+    func recoverAccessToken(rejectedAccessToken: String) async throws -> String? {
+        recoveryCount += 1
+        if let recoveryToken {
+            token = recoveryToken
+        }
+        return token
     }
 
     var isAuthenticated: Bool {
@@ -488,26 +690,34 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
     private let aiError: Error?
     private let premiumResponse: GitHubPremiumRequestUsageResponse?
     private let premiumError: Error?
+    private let rejectedAccessToken: String?
+    private(set) var receivedTokens: [String] = []
 
     init(
         user: GitHubUser = GitHubUser(login: "octocat", id: 42, name: "The Octocat", avatarUrl: nil),
         aiResponse: GitHubAICreditUsageResponse? = nil,
         aiError: Error? = nil,
         premiumResponse: GitHubPremiumRequestUsageResponse? = nil,
-        premiumError: Error? = nil
+        premiumError: Error? = nil,
+        rejectedAccessToken: String? = nil
     ) {
         self.user = user
         self.aiResponse = aiResponse
         self.aiError = aiError
         self.premiumResponse = premiumResponse
         self.premiumError = premiumError
+        self.rejectedAccessToken = rejectedAccessToken
     }
 
     func fetchUser(token: String) async throws -> GitHubUser {
-        user
+        receivedTokens.append(token)
+        try rejectIfNeeded(token)
+        return user
     }
 
     func fetchAICreditUsage(username: String, token: String) async throws -> GitHubAICreditUsageResponse {
+        receivedTokens.append(token)
+        try rejectIfNeeded(token)
         if let aiError { throw aiError }
         return aiResponse ?? GitHubAICreditUsageResponse(
             timePeriod: nil,
@@ -516,10 +726,20 @@ private actor FakeGitHubAPIClient: GitHubAPIProviding {
     }
 
     func fetchPremiumRequestUsage(username: String, token: String) async throws -> GitHubPremiumRequestUsageResponse {
+        receivedTokens.append(token)
+        try rejectIfNeeded(token)
         if let premiumError { throw premiumError }
         return premiumResponse ?? GitHubPremiumRequestUsageResponse(
             timePeriod: nil,
             usageItems: [.mock(quantity: 5)]
+        )
+    }
+
+    private func rejectIfNeeded(_ token: String) throws {
+        guard token == rejectedAccessToken else { return }
+        throw GitHubAPIError.authenticationFailed(
+            statusCode: 401,
+            body: #"{"message":"Bad credentials"}"#
         )
     }
 }
@@ -574,6 +794,19 @@ private final class InMemoryGitHubTokenStore: GitHubTokenStoring, @unchecked Sen
 
     func delete() {
         lock.withLock { bundle = nil }
+    }
+}
+
+private final class LockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    var value: Int {
+        lock.withLock { count }
+    }
+
+    func increment() {
+        lock.withLock { count += 1 }
     }
 }
 
