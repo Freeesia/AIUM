@@ -48,7 +48,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Init
 
     init(
-        githubAuth: GitHubAuthProvider = GitHubAuthProvider(),
+        githubAuth: GitHubAuthProvider = .shared,
         codexAuth: CodexAuthProvider = CodexAuthProvider(),
         usageStore: UsageStore? = nil,
         demoModeStore: DemoModeStore = DemoModeStore()

@@ -28,7 +28,7 @@ actor GitHubUsageProvider: UsageProvider {
     }
 
     init(
-        authProvider: any GitHubAuthProviding = GitHubAuthProvider(),
+        authProvider: any GitHubAuthProviding = GitHubAuthProvider.shared,
         apiClient: any GitHubAPIProviding = GitHubAPIClient()
     ) {
         self.authProvider = authProvider
@@ -42,17 +42,16 @@ actor GitHubUsageProvider: UsageProvider {
     }
 
     func fetchUsage() async throws -> [UsageSnapshot] {
-        guard let token = try await authProvider.validAccessToken() else {
-            throw GitHubUsageError.notAuthenticated
+        let apiClient = self.apiClient
+        let user = try await authenticatedRequest { token in
+            try await apiClient.fetchUser(token: token)
         }
 
-        let user = try await apiClient.fetchUser(token: token)
         var snapshots: [UsageSnapshot] = []
 
         do {
             let aiSnapshot = try await fetchAICreditSnapshot(
                 username: user.login,
-                token: token,
                 user: user
             )
             snapshots.append(aiSnapshot)
@@ -63,7 +62,6 @@ actor GitHubUsageProvider: UsageProvider {
         do {
             let prSnapshot = try await fetchPremiumRequestSnapshot(
                 username: user.login,
-                token: token,
                 user: user
             )
             snapshots.append(prSnapshot)
@@ -82,10 +80,12 @@ actor GitHubUsageProvider: UsageProvider {
 
     private func fetchAICreditSnapshot(
         username: String,
-        token: String,
         user: GitHubUser
     ) async throws -> UsageSnapshot {
-        let response = try await apiClient.fetchAICreditUsage(username: username, token: token)
+        let apiClient = self.apiClient
+        let response = try await authenticatedRequest { token in
+            try await apiClient.fetchAICreditUsage(username: username, token: token)
+        }
 
         let used = response.usedQuantity
         // The current billing report exposes usage, not plan allowance.
@@ -112,10 +112,12 @@ actor GitHubUsageProvider: UsageProvider {
 
     private func fetchPremiumRequestSnapshot(
         username: String,
-        token: String,
         user: GitHubUser
     ) async throws -> UsageSnapshot {
-        let response = try await apiClient.fetchPremiumRequestUsage(username: username, token: token)
+        let apiClient = self.apiClient
+        let response = try await authenticatedRequest { token in
+            try await apiClient.fetchPremiumRequestUsage(username: username, token: token)
+        }
 
         let used = response.usedQuantity
         // The current billing report exposes usage, not plan allowance.
@@ -155,6 +157,29 @@ actor GitHubUsageProvider: UsageProvider {
             source: endpoint.source,
             message: endpoint.errorMessage(for: error)
         )
+    }
+
+    private func authenticatedRequest<Value: Sendable>(
+        _ operation: @Sendable (String) async throws -> Value
+    ) async throws -> Value {
+        guard let token = try await authProvider.validAccessToken() else {
+            throw GitHubUsageError.notAuthenticated
+        }
+
+        do {
+            return try await operation(token)
+        } catch let error as GitHubAPIError {
+            guard case .authenticationFailed = error else { throw error }
+            guard let recoveredToken = try await authProvider.recoverAccessToken(
+                rejectedAccessToken: token
+            ) else {
+                throw GitHubUsageError.notAuthenticated
+            }
+
+            // Retry once with the credential selected by the auth provider.
+            // A second 401 is surfaced instead of starting a refresh loop.
+            return try await operation(recoveredToken)
+        }
     }
 }
 
