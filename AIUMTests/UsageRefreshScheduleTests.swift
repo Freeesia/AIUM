@@ -136,12 +136,12 @@ final class UsageRefreshScheduleTests: XCTestCase {
             provider: .codex,
             accountId: "account",
             planKind: .codexPro,
-            windowKind: .hourly,
+            windowKind: .custom,
             used: used,
             limit: limit,
             source: "test",
             fetchedAt: Date(timeIntervalSince1970: 1_700_000_000),
-            windowDurationMins: 300
+            windowDurationMins: 7 * 24 * 60
         )
     }
 

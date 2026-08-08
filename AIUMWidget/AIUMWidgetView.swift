@@ -115,10 +115,10 @@ struct AIUMMediumWidgetView: View {
     var entry: AIUMWidgetEntry
 
     private var githubSnapshot: UsageSnapshot? {
-        entry.snapshots.first { $0.provider == .githubCopilot }
+        UsageSnapshot.displaySnapshot(from: entry.snapshots, for: .githubCopilot)
     }
     private var codexSnapshot: UsageSnapshot? {
-        entry.snapshots.first { $0.provider == .codex }
+        UsageSnapshot.displaySnapshot(from: entry.snapshots, for: .codex)
     }
     private var isDemoData: Bool {
         entry.snapshots.contains { $0.source == "demo" }
@@ -459,12 +459,13 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
                 provider: .codex,
                 displayName: "user@example.com",
                 planKind: .codexPro,
-                windowKind: .hourly,
+                windowKind: .custom,
                 used: 42,
-                limit: 50,
-                resetAt: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
-                unit: "requests",
-                source: "preview"
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
+                unit: "percent",
+                source: "preview",
+                windowDurationMins: 7 * 24 * 60
             ),
         ],
         provider: .codex
@@ -514,12 +515,13 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
                 provider: .codex,
                 displayName: "user@example.com",
                 planKind: .codexPro,
-                windowKind: .hourly,
-                used: 30,
-                limit: 50,
-                resetAt: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
-                unit: "requests",
-                source: "preview"
+                windowKind: .custom,
+                used: 42,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
+                unit: "percent",
+                source: "preview",
+                windowDurationMins: 7 * 24 * 60
             ),
         ],
         provider: .githubCopilot

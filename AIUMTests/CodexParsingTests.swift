@@ -201,6 +201,33 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(snapshots.first?.used, 25)
     }
 
+    func testNormalizationExcludesRetiredFiveHourWindow() throws {
+        let json = Data("""
+        {
+          "rate_limit": {
+            "primary_window": {
+              "used_percent": 90,
+              "limit_window_seconds": 18000
+            },
+            "secondary_window": {
+              "used_percent": 25,
+              "limit_window_seconds": 604800
+            }
+          }
+        }
+        """.utf8)
+
+        let response = try CodexUsageResponse.decode(from: json)
+        let snapshots = PrivateCodexUsageProvider().normalizeSnapshots(
+            response,
+            tokenBundle: nil
+        )
+
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertEqual(snapshots.first?.windowDurationMins, 7 * 24 * 60)
+        XCTAssertEqual(snapshots.first?.used, 25)
+    }
+
     func testResponseAccountOverridesTokenBundle() throws {
         let bundle = CodexTokenBundle(
             idToken: "id",
@@ -478,9 +505,9 @@ final class CodexParsingTests: XCTestCase {
             {
               "plan_type": "pro",
               "rate_limit": {
-                "primary_window": {
+                "secondary_window": {
                   "used_percent": 40,
-                  "limit_window_seconds": 18000
+                  "limit_window_seconds": 604800
                 }
               }
             }
