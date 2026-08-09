@@ -103,12 +103,13 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
                 provider: .codex,
                 displayName: "user@example.com",
                 planKind: .codexPro,
-                windowKind: .hourly,
-                used: 30,
-                limit: 50,
-                resetAt: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
-                unit: "requests",
-                source: "placeholder"
+                windowKind: .custom,
+                used: 42,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
+                unit: "percent",
+                source: "placeholder",
+                windowDurationMins: 7 * 24 * 60
             ),
         ],
         provider: .githubCopilot

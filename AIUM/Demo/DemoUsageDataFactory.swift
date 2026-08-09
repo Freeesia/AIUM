@@ -54,10 +54,7 @@ enum DemoUsageDataFactory {
     // MARK: - OpenAI Codex
 
     private static func codexSnapshots(now: Date) -> [UsageSnapshot] {
-        let hourlyReset = now.addingTimeInterval(3600)
-        let dailyReset = Calendar.current.startOfDay(
-            for: now.addingTimeInterval(24 * 3600)
-        )
+        let weeklyReset = now.addingTimeInterval(4 * 24 * 3600)
 
         return [
             UsageSnapshot(
@@ -65,28 +62,14 @@ enum DemoUsageDataFactory {
                 accountId: "demo-codex",
                 displayName: "demo@example.com",
                 planKind: .codexPro,
-                windowKind: .hourly,
-                used: 37,
-                limit: 50,
-                resetAt: hourlyReset,
-                unit: "requests",
+                windowKind: .custom,
+                used: 42,
+                limit: 100,
+                resetAt: weeklyReset,
+                unit: "percent",
                 source: "demo",
                 fetchedAt: now,
-                windowDurationMins: 60
-            ),
-            UsageSnapshot(
-                provider: .codex,
-                accountId: "demo-codex",
-                displayName: "demo@example.com",
-                planKind: .codexPro,
-                windowKind: .daily,
-                used: 210,
-                limit: 300,
-                resetAt: dailyReset,
-                unit: "requests",
-                source: "demo",
-                fetchedAt: now,
-                windowDurationMins: 24 * 60
+                windowDurationMins: 7 * 24 * 60
             ),
         ]
     }

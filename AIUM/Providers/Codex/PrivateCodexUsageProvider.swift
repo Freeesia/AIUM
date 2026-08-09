@@ -116,8 +116,8 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         let accountId = response.accountId ?? tokenBundle?.accountId
         let displayName = response.email ?? tokenBundle?.email
 
-        return response.windows.map { window in
-            UsageSnapshot(
+        return response.windows.compactMap { window in
+            let snapshot = UsageSnapshot(
                 provider: .codex,
                 accountId: accountId,
                 displayName: displayName,
@@ -130,6 +130,8 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
                 source: window.source,
                 windowDurationMins: window.windowDurationMins
             )
+
+            return snapshot.isRetiredCodexFiveHourWindow ? nil : snapshot
         }
     }
 

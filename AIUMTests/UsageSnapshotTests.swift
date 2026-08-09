@@ -121,6 +121,35 @@ final class UsageSnapshotTests: XCTestCase {
 
     // MARK: - Widget display selection
 
+    func testDisplaySnapshotsExcludeRetiredCodexFiveHourWindow() throws {
+        let fiveHour = UsageSnapshot(
+            provider: .codex,
+            used: 95,
+            limit: 100,
+            source: "five-hour",
+            windowDurationMins: 5 * 60
+        )
+        let weekly = UsageSnapshot(
+            provider: .codex,
+            used: 20,
+            limit: 100,
+            source: "weekly",
+            windowDurationMins: 7 * 24 * 60
+        )
+
+        let visible = UsageSnapshot.displaySnapshots(
+            from: [fiveHour, weekly],
+            for: .codex
+        )
+        let selected = try XCTUnwrap(UsageSnapshot.displaySnapshot(
+            from: [fiveHour, weekly],
+            for: .codex
+        ))
+
+        XCTAssertEqual(visible.map(\.source), ["weekly"])
+        XCTAssertEqual(selected.source, "weekly")
+    }
+
     func testDisplaySnapshotFiltersByProviderAndSelectsHighestUsage() throws {
         let github = UsageSnapshot(
             provider: .githubCopilot,

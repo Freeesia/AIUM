@@ -124,11 +124,6 @@ Current Codex backend-style rate limits:
       "limitId": "gpt-5-codex",
       "limitName": "GPT-5 Codex",
       "individualLimit": 100,
-      "primary": {
-        "remaining": 25,
-        "limitWindowSeconds": 18000,
-        "resetAfterSeconds": 3600
-      },
       "secondary": {
         "usedPercent": 40,
         "windowDurationMins": 10080,
@@ -166,6 +161,7 @@ Legacy snake_case windows are still accepted:
 - Else if `usedPercent` / `used_percent` (0...100) is present with a limit, `used = limit * usedPercent / 100`.
 - Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
 - `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
+- Retired 300-minute Codex windows are accepted by the parser for compatibility but excluded during snapshot normalization and presentation.
 
 **Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so API changes are visible in the app UI.
 

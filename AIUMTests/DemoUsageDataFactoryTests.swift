@@ -30,10 +30,10 @@ final class DemoUsageDataFactoryTests: XCTestCase {
         XCTAssertTrue(snapshots.contains { $0.planKind == .premiumRequests })
     }
 
-    func testCodexSnapshotsContainHourlyAndDaily() {
+    func testCodexSnapshotsContainOnlyWeeklyWindow() {
         let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
-        XCTAssertTrue(snapshots.contains { $0.windowKind == .hourly })
-        XCTAssertTrue(snapshots.contains { $0.windowKind == .daily })
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertEqual(snapshots.first?.windowDurationMins, 7 * 24 * 60)
     }
 
     func testGithubAICreditsValues() {
@@ -50,18 +50,11 @@ final class DemoUsageDataFactoryTests: XCTestCase {
         XCTAssertEqual(premiumRequests?.limit, 300)
     }
 
-    func testCodexHourlyValues() {
+    func testCodexWeeklyValues() {
         let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
-        let hourly = snapshots.first { $0.windowKind == .hourly }
-        XCTAssertEqual(hourly?.used, 37)
-        XCTAssertEqual(hourly?.limit, 50)
-    }
-
-    func testCodexDailyValues() {
-        let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
-        let daily = snapshots.first { $0.windowKind == .daily }
-        XCTAssertEqual(daily?.used, 210)
-        XCTAssertEqual(daily?.limit, 300)
+        let weekly = snapshots.first
+        XCTAssertEqual(weekly?.used, 42)
+        XCTAssertEqual(weekly?.limit, 100)
     }
 
     func testFetchedAtIsBasedOnNow() {
