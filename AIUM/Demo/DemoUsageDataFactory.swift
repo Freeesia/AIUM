@@ -54,9 +54,24 @@ enum DemoUsageDataFactory {
     // MARK: - OpenAI Codex
 
     private static func codexSnapshots(now: Date) -> [UsageSnapshot] {
+        let fiveHourReset = now.addingTimeInterval(2 * 3600)
         let weeklyReset = now.addingTimeInterval(4 * 24 * 3600)
 
         return [
+            UsageSnapshot(
+                provider: .codex,
+                accountId: "demo-codex",
+                displayName: "demo@example.com",
+                planKind: .codexPro,
+                windowKind: .custom,
+                used: 68,
+                limit: 100,
+                resetAt: fiveHourReset,
+                unit: "percent",
+                source: "demo",
+                fetchedAt: now,
+                windowDurationMins: 5 * 60
+            ),
             UsageSnapshot(
                 provider: .codex,
                 accountId: "demo-codex",

@@ -222,6 +222,17 @@ struct UsageCardView: View {
     // MARK: - Helpers
 
     private var planLabel: LocalizedStringKey {
+        if snapshot.provider == .codex {
+            switch snapshot.windowDurationMins {
+            case 5 * 60:
+                return "5 hours"
+            case 7 * 24 * 60:
+                return "1 week"
+            default:
+                break
+            }
+        }
+
         switch snapshot.planKind {
         case .aiCredits: return "AI Credits"
         case .premiumRequests: return "Premium Requests"
@@ -304,12 +315,24 @@ struct NotSignedInCardView: View {
                 displayName: "user@example.com",
                 planKind: .codexPro,
                 windowKind: .custom,
+                used: 45,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .hour, value: 2, to: Date()),
+                unit: "percent",
+                source: "Codex Private API",
+                windowDurationMins: 5 * 60
+            ))
+            UsageCardView(snapshot: UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexPro,
+                windowKind: .custom,
                 used: 22,
                 limit: 100,
                 resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
                 unit: "percent",
                 source: "Codex Private API",
-                windowDurationMins: 10_080
+                windowDurationMins: 7 * 24 * 60
             ))
             UsageCardView(snapshot: UsageSnapshot.error(provider: .codex, message: "Connection failed"))
             NotSignedInCardView(provider: .githubCopilot)
