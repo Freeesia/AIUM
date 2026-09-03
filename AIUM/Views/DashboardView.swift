@@ -36,10 +36,10 @@ struct DashboardView: View {
                     // OpenAI Codex section
                     sectionHeader(provider: .codex)
                     if codexAuthenticated {
-                        if visibleCodexSnapshots.isEmpty {
+                        if viewModel.codexSnapshots.isEmpty {
                             placeholderCard(provider: .codex)
                         } else {
-                            ForEach(visibleCodexSnapshots) { snapshot in
+                            ForEach(viewModel.codexSnapshots) { snapshot in
                                 UsageCardView(snapshot: snapshot)
                             }
                         }
@@ -123,10 +123,6 @@ struct DashboardView: View {
                 return true
             }
         }
-    }
-
-    private var visibleCodexSnapshots: [UsageSnapshot] {
-        UsageSnapshot.displaySnapshots(from: viewModel.codexSnapshots, for: .codex)
     }
 
     private func updateAuthStatus() async {

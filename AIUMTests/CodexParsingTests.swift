@@ -201,7 +201,7 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(snapshots.first?.used, 25)
     }
 
-    func testNormalizationExcludesRetiredFiveHourWindow() throws {
+    func testNormalizationIncludesFiveHourAndWeeklyWindows() throws {
         let json = Data("""
         {
           "rate_limit": {
@@ -223,9 +223,11 @@ final class CodexParsingTests: XCTestCase {
             tokenBundle: nil
         )
 
-        XCTAssertEqual(snapshots.count, 1)
-        XCTAssertEqual(snapshots.first?.windowDurationMins, 7 * 24 * 60)
-        XCTAssertEqual(snapshots.first?.used, 25)
+        XCTAssertEqual(snapshots.count, 2)
+        XCTAssertEqual(snapshots[0].windowDurationMins, 5 * 60)
+        XCTAssertEqual(snapshots[0].used, 90)
+        XCTAssertEqual(snapshots[1].windowDurationMins, 7 * 24 * 60)
+        XCTAssertEqual(snapshots[1].used, 25)
     }
 
     func testResponseAccountOverridesTokenBundle() throws {

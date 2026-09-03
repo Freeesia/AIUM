@@ -30,10 +30,10 @@ final class DemoUsageDataFactoryTests: XCTestCase {
         XCTAssertTrue(snapshots.contains { $0.planKind == .premiumRequests })
     }
 
-    func testCodexSnapshotsContainOnlyWeeklyWindow() {
+    func testCodexSnapshotsContainFiveHourAndWeeklyWindows() {
         let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
-        XCTAssertEqual(snapshots.count, 1)
-        XCTAssertEqual(snapshots.first?.windowDurationMins, 7 * 24 * 60)
+        XCTAssertEqual(snapshots.count, 2)
+        XCTAssertEqual(snapshots.map(\.windowDurationMins), [5 * 60, 7 * 24 * 60])
     }
 
     func testGithubAICreditsValues() {
@@ -52,9 +52,16 @@ final class DemoUsageDataFactoryTests: XCTestCase {
 
     func testCodexWeeklyValues() {
         let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
-        let weekly = snapshots.first
+        let weekly = snapshots.first { $0.windowDurationMins == 7 * 24 * 60 }
         XCTAssertEqual(weekly?.used, 42)
         XCTAssertEqual(weekly?.limit, 100)
+    }
+
+    func testCodexFiveHourValues() {
+        let snapshots = DemoUsageDataFactory.snapshots(for: .codex, now: now)
+        let fiveHour = snapshots.first { $0.windowDurationMins == 5 * 60 }
+        XCTAssertEqual(fiveHour?.used, 68)
+        XCTAssertEqual(fiveHour?.limit, 100)
     }
 
     func testFetchedAtIsBasedOnNow() {

@@ -141,22 +141,6 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
 // MARK: - Helpers
 
 extension UsageSnapshot {
-    /// The retired Codex five-hour rate-limit window is excluded from every
-    /// presentation surface, including widgets reading an older cache.
-    var isRetiredCodexFiveHourWindow: Bool {
-        provider == .codex && windowDurationMins == 5 * 60
-    }
-
-    /// Returns snapshots that can be presented for the requested provider.
-    static func displaySnapshots(
-        from snapshots: [UsageSnapshot],
-        for provider: Provider
-    ) -> [UsageSnapshot] {
-        snapshots.filter {
-            $0.provider == provider && !$0.isRetiredCodexFiveHourWindow
-        }
-    }
-
     /// Returns the highest-usage snapshot for a provider.
     /// Provider-level failures take precedence so authentication and refresh
     /// errors are not hidden by stale successful data. Endpoint-specific
@@ -165,7 +149,7 @@ extension UsageSnapshot {
         from snapshots: [UsageSnapshot],
         for provider: Provider
     ) -> UsageSnapshot? {
-        let providerSnapshots = displaySnapshots(from: snapshots, for: provider)
+        let providerSnapshots = snapshots.filter { $0.provider == provider }
         let providerErrors = providerSnapshots.filter {
             $0.errorMessage != nil && $0.planKind == .unknown
         }
