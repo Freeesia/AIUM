@@ -223,6 +223,10 @@ struct UsageCardView: View {
 
     private var planLabel: LocalizedStringKey {
         if snapshot.provider == .codex {
+            if snapshot.planKind == .codexLunaReserve {
+                return "Luna Reserve"
+            }
+
             switch snapshot.windowDurationMins {
             case 5 * 60:
                 return "5 hours"
@@ -238,6 +242,7 @@ struct UsageCardView: View {
         case .premiumRequests: return "Premium Requests"
         case .codexFree: return "Free Plan"
         case .codexPro: return "Pro Plan"
+        case .codexLunaReserve: return "Luna Reserve"
         case .unknown:
             switch snapshot.windowKind {
             case .monthly: return "Monthly"
@@ -332,6 +337,18 @@ struct NotSignedInCardView: View {
                 resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
                 unit: "percent",
                 source: "Codex Private API",
+                windowDurationMins: 7 * 24 * 60
+            ))
+            UsageCardView(snapshot: UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexLunaReserve,
+                windowKind: .custom,
+                used: 8,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
+                unit: "percent",
+                source: "Codex Backend Usage (gpt-reserve)",
                 windowDurationMins: 7 * 24 * 60
             ))
             UsageCardView(snapshot: UsageSnapshot.error(provider: .codex, message: "Connection failed"))
