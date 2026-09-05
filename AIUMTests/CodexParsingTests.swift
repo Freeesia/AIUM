@@ -96,6 +96,21 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(response.resetCredits, 3)
     }
 
+    func testDecodeCamelCaseResetCreditCount() throws {
+        let json = Data("""
+        {
+          "rateLimits": [],
+          "rateLimitResetCredits": {
+            "availableCount": 2
+          }
+        }
+        """.utf8)
+
+        let response = try CodexUsageResponse.decode(from: json)
+
+        XCTAssertEqual(response.resetCredits, 2)
+    }
+
     func testDecodeCurrentChatGPTZeroAndOnePercentWithoutScaling() throws {
         let json = Data("""
         {

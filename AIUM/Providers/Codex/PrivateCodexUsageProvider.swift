@@ -128,7 +128,8 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
                 resetAt: window.resetAt,
                 unit: window.unit,
                 source: window.source,
-                windowDurationMins: window.windowDurationMins
+                windowDurationMins: window.windowDurationMins,
+                resetCredits: response.resetCredits
             )
         }
     }
@@ -566,7 +567,10 @@ private struct CodexUsageParser {
                     "value",
                     "remaining",
                     "available",
+                    "availableCount",
                     "available_count",
+                    "applicableAvailableCount",
+                    "applicable_available_count",
                     "credits",
                     "count",
                 ]) {

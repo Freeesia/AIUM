@@ -58,6 +58,9 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
     public let errorMessage: String?
     /// Duration of the rate-limit window in minutes (nil for monthly).
     public let windowDurationMins: Int?
+    /// Number of Codex usage reset credits currently available, when provided
+    /// by the Codex backend. This is shared across the Codex usage windows.
+    public let resetCredits: Double?
 
     // MARK: Computed
 
@@ -96,7 +99,8 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
         source: String,
         fetchedAt: Date = Date(),
         errorMessage: String? = nil,
-        windowDurationMins: Int? = nil
+        windowDurationMins: Int? = nil,
+        resetCredits: Double? = nil
     ) {
         self.provider = provider
         self.accountId = accountId
@@ -111,6 +115,7 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
         self.fetchedAt = fetchedAt
         self.errorMessage = errorMessage
         self.windowDurationMins = windowDurationMins
+        self.resetCredits = resetCredits
     }
 }
 
