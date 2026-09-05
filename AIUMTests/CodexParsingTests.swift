@@ -121,6 +121,63 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(response.windows[1].limit, 100, accuracy: 0.001)
     }
 
+    func testDecodeCurrentRateLimitsShowsCodexAndLunaReserveWindows() throws {
+        let json = Data("""
+        {
+          "plan_type": "plus",
+          "rate_limit": {
+            "primary_window": {
+              "used_percent": 28,
+              "window_duration_mins": 300
+            },
+            "secondary_window": {
+              "used_percent": 95,
+              "window_duration_mins": 10080
+            }
+          },
+          "rate_limits_by_limit_id": {
+            "base_model_inference": {
+              "limit_id": "base_model_inference",
+              "limit_name": "gpt-reserve",
+              "plan_type": "plus",
+              "primary": {
+                "used_percent": 0,
+                "window_duration_mins": 10080
+              }
+            },
+            "codex": {
+              "limit_id": "codex",
+              "plan_type": "plus",
+              "primary": {
+                "used_percent": 28,
+                "window_duration_mins": 300
+              },
+              "secondary": {
+                "used_percent": 95,
+                "window_duration_mins": 10080
+              }
+            }
+          }
+        }
+        """.utf8)
+
+        let response = try CodexUsageResponse.decode(from: json)
+
+        XCTAssertEqual(response.windows.count, 3)
+
+        let codexWindows = response.windows.filter { $0.planKind == .codexPro }
+        XCTAssertEqual(codexWindows.map(\.windowDurationMins), [300, 10_080])
+        XCTAssertEqual(codexWindows.map(\.used), [28, 95])
+        XCTAssertTrue(codexWindows.allSatisfy { $0.source.hasSuffix("(codex)") })
+
+        let reserve = try XCTUnwrap(
+            response.windows.first { $0.planKind == .codexLunaReserve }
+        )
+        XCTAssertEqual(reserve.windowDurationMins, 10_080)
+        XCTAssertEqual(reserve.used, 0)
+        XCTAssertTrue(reserve.source.hasSuffix("(gpt-reserve)"))
+    }
+
     func testDecodeLegacySnakeCaseRateLimitResponse() throws {
         let json = """
         {

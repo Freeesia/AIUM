@@ -454,6 +454,10 @@ private struct CodexUsageParser {
             .compactMap { $0?.lowercased() }
             .joined(separator: " ")
 
+        if raw.contains("gpt-reserve") || raw.contains("base_model_inference") {
+            return .codexLunaReserve
+        }
+
         if raw.contains("free") {
             return .codexFree
         }
@@ -505,23 +509,47 @@ private struct CodexUsageParser {
     }
 
     private func deduplicate(_ windows: [CodexUsageWindow]) -> [CodexUsageWindow] {
-        var seen = Set<String>()
+        var indexByKey: [String: Int] = [:]
         var result: [CodexUsageWindow] = []
 
         for window in windows {
             let key = [
                 window.planKind.rawValue,
                 window.windowKind.rawValue,
-                String(window.windowDurationMins ?? 0),
-                window.source,
+                window.windowDurationMins.map(String.init) ?? window.source,
             ].joined(separator: "|")
 
-            if seen.insert(key).inserted {
+            if let index = indexByKey[key] {
+                if sourcePriority(window.source) > sourcePriority(result[index].source) {
+                    result[index] = window
+                }
+            } else {
+                indexByKey[key] = result.count
                 result.append(window)
             }
         }
 
         return result
+    }
+
+    private func sourcePriority(_ source: String) -> Int {
+        guard let openingParenthesis = source.lastIndex(of: "("), source.hasSuffix(")") else {
+            return 0
+        }
+
+        let identifier = source[source.index(after: openingParenthesis)..<source.index(before: source.endIndex)]
+            .lowercased()
+
+        if identifier == "codex" {
+            return 3
+        }
+        if identifier.contains("codex") {
+            return 2
+        }
+        if identifier == "primary" || identifier == "secondary" {
+            return 1
+        }
+        return 0
     }
 
     private func firstValue(_ dictionary: [String: Any], keys: [String]) -> Any? {

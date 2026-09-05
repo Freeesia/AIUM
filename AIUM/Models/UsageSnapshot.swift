@@ -37,6 +37,7 @@ public enum PlanKind: String, Codable, Sendable {
     case premiumRequests
     case codexFree
     case codexPro
+    case codexLunaReserve
     case unknown
 }
 
