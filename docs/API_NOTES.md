@@ -168,6 +168,31 @@ Legacy snake_case windows are still accepted:
 
 ---
 
+## Codex Usage Reset
+
+The reset card opens a confirmation sheet before any reset request is sent.
+After confirmation, AIUM uses the existing Codex bearer token and the confirmed
+`ChatGPT-Account-Id` with:
+
+```http
+POST https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume
+Content-Type: application/json
+
+{"credit_id": null, "redeem_request_id": "<UUID for this attempt>"}
+```
+
+`credit_id: null` lets the backend select an available credit. This request
+shape was verified in the installed Codex client's communication code; tests
+use mocked responses and do not consume a real credit.
+
+The response `code` is `reset`, `already_redeemed`, `no_credit`, or
+`nothing_to_reset`. Each outcome is shown distinctly, and usage is fetched
+again after a definitive response. A failure to refresh usage does not retry
+the reset. Unknown outcomes and transport errors retain the same request UUID
+for a retry; pending UUIDs are stored per account across sheet dismissal and
+app restarts. The connected account is checked again before sending the POST.
+Demo mode cannot submit reset requests.
+
 ## Adding Official APIs
 
 When official GitHub Copilot or Codex usage APIs are released:

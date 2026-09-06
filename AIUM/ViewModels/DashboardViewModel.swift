@@ -6,7 +6,9 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var githubSnapshots: [UsageSnapshot] = []
     @Published var codexSnapshots: [UsageSnapshot] = []
-    @Published private(set) var codexResetCredits: Int?
+    @Published private(set) var isResettingCodexUsage = false
+    @Published private(set) var codexResetError: String?
+    @Published private(set) var codexResetOutcome: CodexUsageResetOutcome?
     @Published var isRefreshing = false
     @Published var lastError: String?
     @Published var activeRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
@@ -20,6 +22,7 @@ final class DashboardViewModel: ObservableObject {
     private let demoModeStore: DemoModeStore
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
+    private let resetRequestStore: CodexResetRequestStore
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
     private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.storedAutomaticIntervalMinutes()
@@ -30,13 +33,15 @@ final class DashboardViewModel: ObservableObject {
         usageStore: UsageStore? = nil,
         demoModeStore: DemoModeStore = DemoModeStore(),
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
-        codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider()
+        codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider(),
+        resetRequestStore: CodexResetRequestStore? = nil
     ) {
         let resolvedUsageStore = usageStore ?? .shared
         self.usageStore = resolvedUsageStore
         self.demoModeStore = demoModeStore
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
+        self.resetRequestStore = resetRequestStore ?? CodexResetRequestStore()
         self.refreshService = UsageRefreshService(
             usageStore: resolvedUsageStore,
             resolver: AppUsageProviderResolver(
@@ -53,6 +58,69 @@ final class DashboardViewModel: ObservableObject {
     }
 
     // MARK: - Public
+
+    var codexResetCredits: Int? {
+        guard let snapshot = UsageSnapshot.displaySnapshot(from: codexSnapshots, for: .codex),
+              snapshot.errorMessage == nil,
+              let value = snapshot.resetCredits,
+              let count = Int(exactly: value), count > 0 else { return nil }
+        return count
+    }
+
+    func prepareCodexUsageReset() async -> CodexUsageResetConfirmation? {
+        guard !isDemoMode, !demoModeStore.isEnabled,
+              !isRefreshing, !isResettingCodexUsage,
+              let remainingCount = codexResetCredits else { return nil }
+        let identity = await codexProvider.accountIdentity
+        guard !isRefreshing, !isResettingCodexUsage else { return nil }
+        guard let accountId = identity.accountId,
+              codexSnapshots.contains(where: { $0.accountId == accountId }) else {
+            lastError = String(localized: "Refresh Codex usage before resetting it.")
+            return nil
+        }
+        codexResetError = nil
+        codexResetOutcome = nil
+        return CodexUsageResetConfirmation(
+            accountId: accountId,
+            accountDisplayName: identity.email ?? accountId,
+            remainingCount: remainingCount
+        )
+    }
+
+    func resetCodexUsage(_ confirmation: CodexUsageResetConfirmation) async {
+        guard !isResettingCodexUsage, !isRefreshing, codexResetOutcome == nil,
+              !isDemoMode, !demoModeStore.isEnabled else { return }
+        isResettingCodexUsage = true
+        codexResetError = nil
+        lastError = nil
+        defer { isResettingCodexUsage = false }
+
+        let requestID = resetRequestStore.requestID(for: confirmation.accountId)
+        do {
+            let outcome = try await codexProvider.resetUsage(
+                requestID: requestID,
+                accountId: confirmation.accountId
+            )
+            resetRequestStore.clear(for: confirmation.accountId)
+            codexResetOutcome = outcome
+
+            // The old limits and credit count no longer describe the account.
+            // A refresh failure must not turn a completed reset into a retry.
+            usageStore.clear(provider: .codex)
+            loadFromStore()
+            do {
+                let snapshots = try await codexProvider.fetchUsage()
+                usageStore.replace(provider: .codex, with: snapshots)
+                loadFromStore()
+            } catch {
+                lastError = String(localized: "Could not refresh usage. Close this sheet and refresh the dashboard.")
+            }
+        } catch let error as CodexUsageResetError {
+            codexResetError = error.localizedDescription
+        } catch {
+            codexResetError = String(localized: "Could not confirm the reset. Retry to check the same request without using an additional reset.")
+        }
+    }
 
     func refresh() {
         Task {
@@ -147,14 +215,10 @@ final class DashboardViewModel: ObservableObject {
     private func loadFromStore() {
         githubSnapshots = usageStore.snapshots(for: .githubCopilot)
         codexSnapshots = usageStore.snapshots(for: .codex)
-        codexResetCredits = codexSnapshots
-            .compactMap(\.resetCredits)
-            .first(where: { $0 > 0 })
-            .map { Int($0.rounded(.down)) }
     }
 
     private func refreshNow(shouldReschedulePeriodicRefresh: Bool) async {
-        guard !isRefreshing else { return }
+        guard !isRefreshing, !isResettingCodexUsage else { return }
         isRefreshing = true
         lastError = nil
 

@@ -76,6 +76,40 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         get async { await authProvider.isAuthenticated }
     }
 
+    var accountIdentity: CodexAccountIdentity {
+        get async {
+            let bundle = await authProvider.tokenBundle
+            return CodexAccountIdentity(accountId: bundle?.accountId, email: bundle?.email)
+        }
+    }
+
+    /// Call only after confirming with the user. The request ID belongs to one
+    /// logical attempt and must stay the same after an uncertain response.
+    func resetUsage(requestID: UUID, accountId: String) async throws -> CodexUsageResetOutcome {
+        let token = try await authProvider.validAccessToken()
+        let bundle = await authProvider.tokenBundle
+        guard !accountId.isEmpty, bundle?.accountId == accountId else {
+            throw CodexUsageResetError.accountChanged
+        }
+
+        var request = makeBackendRequest(
+            path: "/wham/rate-limit-reset-credits/consume",
+            token: token,
+            accountId: accountId
+        )
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "credit_id": NSNull(),
+            "redeem_request_id": requestID.uuidString,
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data, endpointName: "Codex usage reset")
+        // Unknown outcomes are errors, so they cannot consume a fresh request ID.
+        return try JSONDecoder().decode(CodexUsageResetResponse.self, from: data).code
+    }
+
     func fetchUsage() async throws -> [UsageSnapshot] {
         let token = try await authProvider.validAccessToken()
         let tokenBundle = await authProvider.tokenBundle
@@ -168,6 +202,10 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         print("[AIUM][CodexUsage] \(message())")
         #endif
     }
+}
+
+private struct CodexUsageResetResponse: Decodable {
+    let code: CodexUsageResetOutcome
 }
 
 // MARK: - Parser
