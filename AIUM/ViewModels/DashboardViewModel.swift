@@ -6,6 +6,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var githubSnapshots: [UsageSnapshot] = []
     @Published var codexSnapshots: [UsageSnapshot] = []
+    @Published private(set) var codexResetCredits: Int?
     @Published var isRefreshing = false
     @Published var lastError: String?
     @Published var activeRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
@@ -146,6 +147,10 @@ final class DashboardViewModel: ObservableObject {
     private func loadFromStore() {
         githubSnapshots = usageStore.snapshots(for: .githubCopilot)
         codexSnapshots = usageStore.snapshots(for: .codex)
+        codexResetCredits = codexSnapshots
+            .compactMap(\.resetCredits)
+            .first(where: { $0 > 0 })
+            .map { Int($0.rounded(.down)) }
     }
 
     private func refreshNow(shouldReschedulePeriodicRefresh: Bool) async {

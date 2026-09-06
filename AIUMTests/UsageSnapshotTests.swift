@@ -84,7 +84,8 @@ final class UsageSnapshotTests: XCTestCase {
             limit: 1000,
             resetAt: Date(timeIntervalSince1970: 1_700_000_000),
             unit: "AI credits",
-            source: "GitHub Billing API"
+            source: "GitHub Billing API",
+            resetCredits: 2
         )
 
         let encoder = JSONEncoder()
@@ -107,6 +108,7 @@ final class UsageSnapshotTests: XCTestCase {
                        accuracy: 1)
         XCTAssertEqual(decoded.unit, original.unit)
         XCTAssertEqual(decoded.source, original.source)
+        XCTAssertEqual(decoded.resetCredits, original.resetCredits)
     }
 
     // MARK: - ID uniqueness
