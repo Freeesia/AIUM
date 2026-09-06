@@ -17,6 +17,7 @@ final class CodexUsageResetTests: XCTestCase {
         attachPreview(
             CodexResetCreditsCard(remainingCount: 2, isDisabled: false, onReset: {})
                 .padding()
+                .preferredColorScheme(.dark)
                 .environment(\.locale, Locale(identifier: "ja")),
             name: "Codex reset card", height: 220
         )

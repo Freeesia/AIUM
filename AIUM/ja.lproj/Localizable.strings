@@ -113,7 +113,9 @@
 /* Codex usage resets */
 "Cancel" = "キャンセル";
 "Close" = "閉じる";
-"Usage resets available" = "利用可能なリセット";
+"Usage reset" = "利用量リセット";
+"%lld remaining" = "残り%lld回";
+"Reset" = "実行";
 "Reset credits remaining: %lld" = "リセット残り回数：%lld回";
 "Reset usage" = "利用量をリセット";
 "Reset Codex usage?" = "利用量のリセット";

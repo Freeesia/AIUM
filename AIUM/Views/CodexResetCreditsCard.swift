@@ -6,25 +6,29 @@ struct CodexResetCreditsCard: View {
     let onReset: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        HStack(spacing: 12) {
             HStack(spacing: 12) {
                 Image(systemName: "arrow.clockwise.circle.fill")
                     .font(.title2)
                     .foregroundStyle(.green)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Usage resets available")
+                    Text("Usage reset")
                         .font(.headline)
-                    Text("Reset credits remaining: \(remainingCount)")
+                    Text("\(remainingCount) remaining")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
 
-            Button("Reset usage", action: onReset)
+            Spacer(minLength: 8)
+
+            Button("Reset", action: onReset)
                 .buttonStyle(.bordered)
+                .fixedSize(horizontal: true, vertical: false)
                 .disabled(isDisabled)
+                .accessibilityLabel("Reset usage")
                 .accessibilityIdentifier("codex-reset-usage")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

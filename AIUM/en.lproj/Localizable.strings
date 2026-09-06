@@ -113,7 +113,9 @@
 /* Codex usage resets */
 "Cancel" = "Cancel";
 "Close" = "Close";
-"Usage resets available" = "Usage resets available";
+"Usage reset" = "Usage reset";
+"%lld remaining" = "%lld remaining";
+"Reset" = "Reset";
 "Reset credits remaining: %lld" = "Reset credits remaining: %lld";
 "Reset usage" = "Reset usage";
 "Reset Codex usage?" = "Reset Codex usage?";
