@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
-    @State private var showSettings = ScreenshotLaunchConfiguration.showSettings
+    @State private var presentedSheet: DashboardSheet? = ScreenshotLaunchConfiguration.showSettings ? .settings : nil
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
@@ -60,10 +60,11 @@ struct DashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        showSettings = true
+                        presentedSheet = .settings
                     } label: {
                         Image(systemName: "gear")
                     }
+                    .disabled(viewModel.isResettingCodexUsage)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -76,14 +77,19 @@ struct DashboardView: View {
                             Image(systemName: "arrow.clockwise")
                         }
                     }
-                    .disabled(viewModel.isRefreshing)
+                    .disabled(viewModel.isRefreshing || viewModel.isResettingCodexUsage)
                 }
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
+            .sheet(item: $presentedSheet) { destination in
+                switch destination {
+                case .settings:
+                    SettingsView()
+                case .codexReset(let confirmation):
+                    CodexUsageResetSheet(confirmation: confirmation, viewModel: viewModel)
+                }
             }
-            .onChange(of: showSettings) { _, isPresented in
-                guard !isPresented else { return }
+            .onChange(of: presentedSheet?.id) { oldID, _ in
+                guard oldID == DashboardSheet.settings.id else { return }
                 viewModel.reloadDemoMode()
                 Task {
                     await updateAuthStatus()
@@ -197,36 +203,29 @@ struct DashboardView: View {
     @ViewBuilder
     private var codexResetCreditsCard: some View {
         if let resetCredits = viewModel.codexResetCredits, resetCredits > 0 {
-            CodexResetCreditsCard(remainingCount: resetCredits)
+            CodexResetCreditsCard(
+                remainingCount: resetCredits,
+                isDisabled: viewModel.isRefreshing || viewModel.isResettingCodexUsage || viewModel.isDemoMode
+            ) {
+                Task {
+                    if let confirmation = await viewModel.prepareCodexUsageReset() {
+                        presentedSheet = .codexReset(confirmation)
+                    }
+                }
+            }
         }
     }
 }
 
-// MARK: - Codex reset credits
+private enum DashboardSheet: Identifiable {
+    case settings
+    case codexReset(CodexUsageResetConfirmation)
 
-struct CodexResetCreditsCard: View {
-    let remainingCount: Int
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "arrow.clockwise.circle.fill")
-                .font(.title2)
-                .foregroundStyle(.green)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Usage resets available")
-                    .font(.headline)
-                Text("You have \(remainingCount) reset \(remainingCount == 1 ? "credit" : "credits") remaining.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
+    var id: String {
+        switch self {
+        case .settings: return "settings"
+        case .codexReset(let confirmation): return confirmation.id.uuidString
         }
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Usage resets available: \(remainingCount) remaining")
     }
 }
 

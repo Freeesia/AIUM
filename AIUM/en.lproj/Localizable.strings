@@ -109,3 +109,26 @@
 "load" = "load";
 "delete" = "delete";
 "no body" = "no body";
+
+/* Codex usage resets */
+"Cancel" = "Cancel";
+"Close" = "Close";
+"Usage reset" = "Usage reset";
+"%lld remaining" = "%lld remaining";
+"Reset" = "Reset";
+"Reset credits remaining: %lld" = "Reset credits remaining: %lld";
+"Reset usage" = "Reset usage";
+"Reset Codex usage?" = "Reset Codex usage?";
+"This uses one reset credit to reset your Codex usage limits." = "This uses one reset credit to reset your Codex usage limits.";
+"This action cannot be undone." = "This action cannot be undone.";
+"Use 1 reset" = "Use 1 reset";
+"Resetting…" = "Resetting…";
+"Retry" = "Retry";
+"Codex usage has been reset." = "Codex usage has been reset.";
+"This reset request was already completed. No additional reset was used." = "This reset request was already completed. No additional reset was used.";
+"No reset credits are available." = "No reset credits are available.";
+"Your usage does not need a reset right now." = "Your usage does not need a reset right now.";
+"The connected Codex account changed. Close this sheet and refresh before trying again." = "The connected Codex account changed. Close this sheet and refresh before trying again.";
+"Refresh Codex usage before resetting it." = "Refresh Codex usage before resetting it.";
+"Could not confirm the reset. Retry to check the same request without using an additional reset." = "Could not confirm the reset. Retry to check the same request without using an additional reset.";
+"Could not refresh usage. Close this sheet and refresh the dashboard." = "Could not refresh usage. Close this sheet and refresh the dashboard.";

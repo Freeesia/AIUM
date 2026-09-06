@@ -109,3 +109,26 @@
 "load" = "読み込み";
 "delete" = "削除";
 "no body" = "レスポンス本文なし";
+
+/* Codex usage resets */
+"Cancel" = "キャンセル";
+"Close" = "閉じる";
+"Usage reset" = "利用量リセット";
+"%lld remaining" = "残り%lld回";
+"Reset" = "実行";
+"Reset credits remaining: %lld" = "リセット残り回数：%lld回";
+"Reset usage" = "利用量をリセット";
+"Reset Codex usage?" = "利用量のリセット";
+"This uses one reset credit to reset your Codex usage limits." = "リセット権を1回分使って、Codexの利用量をリセットします。";
+"This action cannot be undone." = "この操作は取り消せません。";
+"Use 1 reset" = "1回分使ってリセット";
+"Resetting…" = "リセット中…";
+"Retry" = "再試行";
+"Codex usage has been reset." = "Codexの利用量をリセットしました。";
+"This reset request was already completed. No additional reset was used." = "このリセットはすでに完了しています。追加のリセット権は使用していません。";
+"No reset credits are available." = "利用可能なリセット権がありません。";
+"Your usage does not need a reset right now." = "現在の利用量はリセットする必要がありません。";
+"The connected Codex account changed. Close this sheet and refresh before trying again." = "接続先のCodexアカウントが変わりました。シートを閉じて利用量を更新してください。";
+"Refresh Codex usage before resetting it." = "リセットする前にCodexの利用量を更新してください。";
+"Could not confirm the reset. Retry to check the same request without using an additional reset." = "リセットの結果を確認できませんでした。再試行すると、追加のリセット権を使わずに同じリクエストを確認します。";
+"Could not refresh usage. Close this sheet and refresh the dashboard." = "利用量を取得できませんでした。シートを閉じてダッシュボードを更新してください。";
