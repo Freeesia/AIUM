@@ -60,13 +60,24 @@ struct CodexTokenBundle: Codable, Sendable {
     var expiresAt: Date
     var accountId: String?
     var email: String?
+    var name: String?
 
     var isExpired: Bool {
         Date() >= expiresAt.addingTimeInterval(-60) // refresh 1 min early
     }
 
+    var accountName: String? {
+        if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+
+        // Older saved bundles already contain the identity token, so a new login
+        // is not required to recover the account name.
+        return CodexAccountIdentity.extract(accessToken: accessToken, idToken: idToken).name
+    }
+
     var accountDisplayName: String? {
-        email ?? accountId
+        accountName ?? email ?? accountId
     }
 }
 
@@ -104,6 +115,7 @@ struct CodexTokenPersistence: Sendable {
 struct CodexAccountIdentity: Equatable, Sendable {
     let accountId: String?
     let email: String?
+    let name: String?
 
     static func extract(accessToken: String?, idToken: String?) -> CodexAccountIdentity {
         let accessClaims = jwtPayload(accessToken)
@@ -112,6 +124,7 @@ struct CodexAccountIdentity: Equatable, Sendable {
         let accessAuth = accessClaims["https://api.openai.com/auth"] as? [String: Any]
         let idAuth = idClaims["https://api.openai.com/auth"] as? [String: Any]
         let accessProfile = accessClaims["https://api.openai.com/profile"] as? [String: Any]
+        let idProfile = idClaims["https://api.openai.com/profile"] as? [String: Any]
 
         let accountId = firstString(
             accessAuth?["chatgpt_account_id"],
@@ -124,8 +137,14 @@ struct CodexAccountIdentity: Equatable, Sendable {
             accessClaims["email"],
             idClaims["email"]
         )
+        let name = firstString(
+            idClaims["name"],
+            accessProfile?["name"],
+            idProfile?["name"],
+            accessClaims["name"]
+        )
 
-        return CodexAccountIdentity(accountId: accountId, email: email)
+        return CodexAccountIdentity(accountId: accountId, email: email, name: name)
     }
 
     static func extract(jsonData: Data) -> CodexAccountIdentity? {
@@ -146,9 +165,14 @@ struct CodexAccountIdentity: Equatable, Sendable {
             (json["profile"] as? [String: Any])?["email"],
             (json["user"] as? [String: Any])?["email"]
         )
+        let name = firstString(
+            json["name"],
+            (json["profile"] as? [String: Any])?["name"],
+            (json["user"] as? [String: Any])?["name"]
+        )
 
-        guard accountId != nil || email != nil else { return nil }
-        return CodexAccountIdentity(accountId: accountId, email: email)
+        guard accountId != nil || email != nil || name != nil else { return nil }
+        return CodexAccountIdentity(accountId: accountId, email: email, name: name)
     }
 
     private static func jwtPayload(_ token: String?) -> [String: Any] {
@@ -447,7 +471,8 @@ actor CodexAuthProvider: CodexAuthProviding {
             refreshToken: tokenResponse.refreshToken,
             expiresAt: Date().addingTimeInterval(Double(tokenResponse.expiresIn ?? 3600)),
             accountId: identity.accountId,
-            email: identity.email
+            email: identity.email,
+            name: identity.name
         )
     }
 
@@ -492,7 +517,8 @@ actor CodexAuthProvider: CodexAuthProviding {
             refreshToken: tokenResponse.refreshToken ?? bundle.refreshToken,
             expiresAt: Date().addingTimeInterval(Double(tokenResponse.expiresIn ?? 3600)),
             accountId: identity.accountId ?? bundle.accountId,
-            email: identity.email ?? bundle.email
+            email: identity.email ?? bundle.email,
+            name: identity.name ?? bundle.accountName
         )
         try saveBundle(updated)
         debugLog("Codex token refresh succeeded.")

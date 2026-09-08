@@ -148,7 +148,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         tokenBundle: CodexTokenBundle?
     ) -> [UsageSnapshot] {
         let accountId = response.accountId ?? tokenBundle?.accountId
-        let displayName = response.email ?? tokenBundle?.email
+        let displayName = tokenBundle?.accountName ?? response.email ?? tokenBundle?.email
 
         return response.windows.map { window in
             UsageSnapshot(

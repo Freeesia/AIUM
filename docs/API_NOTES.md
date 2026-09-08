@@ -100,11 +100,12 @@ by HTTP 403/404 until approval or timeout.
 - `refresh_token` — Used for silent refresh
 - `expires_at` — Computed from `expires_in`
 - `account_id` — Optional user identifier
-- `email` — Optional display name
+- `email` — Optional email address, used when the account name is unavailable
+- `name` — Optional account name, preferred for account display
 
 **Token refresh:** AIUM implements single-flight refresh protection — if multiple concurrent tasks request a valid token, only one refresh is performed and all waiters receive the result.
 
-AIUM extracts `account_id` and `email` from the returned JWT claims when available. Usage refresh also calls the Codex profile endpoint and updates the stored account display metadata if the backend returns it.
+AIUM extracts `account_id`, `email`, and `name` from the returned JWT claims when available. The ID token's `name` claim takes precedence over names in other token claims. Existing saved bundles without a separate `name` field resolve the name from their stored tokens, without requiring another login. Token refresh preserves the previous name when the new tokens omit it. Settings and usage cards prefer the account name and fall back to the email address when unavailable; usage refresh does not make an additional profile request.
 
 ### Codex Usage / Rate Limits
 

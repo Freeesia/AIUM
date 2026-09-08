@@ -93,7 +93,7 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 
 この値が `YOUR_CODEX_CLIENT_ID` placeholder または空値の場合、アプリは Codex ログイン処理を開始せず、設定画面にエラーを表示します。
 
-利用状況取得は `https://chatgpt.com/backend-api/wham/usage` を呼び出し、保存済みの `accountId` がある場合は `ChatGPT-Account-Id` ヘッダーに付与します。認証トークンから取得できた `accountId` / `email` は Keychain 内の Codex token bundle に保存し、設定画面と使用量カードの接続先表示に反映します。
+利用状況取得は `https://chatgpt.com/backend-api/wham/usage` を呼び出し、保存済みの `accountId` がある場合は `ChatGPT-Account-Id` ヘッダーに付与します。認証トークンから取得できた `accountId` / `email` / `name` は Keychain 内の Codex token bundle に保存します。設定画面と使用量カードではアカウント名を優先し、名前を取得できない場合はメールアドレスを表示します。既存のログイン情報も保存済みトークンから名前を読み取るため、トークンに名前が含まれていれば再ログインは不要です。
 
 この部分はサービス側の変更によって仕様が変わる可能性があります。
 

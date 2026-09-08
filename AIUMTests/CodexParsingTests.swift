@@ -246,17 +246,19 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(window.unit, "percent")
     }
 
-    func testNormalizationWithTokenBundle() throws {
+    func testNormalizationPrefersAccountNameOverEmail() throws {
         let bundle = CodexTokenBundle(
             idToken: "id",
             accessToken: "access",
             refreshToken: nil,
             expiresAt: Date().addingTimeInterval(3600),
             accountId: "acct-token",
-            email: "token@example.com"
+            email: "token@example.com",
+            name: "Codex User"
         )
         let json = """
         {
+          "email": "token@example.com",
           "primary_window": {
             "limit": 50,
             "remaining": 25
@@ -265,11 +267,12 @@ final class CodexParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try CodexUsageResponse.decode(from: json)
-        let provider = PrivateCodexUsageProvider()
+        let provider = PrivateCodexUsageProvider(authProvider: FakeCodexAuthProvider(bundle: nil))
         let snapshots = provider.normalizeSnapshots(response, tokenBundle: bundle)
 
         XCTAssertEqual(snapshots.first?.accountId, "acct-token")
-        XCTAssertEqual(snapshots.first?.displayName, "token@example.com")
+        XCTAssertEqual(snapshots.first?.displayName, "Codex User")
+        XCTAssertEqual(bundle.accountDisplayName, "Codex User")
         XCTAssertEqual(snapshots.first?.used, 25)
     }
 
@@ -323,7 +326,7 @@ final class CodexParsingTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try CodexUsageResponse.decode(from: json)
-        let provider = PrivateCodexUsageProvider()
+        let provider = PrivateCodexUsageProvider(authProvider: FakeCodexAuthProvider(bundle: nil))
         let snapshots = provider.normalizeSnapshots(response, tokenBundle: bundle)
 
         XCTAssertEqual(snapshots.first?.accountId, "acct-response")
@@ -349,7 +352,11 @@ final class CodexParsingTests: XCTestCase {
 
     func testStartDeviceFlowFailsBeforeNetworkWhenClientIdIsMissing() async throws {
         let session = URLSession(configuration: .ephemeral)
-        let provider = CodexAuthProvider(session: session, clientIdProvider: { nil })
+        let provider = CodexAuthProvider(
+            session: session,
+            clientIdProvider: { nil },
+            persistence: inMemoryPersistence()
+        )
 
         do {
             _ = try await provider.startDeviceFlow()
@@ -382,6 +389,7 @@ final class CodexParsingTests: XCTestCase {
     func testPollForTokenContinuesAfterPendingDeviceAuthorization() async throws {
         defer { CodexMockURLProtocol.requestHandler = nil }
 
+        let idToken = makeJWT(payload: #"{"name":"Codex User"}"#)
         var requestCount = 0
         CodexMockURLProtocol.requestHandler = { request in
             requestCount += 1
@@ -409,7 +417,7 @@ final class CodexParsingTests: XCTestCase {
 
             return (response, Data("""
             {
-              "id_token": "id-token",
+              "id_token": "\(idToken)",
               "access_token": "access-token",
               "refresh_token": "refresh-token",
               "expires_in": 3600
@@ -422,6 +430,7 @@ final class CodexParsingTests: XCTestCase {
         let provider = CodexAuthProvider(
             session: URLSession(configuration: configuration),
             clientIdProvider: { "client-id" },
+            persistence: inMemoryPersistence(),
             sleep: { _ in }
         )
 
@@ -429,6 +438,9 @@ final class CodexParsingTests: XCTestCase {
 
         XCTAssertEqual(bundle.accessToken, "access-token")
         XCTAssertEqual(bundle.refreshToken, "refresh-token")
+        XCTAssertEqual(bundle.name, "Codex User")
+        let savedBundle = await provider.tokenBundle
+        XCTAssertEqual(savedBundle?.accountDisplayName, "Codex User")
         XCTAssertEqual(requestCount, 3)
         await provider.logout()
     }
@@ -478,7 +490,8 @@ final class CodexParsingTests: XCTestCase {
             "chatgpt_account_id": "acct-access"
           },
           "https://api.openai.com/profile": {
-            "email": "access@example.com"
+            "email": "access@example.com",
+            "name": "Access User"
           }
         }
         """)
@@ -487,6 +500,62 @@ final class CodexParsingTests: XCTestCase {
 
         XCTAssertEqual(identity.accountId, "acct-access")
         XCTAssertEqual(identity.email, "access@example.com")
+        XCTAssertEqual(identity.name, "Access User")
+    }
+
+    func testAccountIdentityPrefersIDTokenNameAndSkipsBlankNames() {
+        let accessToken = makeJWT(payload: #"{"https://api.openai.com/profile":{"name":"Access User"}}"#)
+        let idToken = makeJWT(payload: #"{"name":"  山田 太郎  "}"#)
+        let identity = CodexAccountIdentity.extract(accessToken: accessToken, idToken: idToken)
+
+        XCTAssertEqual(identity.name, "山田 太郎")
+
+        let blankName = CodexAccountIdentity.extract(
+            accessToken: accessToken,
+            idToken: makeJWT(payload: #"{"name":" \n "}"#)
+        )
+        XCTAssertEqual(blankName.name, "Access User")
+    }
+
+    func testLegacyTokenBundleDisplaysNameWithoutAnotherLogin() throws {
+        let idToken = makeJWT(payload: #"{"name":"山田 太郎"}"#)
+        let data = try JSONSerialization.data(withJSONObject: [
+            "idToken": idToken,
+            "accessToken": "access",
+            "refreshToken": "refresh",
+            "expiresAt": 0,
+            "accountId": "acct-token",
+            "email": "token@example.com",
+        ])
+        let bundle = try JSONDecoder().decode(CodexTokenBundle.self, from: data)
+
+        XCTAssertNil(bundle.name)
+        XCTAssertEqual(bundle.accountDisplayName, "山田 太郎")
+
+        let response = try CodexUsageResponse.decode(from: Data(#"{"primary":{"limit":10,"used":4}}"#.utf8))
+        let provider = PrivateCodexUsageProvider(authProvider: FakeCodexAuthProvider(bundle: nil))
+        let snapshots = provider.normalizeSnapshots(response, tokenBundle: bundle)
+        XCTAssertEqual(snapshots.first?.displayName, "山田 太郎")
+    }
+
+    func testAccountDisplayFallsBackWhenNameIsUnavailable() throws {
+        var bundle = CodexTokenBundle(
+            idToken: makeJWT(payload: #"{"name":" \n "}"#),
+            accessToken: "access",
+            expiresAt: Date().addingTimeInterval(3600),
+            accountId: "acct-token",
+            email: "token@example.com",
+            name: " "
+        )
+        XCTAssertEqual(bundle.accountDisplayName, "token@example.com")
+
+        let response = try CodexUsageResponse.decode(from: Data(#"{"primary":{"limit":10,"used":4}}"#.utf8))
+        let provider = PrivateCodexUsageProvider(authProvider: FakeCodexAuthProvider(bundle: nil))
+        let snapshots = provider.normalizeSnapshots(response, tokenBundle: bundle)
+        XCTAssertEqual(snapshots.first?.displayName, "token@example.com")
+
+        bundle.email = nil
+        XCTAssertEqual(bundle.accountDisplayName, "acct-token")
     }
 
     // MARK: - Token refresh single-flight
@@ -537,7 +606,7 @@ final class CodexParsingTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CodexMockURLProtocol.self]
         let expiredBundle = CodexTokenBundle(
-            idToken: "old-id",
+            idToken: makeJWT(payload: #"{"name":"Original User"}"#),
             accessToken: "old-access",
             refreshToken: "old-refresh",
             expiresAt: Date().addingTimeInterval(-10),
@@ -547,7 +616,8 @@ final class CodexParsingTests: XCTestCase {
         let provider = CodexAuthProvider(
             session: URLSession(configuration: configuration),
             clientIdProvider: { "client-id" },
-            initialTokenBundle: expiredBundle
+            initialTokenBundle: expiredBundle,
+            persistence: inMemoryPersistence()
         )
 
         let accessToken = try await provider.validAccessToken()
@@ -557,6 +627,8 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(updatedBundle?.refreshToken, "new-refresh")
         XCTAssertEqual(updatedBundle?.accountId, "acct-old")
         XCTAssertEqual(updatedBundle?.email, "old@example.com")
+        XCTAssertEqual(updatedBundle?.name, "Original User")
+        XCTAssertEqual(updatedBundle?.accountDisplayName, "Original User")
         XCTAssertEqual(requestCount, 1)
         await provider.logout()
     }
@@ -564,6 +636,7 @@ final class CodexParsingTests: XCTestCase {
     // MARK: - Usage provider networking
 
     func testUsageProviderUsesWhamEndpointAndSendsAccountHeader() async throws {
+        defer { CodexMockURLProtocol.requestHandler = nil }
         var seenRequests: [URLRequest] = []
         CodexMockURLProtocol.requestHandler = { request in
             seenRequests.append(request)
@@ -620,6 +693,15 @@ final class CodexParsingTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func inMemoryPersistence() -> CodexTokenPersistence {
+        let store = CodexTokenPersistenceBox()
+        return CodexTokenPersistence(
+            load: { store.load() },
+            save: { store.save($0) },
+            delete: { store.delete() }
+        )
+    }
 
     private func makeJWT(payload: String) -> String {
         let header = #"{"alg":"none"}"#.data(using: .utf8)!.base64URLEncodedString()
