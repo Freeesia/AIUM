@@ -79,7 +79,11 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
     var accountIdentity: CodexAccountIdentity {
         get async {
             let bundle = await authProvider.tokenBundle
-            return CodexAccountIdentity(accountId: bundle?.accountId, email: bundle?.email)
+            return CodexAccountIdentity(
+                accountId: bundle?.accountId,
+                email: bundle?.email,
+                name: bundle?.accountName
+            )
         }
     }
 
