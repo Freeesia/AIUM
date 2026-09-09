@@ -100,13 +100,10 @@ by HTTP 403/404 until approval or timeout.
 - `refresh_token` — Used for silent refresh
 - `expires_at` — Computed from `expires_in`
 - `account_id` — Optional user identifier
-- `email` — Optional email address, used when the account name is unavailable
-- `name` — Optional account name from JWT claims; distinct from the ChatGPT profile name
-- `profile` — Optional cached ChatGPT profile containing `display_name` and `username`
+- `email` — Optional email address
+- `profile` — Optional cached ChatGPT profile containing `display_name`
 
 **Token refresh:** AIUM implements single-flight refresh protection — if multiple concurrent tasks request a valid token, only one refresh is performed and all waiters receive the result.
-
-AIUM extracts `account_id`, `email`, and `name` from JWT claims when available. Existing saved bundles can resolve the account name from their stored tokens. Token refresh preserves the cached profile for the same account, along with the previous account name when new tokens omit it.
 
 ### ChatGPT Profile
 
@@ -116,9 +113,9 @@ Authorization: Bearer {access_token}
 ChatGPT-Account-Id: {account_id}  # when known
 ```
 
-The response contains `profile_details.display_name` (the name shown in the ChatGPT app's profile editor) and `profile_details.username` (the handle). Both differ from the account-level `name` claim shown in ChatGPT web account settings.
+AIUM uses `profile_details.display_name`, the name shown in the ChatGPT app's profile editor, for settings, usage cards, and the reset confirmation. When the profile name is unavailable, the name row is omitted.
 
-AIUM refreshes this profile after login, during usage refresh, and when opening settings. Settings, usage cards, and the reset confirmation prefer the profile display name, then the username, JWT account name, and email. Requests use a 10-second timeout; HTTP errors, malformed responses, and network failures retain the cached profile without failing login or usage refresh. Profile responses are discarded if the login or account changes while the request is in flight. A response for another account is never saved into the current token bundle.
+The profile is refreshed after login, during usage refresh, and when opening settings. Requests use a 10-second timeout; HTTP errors, malformed responses, and network failures retain the cached profile without failing login or usage refresh. Token refresh preserves the profile for the same account. Profile responses are discarded if the login or account changes while the request is in flight.
 
 ### Codex Usage / Rate Limits
 

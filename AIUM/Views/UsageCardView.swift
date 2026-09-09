@@ -329,7 +329,7 @@ struct NotSignedInCardView: View {
             ))
             UsageCardView(snapshot: UsageSnapshot(
                 provider: .codex,
-                displayName: "user@example.com",
+                displayName: "Codex User",
                 planKind: .codexPro,
                 windowKind: .custom,
                 used: 22,
@@ -341,7 +341,7 @@ struct NotSignedInCardView: View {
             ))
             UsageCardView(snapshot: UsageSnapshot(
                 provider: .codex,
-                displayName: "user@example.com",
+                displayName: "Codex User",
                 planKind: .codexLunaReserve,
                 windowKind: .custom,
                 used: 8,

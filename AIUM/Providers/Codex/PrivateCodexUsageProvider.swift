@@ -82,7 +82,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
             return CodexAccountIdentity(
                 accountId: bundle?.accountId,
                 email: bundle?.email,
-                name: bundle?.profile?.preferredName ?? bundle?.accountName
+                profileName: bundle?.accountDisplayName
             )
         }
     }
@@ -155,8 +155,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         tokenBundle: CodexTokenBundle?
     ) -> [UsageSnapshot] {
         let accountId = response.accountId ?? tokenBundle?.accountId
-        let displayName = tokenBundle?.profile?.preferredName ?? tokenBundle?.accountName
-            ?? response.email ?? tokenBundle?.email
+        let displayName = tokenBundle?.accountDisplayName
 
         return response.windows.map { window in
             UsageSnapshot(

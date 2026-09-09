@@ -82,7 +82,7 @@ final class DashboardViewModel: ObservableObject {
         codexResetOutcome = nil
         return CodexUsageResetConfirmation(
             accountId: accountId,
-            accountDisplayName: identity.name ?? identity.email ?? accountId,
+            accountDisplayName: identity.profileName,
             remainingCount: remainingCount
         )
     }
