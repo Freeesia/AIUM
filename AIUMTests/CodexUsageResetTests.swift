@@ -313,10 +313,12 @@ private actor ResetAuthProvider: CodexAuthProviding {
     var tokenBundle: CodexTokenBundle? = CodexTokenBundle(
         idToken: "id", accessToken: "access", refreshToken: "refresh",
         expiresAt: Date().addingTimeInterval(3600), accountId: "account-a", email: "person@example.com",
-        name: "Codex User"
+        name: "Account Name",
+        profile: CodexAccountProfile(displayName: "Codex User", username: "codex-user")
     )
     var isAuthenticated: Bool { tokenBundle != nil }
     func validAccessToken() async throws -> String { "access" }
+    func refreshAccountProfile(accessToken: String) async -> CodexAccountProfile? { tokenBundle?.profile }
     func updateAccount(accountId: String?, email: String?) {
         tokenBundle?.accountId = accountId
         tokenBundle?.email = email

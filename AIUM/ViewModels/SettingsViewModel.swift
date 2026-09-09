@@ -84,6 +84,10 @@ final class SettingsViewModel: ObservableObject {
             isGitHubAuthenticated = await githubAuth.isAuthenticated
             isCodexAuthenticated = await codexAuth.isAuthenticated
             codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
+            if isCodexAuthenticated, let accessToken = try? await codexAuth.validAccessToken() {
+                _ = await codexAuth.refreshAccountProfile(accessToken: accessToken)
+                codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
+            }
         }
     }
 
