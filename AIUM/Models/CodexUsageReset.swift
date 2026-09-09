@@ -3,7 +3,7 @@ import Foundation
 struct CodexUsageResetConfirmation: Identifiable, Sendable {
     let id = UUID()
     let accountId: String
-    let accountDisplayName: String
+    let accountDisplayName: String?
     let remainingCount: Int
 }
 

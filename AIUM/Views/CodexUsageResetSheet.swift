@@ -9,9 +9,11 @@ struct CodexUsageResetSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Label(confirmation.accountDisplayName, systemImage: "person.crop.circle")
-                        .font(.subheadline)
-                        .textSelection(.enabled)
+                    if let accountName = confirmation.accountDisplayName {
+                        Label(accountName, systemImage: "person.crop.circle")
+                            .font(.subheadline)
+                            .textSelection(.enabled)
+                    }
 
                     if let outcome = viewModel.codexResetOutcome {
                         Text(outcome.message)

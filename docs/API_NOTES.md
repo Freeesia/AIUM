@@ -100,11 +100,22 @@ by HTTP 403/404 until approval or timeout.
 - `refresh_token` — Used for silent refresh
 - `expires_at` — Computed from `expires_in`
 - `account_id` — Optional user identifier
-- `email` — Optional display name
+- `email` — Optional email address
+- `profile` — Optional cached ChatGPT profile containing `display_name`
 
 **Token refresh:** AIUM implements single-flight refresh protection — if multiple concurrent tasks request a valid token, only one refresh is performed and all waiters receive the result.
 
-AIUM extracts `account_id` and `email` from the returned JWT claims when available. Usage refresh also calls the Codex profile endpoint and updates the stored account display metadata if the backend returns it.
+### ChatGPT Profile
+
+```
+GET https://chatgpt.com/backend-api/profiles/me
+Authorization: Bearer {access_token}
+ChatGPT-Account-Id: {account_id}  # when known
+```
+
+AIUM uses `profile_details.display_name`, the name shown in the ChatGPT app's profile editor, for settings, usage cards, and the reset confirmation. When the profile name is unavailable, the name row is omitted.
+
+The profile is refreshed after login, during usage refresh, and when opening settings. Requests use a 10-second timeout; HTTP errors, malformed responses, and network failures retain the cached profile without failing login or usage refresh. Token refresh preserves the profile for the same account. Profile responses are discarded if the login or account changes while the request is in flight.
 
 ### Codex Usage / Rate Limits
 

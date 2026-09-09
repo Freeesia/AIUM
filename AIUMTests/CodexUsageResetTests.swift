@@ -28,7 +28,7 @@ final class CodexUsageResetTests: XCTestCase {
         )
 
         XCTAssertEqual(confirmation.accountId, "account-a")
-        XCTAssertEqual(confirmation.accountDisplayName, "person@example.com")
+        XCTAssertEqual(confirmation.accountDisplayName, "Codex User")
         XCTAssertEqual(confirmation.remainingCount, 2)
         XCTAssertEqual(requests, 0)
         XCTAssertNil(fixture.model.codexResetOutcome)
@@ -312,10 +312,12 @@ private final class Fixture {
 private actor ResetAuthProvider: CodexAuthProviding {
     var tokenBundle: CodexTokenBundle? = CodexTokenBundle(
         idToken: "id", accessToken: "access", refreshToken: "refresh",
-        expiresAt: Date().addingTimeInterval(3600), accountId: "account-a", email: "person@example.com"
+        expiresAt: Date().addingTimeInterval(3600), accountId: "account-a", email: "person@example.com",
+        profile: CodexAccountProfile(displayName: "Codex User")
     )
     var isAuthenticated: Bool { tokenBundle != nil }
     func validAccessToken() async throws -> String { "access" }
+    func refreshAccountProfile(accessToken: String) async -> CodexAccountProfile? { tokenBundle?.profile }
     func updateAccount(accountId: String?, email: String?) {
         tokenBundle?.accountId = accountId
         tokenBundle?.email = email

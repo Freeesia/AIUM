@@ -79,7 +79,11 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
     var accountIdentity: CodexAccountIdentity {
         get async {
             let bundle = await authProvider.tokenBundle
-            return CodexAccountIdentity(accountId: bundle?.accountId, email: bundle?.email)
+            return CodexAccountIdentity(
+                accountId: bundle?.accountId,
+                email: bundle?.email,
+                profileName: bundle?.accountDisplayName
+            )
         }
     }
 
@@ -112,7 +116,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
 
     func fetchUsage() async throws -> [UsageSnapshot] {
         let token = try await authProvider.validAccessToken()
-        let tokenBundle = await authProvider.tokenBundle
+        var tokenBundle = await authProvider.tokenBundle
 
         let request = makeBackendRequest(
             path: usageEndpointPath,
@@ -128,12 +132,15 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         try validate(response: response, data: data, endpointName: "Codex usage")
 
         let decoded = try decodeResponse(data)
-        let snapshots = normalizeSnapshots(decoded, tokenBundle: tokenBundle)
-        debugLog("Decoded \(snapshots.count) Codex usage snapshot(s).")
-        guard !snapshots.isEmpty else {
+        guard !decoded.windows.isEmpty else {
             throw CodexUsageError.noUsageData(body: String(data: data, encoding: .utf8))
         }
 
+        if let profile = await authProvider.refreshAccountProfile(accessToken: token) {
+            tokenBundle?.profile = profile
+        }
+        let snapshots = normalizeSnapshots(decoded, tokenBundle: tokenBundle)
+        debugLog("Decoded \(snapshots.count) Codex usage snapshot(s).")
         return snapshots
     }
 
@@ -148,7 +155,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         tokenBundle: CodexTokenBundle?
     ) -> [UsageSnapshot] {
         let accountId = response.accountId ?? tokenBundle?.accountId
-        let displayName = response.email ?? tokenBundle?.email
+        let displayName = tokenBundle?.accountDisplayName
 
         return response.windows.map { window in
             UsageSnapshot(

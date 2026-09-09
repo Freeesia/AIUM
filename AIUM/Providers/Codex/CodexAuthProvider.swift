@@ -46,6 +46,7 @@ protocol CodexAuthProviding: Actor {
     func startDeviceFlow() async throws -> CodexDeviceCodeResponse
     func pollForToken(deviceCode: String, userCode: String, interval: Int) async throws -> CodexTokenBundle
     func validAccessToken() async throws -> String
+    func refreshAccountProfile(accessToken: String) async -> CodexAccountProfile?
     func updateAccount(accountId: String?, email: String?) throws
     func logout()
 }
@@ -60,13 +61,16 @@ struct CodexTokenBundle: Codable, Sendable {
     var expiresAt: Date
     var accountId: String?
     var email: String?
+    var profile: CodexAccountProfile?
 
     var isExpired: Bool {
         Date() >= expiresAt.addingTimeInterval(-60) // refresh 1 min early
     }
 
     var accountDisplayName: String? {
-        email ?? accountId
+        guard let name = profile?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !name.isEmpty else { return nil }
+        return name
     }
 }
 
@@ -101,9 +105,30 @@ struct CodexTokenPersistence: Sendable {
 
 // MARK: - Account Identity
 
+/// ChatGPT profile data used for account display.
+struct CodexAccountProfile: Codable, Equatable, Sendable {
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
+    }
+
+    static func decode(from data: Data) throws -> CodexAccountProfile {
+        struct Response: Decodable {
+            let profileDetails: CodexAccountProfile
+
+            enum CodingKeys: String, CodingKey {
+                case profileDetails = "profile_details"
+            }
+        }
+        return try JSONDecoder().decode(Response.self, from: data).profileDetails
+    }
+}
+
 struct CodexAccountIdentity: Equatable, Sendable {
     let accountId: String?
     let email: String?
+    var profileName: String?
 
     static func extract(accessToken: String?, idToken: String?) -> CodexAccountIdentity {
         let accessClaims = jwtPayload(accessToken)
@@ -358,12 +383,13 @@ actor CodexAuthProvider: CodexAuthProviding {
 
             try validate(response: response, data: data)
             let authorization = try JSONDecoder().decode(CodexDeviceAuthorizationResponse.self, from: data)
-            let bundle = try await exchangeAuthorizationCode(
+            var bundle = try await exchangeAuthorizationCode(
                 authorization.authorizationCode,
                 codeVerifier: authorization.codeVerifier,
                 clientId: clientId
             )
             try saveBundle(bundle)
+            bundle.profile = await refreshAccountProfile(accessToken: bundle.accessToken)
             debugLog("Codex device authorization succeeded.")
             return bundle
         }
@@ -492,11 +518,52 @@ actor CodexAuthProvider: CodexAuthProviding {
             refreshToken: tokenResponse.refreshToken ?? bundle.refreshToken,
             expiresAt: Date().addingTimeInterval(Double(tokenResponse.expiresIn ?? 3600)),
             accountId: identity.accountId ?? bundle.accountId,
-            email: identity.email ?? bundle.email
+            email: identity.email ?? bundle.email,
+            profile: identity.accountId == nil || identity.accountId == bundle.accountId ? bundle.profile : nil
         )
         try saveBundle(updated)
         debugLog("Codex token refresh succeeded.")
         return updated
+    }
+
+    /// Profile lookup is optional: failure must not prevent login or usage refresh.
+    func refreshAccountProfile(accessToken: String) async -> CodexAccountProfile? {
+        do {
+            guard let originalBundle = try synchronizedTokenBundle(),
+                  originalBundle.accessToken == accessToken else { return nil }
+
+            var request = URLRequest(
+                url: CodexOAuthConfig.backendBaseURL.appendingPathComponent("profiles/me"),
+                timeoutInterval: 10
+            )
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("AIUM", forHTTPHeaderField: "User-Agent")
+            if let accountId = originalBundle.accountId, !accountId.isEmpty {
+                request.setValue(accountId, forHTTPHeaderField: "ChatGPT-Account-Id")
+            }
+
+            let (data, response) = try await session.data(for: request)
+            guard let response = response as? HTTPURLResponse,
+                  (200..<300).contains(response.statusCode) else {
+                debugLog("Codex profile request failed; keeping cached account display.")
+                return nil
+            }
+            let profile = try CodexAccountProfile.decode(from: data)
+
+            // Do not attach an in-flight response to a different login or account.
+            guard var bundle = try synchronizedTokenBundle(),
+                  bundle.accessToken == accessToken,
+                  bundle.accountId == originalBundle.accountId else { return nil }
+            if bundle.profile != profile {
+                bundle.profile = profile
+                try saveBundle(bundle)
+            }
+            return profile
+        } catch {
+            debugLog("Unable to refresh Codex profile; keeping cached account display.")
+            return nil
+        }
     }
 
     func updateAccount(accountId: String?, email: String?) throws {
@@ -506,6 +573,9 @@ actor CodexAuthProvider: CodexAuthProviding {
         let resolvedEmail = email ?? bundle.email
         guard resolvedAccountId != bundle.accountId || resolvedEmail != bundle.email else { return }
 
+        if resolvedAccountId != bundle.accountId {
+            bundle.profile = nil
+        }
         bundle.accountId = resolvedAccountId
         bundle.email = resolvedEmail
         try saveBundle(bundle)
