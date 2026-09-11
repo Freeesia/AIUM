@@ -2,7 +2,7 @@
 "AIUM — Usage" = "AIUM — Usage";
 "Shows your primary usage at a glance." = "Shows your primary usage at a glance.";
 "AIUM — Lock Screen Usage" = "AIUM — Lock Screen Usage";
-"Shows the highest usage for your selected provider." = "Shows the highest usage for your selected provider.";
+"Shows usage for your selected provider, with three rings for Codex limits." = "Shows usage for your selected provider, with three rings for Codex limits.";
 "AIUM — Copilot & Codex" = "AIUM — Copilot & Codex";
 "Shows GitHub Copilot and Codex usage side by side." = "Shows GitHub Copilot and Codex usage side by side.";
 
@@ -11,9 +11,16 @@
 "Not signed in" = "Not signed in";
 "%lld%% used" = "%lld%% used";
 "Usage unavailable" = "Usage unavailable";
+"5h" = "5h";
+"1w" = "1w";
+"Outer ring: 5 hours" = "Outer ring: 5 hours";
+"Middle ring: 1 week" = "Middle ring: 1 week";
+"Inner ring: Luna Reserve" = "Inner ring: Luna Reserve";
+"Demo: %@" = "Demo: %@";
 "Demo: %lld percent used" = "Demo: %lld percent used";
 "%lld percent used" = "%lld percent used";
 "Resets in %@" = "Resets in %@";
+"Resets at %@" = "Resets at %@";
 "At %@" = "At %@";
 "%@ · %@" = "%@ · %@";
 "now" = "now";
@@ -28,7 +35,7 @@
 "GitHub Copilot" = "GitHub Copilot";
 "OpenAI Codex" = "OpenAI Codex";
 "Usage Provider" = "Usage Provider";
-"Choose the provider whose highest usage is shown." = "Choose the provider whose highest usage is shown.";
+"Choose the provider whose usage is shown." = "Choose the provider whose usage is shown.";
 "Provider: ${provider}" = "Provider: ${provider}";
 
 /* Units */

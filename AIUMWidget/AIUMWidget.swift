@@ -25,7 +25,7 @@ enum AIUMWidgetProviderOption: String, AppEnum {
 
 struct AIUMWidgetConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Usage Provider"
-    static var description = IntentDescription("Choose the provider whose highest usage is shown.")
+    static var description = IntentDescription("Choose the provider whose usage is shown.")
 
     @Parameter(title: "Provider", default: .githubCopilot)
     var provider: AIUMWidgetProviderOption
@@ -104,9 +104,33 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
                 displayName: "user@example.com",
                 planKind: .codexPro,
                 windowKind: .custom,
+                used: 72,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .hour, value: 2, to: Date()),
+                unit: "percent",
+                source: "placeholder",
+                windowDurationMins: 5 * 60
+            ),
+            UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexPro,
+                windowKind: .custom,
                 used: 42,
                 limit: 100,
                 resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
+                unit: "percent",
+                source: "placeholder",
+                windowDurationMins: 7 * 24 * 60
+            ),
+            UsageSnapshot(
+                provider: .codex,
+                displayName: "user@example.com",
+                planKind: .codexLunaReserve,
+                windowKind: .custom,
+                used: 8,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
                 unit: "percent",
                 source: "placeholder",
                 windowDurationMins: 7 * 24 * 60
@@ -174,7 +198,7 @@ struct AIUMLockScreenWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Lock Screen Usage")
-        .description("Shows the highest usage for your selected provider.")
+        .description("Shows usage for your selected provider, with three rings for Codex limits.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         .promptsForUserConfiguration()
     }

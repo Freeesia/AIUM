@@ -63,6 +63,13 @@ struct AIUMSmallWidgetView: View {
                     .font(.caption2)
                     .foregroundStyle(.red)
                     .lineLimit(2)
+            } else if snapshot.provider == .codex {
+                CodexUsageRingsDetailView(
+                    snapshots: entry.snapshots,
+                    ringSize: 48,
+                    showsResetTimes: true
+                )
+                .frame(maxWidth: .infinity)
             } else {
                 // Circular progress
                 ZStack {
@@ -87,7 +94,7 @@ struct AIUMSmallWidgetView: View {
 
             Spacer(minLength: 0)
 
-            if let resetAt = snapshot.resetAt {
+            if snapshot.provider != .codex, let resetAt = snapshot.resetAt {
                 resetInfo(resetAt: resetAt, style: .compact)
             }
         }
@@ -174,19 +181,28 @@ struct AIUMMediumWidgetView: View {
                 } else {
                     Spacer(minLength: 0)
 
-                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(progressColor(for: snapshot.usedPercent))
+                    if provider == .codex {
+                        CodexUsageRingsDetailView(
+                            snapshots: entry.snapshots,
+                            ringSize: 60,
+                            showsResetTimes: true
+                        )
+                        Spacer(minLength: 0)
+                    } else {
+                        Text(verbatim: "\(Int(snapshot.usedPercent))%")
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .foregroundStyle(progressColor(for: snapshot.usedPercent))
 
-                    ProgressView(value: snapshot.usedPercent / 100)
-                        .tint(progressColor(for: snapshot.usedPercent))
+                        ProgressView(value: snapshot.usedPercent / 100)
+                            .tint(progressColor(for: snapshot.usedPercent))
 
-                    Text(verbatim: "\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.localizedUnit)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        Text(verbatim: "\(formatCount(snapshot.used)) / \(formatCount(snapshot.limit)) \(snapshot.localizedUnit)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
 
-                    if let resetAt = snapshot.resetAt {
-                        resetInfo(resetAt: resetAt, style: .stacked)
+                        if let resetAt = snapshot.resetAt {
+                            resetInfo(resetAt: resetAt, style: .stacked)
+                        }
                     }
                 }
             } else {
@@ -217,6 +233,8 @@ struct AIUMAccessoryCircularView: View {
                     systemImage: "exclamationmark.triangle.fill",
                     accessibilityValue: errorMessage
                 )
+            } else if snapshot.provider == .codex {
+                CodexUsageRingsView(snapshots: entry.snapshots)
             } else if snapshot.source == "demo" {
                 Gauge(value: snapshot.usedPercent / 100) {
                     ProviderIconView(provider: snapshot.provider, size: 20)
@@ -284,6 +302,20 @@ struct AIUMAccessoryRectangularView: View {
                         .font(.caption2.bold())
                     Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption2)
+                }
+            } else if snapshot.provider == .codex {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(snapshot.provider.displayName)
+                            .font(.caption2.bold())
+                        if snapshot.source == "demo" {
+                            Text(verbatim: "DEMO")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                    }
+                    .lineLimit(1)
+
+                    CodexUsageRingsDetailView(snapshots: entry.snapshots, ringSize: 46)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 2) {
@@ -386,7 +418,7 @@ private func resetSummaryText(resetAt: Date, referenceDate: Date) -> String {
     )
 }
 
-private func remainingTimeText(until resetAt: Date, from referenceDate: Date) -> String {
+func remainingTimeText(until resetAt: Date, from referenceDate: Date) -> String {
     let seconds = resetAt.timeIntervalSince(referenceDate)
     guard seconds > 0 else { return String(localized: "now") }
 
@@ -427,103 +459,79 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
 
 // MARK: - Previews
 
+private enum WidgetPreviewData {
+    static let date = Date(timeIntervalSince1970: 1_789_171_200)
+    static let snapshots = [
+        UsageSnapshot(
+            provider: .githubCopilot, displayName: "octocat", planKind: .aiCredits,
+            windowKind: .monthly, used: 750, limit: 1000,
+            resetAt: date.addingTimeInterval(10 * 24 * 3600),
+            unit: "AI credits", source: "preview", fetchedAt: date
+        ),
+        codexSnapshot(plan: .codexPro, used: 72, minutes: 5 * 60, resetHours: 2),
+        codexSnapshot(plan: .codexPro, used: 42, minutes: 7 * 24 * 60, resetHours: 96),
+        codexSnapshot(plan: .codexLunaReserve, used: 8, minutes: 7 * 24 * 60, resetHours: 168),
+    ]
+
+    static func entry(provider: Provider, snapshots: [UsageSnapshot] = snapshots) -> AIUMWidgetEntry {
+        AIUMWidgetEntry(date: date, snapshots: snapshots, provider: provider)
+    }
+
+    private static func codexSnapshot(
+        plan: PlanKind, used: Double, minutes: Int, resetHours: Double
+    ) -> UsageSnapshot {
+        UsageSnapshot(
+            provider: .codex, planKind: plan, windowKind: .custom, used: used, limit: 100,
+            resetAt: date.addingTimeInterval(resetHours * 3600), unit: "percent",
+            source: "preview", fetchedAt: date, windowDurationMins: minutes
+        )
+    }
+}
+
 #Preview("Small", as: .systemSmall) {
     AIUMSmallWidget()
 } timeline: {
-    AIUMWidgetEntry(
-        date: Date(),
-        snapshots: [
-            UsageSnapshot(
-                provider: .githubCopilot,
-                displayName: "octocat",
-                planKind: .aiCredits,
-                windowKind: .monthly,
-                used: 750,
-                limit: 1000,
-                resetAt: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
-                unit: "AI credits",
-                source: "preview"
-            )
-        ],
-        provider: .githubCopilot
+    WidgetPreviewData.entry(provider: .githubCopilot)
+}
+
+#Preview("Codex Circular", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .codex)
+}
+
+#Preview("Codex Rectangular", as: .accessoryRectangular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .codex)
+}
+
+#Preview("Codex Missing Reserve", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(
+        provider: .codex,
+        snapshots: WidgetPreviewData.snapshots.filter { $0.planKind != .codexLunaReserve }
     )
 }
 
-#Preview("Lock Screen Circular", as: .accessoryCircular) {
+#Preview("Codex Error", as: .accessoryCircular) {
     AIUMLockScreenWidget()
 } timeline: {
-    AIUMWidgetEntry(
-        date: Date(),
-        snapshots: [
-            UsageSnapshot(
-                provider: .codex,
-                displayName: "user@example.com",
-                planKind: .codexPro,
-                windowKind: .custom,
-                used: 42,
-                limit: 100,
-                resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
-                unit: "percent",
-                source: "preview",
-                windowDurationMins: 7 * 24 * 60
-            ),
-        ],
-        provider: .codex
+    WidgetPreviewData.entry(
+        provider: .codex,
+        snapshots: [.error(provider: .codex, message: "Connection failed")]
     )
 }
 
-#Preview("Lock Screen Rectangular", as: .accessoryRectangular) {
+#Preview("Copilot Rectangular", as: .accessoryRectangular) {
     AIUMLockScreenWidget()
 } timeline: {
-    AIUMWidgetEntry(
-        date: Date(),
-        snapshots: [
-            UsageSnapshot(
-                provider: .githubCopilot,
-                displayName: "octocat",
-                planKind: .aiCredits,
-                windowKind: .monthly,
-                used: 750,
-                limit: 1000,
-                resetAt: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
-                unit: "AI credits",
-                source: "preview"
-            ),
-        ],
-        provider: .githubCopilot
-    )
+    WidgetPreviewData.entry(provider: .githubCopilot)
 }
 
 #Preview("Medium", as: .systemMedium) {
     AIUMMediumWidget()
 } timeline: {
-    AIUMWidgetEntry(
-        date: Date(),
-        snapshots: [
-            UsageSnapshot(
-                provider: .githubCopilot,
-                displayName: "octocat",
-                planKind: .aiCredits,
-                windowKind: .monthly,
-                used: 750,
-                limit: 1000,
-                resetAt: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
-                unit: "AI credits",
-                source: "preview"
-            ),
-            UsageSnapshot(
-                provider: .codex,
-                displayName: "user@example.com",
-                planKind: .codexPro,
-                windowKind: .custom,
-                used: 42,
-                limit: 100,
-                resetAt: Calendar.current.date(byAdding: .day, value: 4, to: Date()),
-                unit: "percent",
-                source: "preview",
-                windowDurationMins: 7 * 24 * 60
-            ),
-        ],
-        provider: .githubCopilot
-    )
+    WidgetPreviewData.entry(provider: .githubCopilot)
 }
