@@ -213,7 +213,7 @@ struct AIUMMediumWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 4)
     }
 
     private func formatCount(_ value: Double) -> String {

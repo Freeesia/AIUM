@@ -180,6 +180,7 @@ struct AIUMSmallWidget: Widget {
         .configurationDisplayName("AIUM — Usage")
         .description("Shows your primary usage at a glance.")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 
@@ -217,5 +218,6 @@ struct AIUMMediumWidget: Widget {
         .configurationDisplayName("AIUM — Copilot & Codex")
         .description("Shows GitHub Copilot and Codex usage side by side.")
         .supportedFamilies([.systemMedium])
+        .contentMarginsDisabled()
     }
 }
