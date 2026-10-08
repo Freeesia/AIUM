@@ -97,6 +97,10 @@ struct AIUMSmallWidgetView: View {
             if snapshot.provider != .codex, let resetAt = snapshot.resetAt {
                 resetInfo(resetAt: resetAt, style: .compact)
             }
+
+            if snapshot.errorMessage == nil {
+                updatedInfo(fetchedAt: displayedFetchDate(for: snapshot, in: entry.snapshots))
+            }
         }
         .padding(12)
     }
@@ -204,6 +208,8 @@ struct AIUMMediumWidgetView: View {
                             resetInfo(resetAt: resetAt, style: .stacked)
                         }
                     }
+
+                    updatedInfo(fetchedAt: displayedFetchDate(for: snapshot, in: entry.snapshots))
                 }
             } else {
                 Spacer(minLength: 0)
@@ -234,37 +240,28 @@ struct AIUMAccessoryCircularView: View {
                     accessibilityValue: errorMessage
                 )
             } else if snapshot.provider == .codex {
-                CodexUsageRingsView(snapshots: entry.snapshots)
-            } else if snapshot.source == "demo" {
-                Gauge(value: snapshot.usedPercent / 100) {
-                    ProviderIconView(provider: snapshot.provider, size: 20)
-                } currentValueLabel: {
-                    Text(verbatim: "D")
-                        .font(.system(size: 12, weight: .bold))
-                }
-                .gaugeStyle(.accessoryCircular)
-                .accessibilityLabel(snapshot.provider.displayName)
-                .accessibilityValue(
-                    String.localizedStringWithFormat(
-                        String(localized: "Demo: %lld percent used"),
-                        Int64(snapshot.usedPercent)
+                VStack(spacing: 1) {
+                    CodexUsageRingsView(snapshots: entry.snapshots)
+                    updatedInfo(
+                        fetchedAt: displayedFetchDate(for: snapshot, in: entry.snapshots),
+                        style: .circular
                     )
-                )
+                }
+                .accessibilityElement(children: .combine)
             } else {
                 Gauge(value: snapshot.usedPercent / 100) {
                     ProviderIconView(provider: snapshot.provider, size: 20)
                 } currentValueLabel: {
-                    Text(verbatim: "\(Int(snapshot.usedPercent))%")
-                        .font(.system(size: 12, weight: .bold))
+                    VStack(spacing: 1) {
+                        Text(verbatim: snapshot.source == "demo" ? "D" : "\(Int(snapshot.usedPercent))%")
+                            .font(.system(size: 12, weight: .bold))
+                        updatedInfo(fetchedAt: snapshot.fetchedAt, style: .circular)
+                            .frame(width: 40)
+                    }
                 }
                 .gaugeStyle(.accessoryCircular)
                 .accessibilityLabel(snapshot.provider.displayName)
-                .accessibilityValue(
-                    String.localizedStringWithFormat(
-                        String(localized: "%lld percent used"),
-                        Int64(snapshot.usedPercent)
-                    )
-                )
+                .accessibilityValue(usageAccessibilityValue(snapshot: snapshot))
             }
         } else {
             unavailableGauge(
@@ -312,6 +309,11 @@ struct AIUMAccessoryRectangularView: View {
                             Text(verbatim: "DEMO")
                                 .font(.system(size: 9, weight: .bold))
                         }
+                        Spacer(minLength: 0)
+                        updatedInfo(
+                            fetchedAt: displayedFetchDate(for: snapshot, in: entry.snapshots),
+                            style: .compact
+                        )
                     }
                     .lineLimit(1)
 
@@ -335,6 +337,8 @@ struct AIUMAccessoryRectangularView: View {
                             Text(verbatim: "DEMO")
                                 .font(.system(size: 9, weight: .bold))
                         }
+                        Spacer(minLength: 0)
+                        updatedInfo(fetchedAt: snapshot.fetchedAt, style: .compact)
                     }
                     if let resetAt = snapshot.resetAt {
                         resetSummary(resetAt: resetAt)
@@ -354,6 +358,53 @@ struct AIUMAccessoryRectangularView: View {
 }
 
 // MARK: - Shared helper
+
+/// A set of Codex rings shows multiple snapshots, so report the age of the
+/// oldest visible limit rather than making older data appear freshly fetched.
+private func displayedFetchDate(for snapshot: UsageSnapshot, in snapshots: [UsageSnapshot]) -> Date {
+    guard snapshot.provider == .codex else { return snapshot.fetchedAt }
+    return CodexUsageLimit.allCases
+        .compactMap { $0.snapshot(in: snapshots)?.fetchedAt }
+        .min() ?? snapshot.fetchedAt
+}
+
+private enum UpdatedInfoStyle {
+    case full
+    case compact
+    case circular
+}
+
+/// Dynamic date text keeps the displayed age current even when WidgetKit
+/// delays the next timeline reload. Use the data's fetch date, not the entry date.
+private func updatedInfo(fetchedAt: Date, style: UpdatedInfoStyle = .full) -> some View {
+    Group {
+        switch style {
+        case .full:
+            Text("Updated \(fetchedAt, style: .relative) ago")
+        case .compact:
+            Text("\(fetchedAt, style: .relative) ago")
+        case .circular:
+            HStack(spacing: 1) {
+                Image(systemName: "clock")
+                Text(fetchedAt, style: .relative)
+            }
+        }
+    }
+    .font(.system(size: style == .circular ? 7 : 9))
+    .foregroundStyle(.secondary)
+    .lineLimit(1)
+    .minimumScaleFactor(0.7)
+    .accessibilityLabel(Text("Updated \(fetchedAt, style: .relative) ago"))
+}
+
+private func usageAccessibilityValue(snapshot: UsageSnapshot) -> Text {
+    let format = snapshot.source == "demo"
+        ? String(localized: "Demo: %lld percent used")
+        : String(localized: "%lld percent used")
+    let usage = String.localizedStringWithFormat(format, Int64(snapshot.usedPercent))
+    let updated = Text("Updated \(snapshot.fetchedAt, style: .relative) ago")
+    return Text("\(usage), \(updated)")
+}
 
 private func progressColor(for percent: Double) -> Color {
     if percent >= 90 { return .red }
@@ -460,13 +511,13 @@ private func resetTimeText(_ resetAt: Date, relativeTo referenceDate: Date) -> S
 // MARK: - Previews
 
 private enum WidgetPreviewData {
-    static let date = Date(timeIntervalSince1970: 1_789_171_200)
+    static let date = Date()
     static let snapshots = [
         UsageSnapshot(
             provider: .githubCopilot, displayName: "octocat", planKind: .aiCredits,
             windowKind: .monthly, used: 750, limit: 1000,
             resetAt: date.addingTimeInterval(10 * 24 * 3600),
-            unit: "AI credits", source: "preview", fetchedAt: date
+            unit: "AI credits", source: "preview", fetchedAt: date.addingTimeInterval(-5 * 60)
         ),
         codexSnapshot(plan: .codexPro, used: 72, minutes: 5 * 60, resetHours: 2),
         codexSnapshot(plan: .codexPro, used: 42, minutes: 7 * 24 * 60, resetHours: 96),
@@ -483,7 +534,7 @@ private enum WidgetPreviewData {
         UsageSnapshot(
             provider: .codex, planKind: plan, windowKind: .custom, used: used, limit: 100,
             resetAt: date.addingTimeInterval(resetHours * 3600), unit: "percent",
-            source: "preview", fetchedAt: date, windowDurationMins: minutes
+            source: "preview", fetchedAt: date.addingTimeInterval(-2 * 60 * 60), windowDurationMins: minutes
         )
     }
 }
@@ -532,6 +583,38 @@ private enum WidgetPreviewData {
 
 #Preview("Medium", as: .systemMedium) {
     AIUMMediumWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .githubCopilot)
+}
+
+#Preview("Small — Stale, Error & Not Signed In", as: .systemSmall) {
+    AIUMSmallWidget()
+} timeline: {
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [
+            UsageSnapshot(
+                provider: .githubCopilot,
+                planKind: .aiCredits,
+                used: 750,
+                limit: 1000,
+                unit: "AI credits",
+                source: "preview",
+                fetchedAt: Date().addingTimeInterval(-2 * 24 * 60 * 60)
+            ),
+        ],
+        provider: .githubCopilot
+    )
+    AIUMWidgetEntry(
+        date: Date(),
+        snapshots: [.error(provider: .githubCopilot, message: "Connection failed")],
+        provider: .githubCopilot
+    )
+    AIUMWidgetEntry(date: Date(), snapshots: [], provider: .githubCopilot)
+}
+
+#Preview("Copilot Circular", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
 } timeline: {
     WidgetPreviewData.entry(provider: .githubCopilot)
 }
