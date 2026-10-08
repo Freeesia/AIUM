@@ -19,6 +19,9 @@
 "Demo: %@" = "デモ：%@";
 "Demo: %lld percent used" = "デモ：%lldパーセント使用済み";
 "%lld percent used" = "%lldパーセント使用済み";
+"Updated %@ ago" = "%@前に更新";
+"%@ ago" = "%@前";
+"%@, %@" = "%@、%@";
 "Resets in %@" = "%@後にリセット";
 "Resets at %@" = "%@にリセット";
 "At %@" = "時刻：%@";

@@ -19,6 +19,9 @@
 "Demo: %@" = "Demo: %@";
 "Demo: %lld percent used" = "Demo: %lld percent used";
 "%lld percent used" = "%lld percent used";
+"Updated %@ ago" = "Updated %@ ago";
+"%@ ago" = "%@ ago";
+"%@, %@" = "%@, %@";
 "Resets in %@" = "Resets in %@";
 "Resets at %@" = "Resets at %@";
 "At %@" = "At %@";
