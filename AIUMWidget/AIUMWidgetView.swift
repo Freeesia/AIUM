@@ -374,19 +374,31 @@ private enum UpdatedInfoStyle {
     case circular
 }
 
-/// Dynamic date text keeps the displayed age current even when WidgetKit
-/// delays the next timeline reload. Use the data's fetch date, not the entry date.
+/// Use the data's fetch date, not the entry date. Lock Screen labels use the
+/// app's minute precision so seconds never widen the text inside a gauge.
 private func updatedInfo(fetchedAt: Date, style: UpdatedInfoStyle = .full) -> some View {
     Group {
         switch style {
         case .full:
             Text("Updated \(fetchedAt, style: .relative) ago")
-        case .compact:
-            Text("\(fetchedAt, style: .relative) ago")
-        case .circular:
-            HStack(spacing: 1) {
-                Image(systemName: "clock")
-                Text(fetchedAt, style: .relative)
+                .accessibilityLabel(Text("Updated \(fetchedAt, style: .relative) ago"))
+        case .compact, .circular:
+            TimelineView(.everyMinute) { context in
+                let elapsed = UsageRelativeTimeText.fetched(at: fetchedAt, relativeTo: context.date)
+
+                Group {
+                    if style == .circular {
+                        HStack(spacing: 1) {
+                            Image(systemName: "clock")
+                            Text(elapsed)
+                        }
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        Text(elapsed)
+                    }
+                }
+                .accessibilityLabel(Text("Updated \(elapsed)"))
             }
         }
     }
@@ -394,7 +406,6 @@ private func updatedInfo(fetchedAt: Date, style: UpdatedInfoStyle = .full) -> so
     .foregroundStyle(.secondary)
     .lineLimit(1)
     .minimumScaleFactor(0.7)
-    .accessibilityLabel(Text("Updated \(fetchedAt, style: .relative) ago"))
 }
 
 private func usageAccessibilityValue(snapshot: UsageSnapshot) -> Text {
