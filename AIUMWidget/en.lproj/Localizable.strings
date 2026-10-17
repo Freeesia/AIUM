@@ -20,6 +20,7 @@
 "Demo: %lld percent used" = "Demo: %lld percent used";
 "%lld percent used" = "%lld percent used";
 "Updated %@ ago" = "Updated %@ ago";
+"Updated %@" = "Updated %@";
 "%@ ago" = "%@ ago";
 "%@, %@" = "%@, %@";
 "Resets in %@" = "Resets in %@";
