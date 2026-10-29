@@ -117,6 +117,11 @@
 "%lld remaining" = "%lld remaining";
 "Reset" = "Reset";
 "Reset credits remaining: %lld" = "Reset credits remaining: %lld";
+"Reset credit expiration dates" = "Reset credit expiration dates";
+"Loading expiration dates…" = "Loading expiration dates…";
+"Expires %@" = "Expires %@";
+"Expiration date unavailable" = "Expiration date unavailable";
+"Could not load reset expiration dates. Try again." = "Could not load reset expiration dates. Try again.";
 "Reset usage" = "Reset usage";
 "Reset Codex usage?" = "Reset Codex usage?";
 "This uses one reset credit to reset your Codex usage limits." = "This uses one reset credit to reset your Codex usage limits.";

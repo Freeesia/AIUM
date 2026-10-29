@@ -7,6 +7,23 @@ struct CodexUsageResetConfirmation: Identifiable, Sendable {
     let remainingCount: Int
 }
 
+struct CodexResetCreditDetails: Sendable {
+    let availableCount: Int
+    let credits: [CodexResetCredit]
+}
+
+struct CodexResetCredit: Identifiable, Sendable {
+    let id: String
+    let title: String?
+    let expiresAt: Date?
+
+    var displayTitle: String {
+        guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else { return String(localized: "Usage reset") }
+        return title
+    }
+}
+
 enum CodexUsageResetOutcome: String, Decodable, Sendable {
     case reset
     case alreadyRedeemed = "already_redeemed"
