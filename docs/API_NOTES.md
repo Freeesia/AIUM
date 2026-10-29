@@ -182,6 +182,15 @@ Legacy snake_case windows are still accepted:
 ## Codex Usage Reset
 
 The reset card opens a confirmation sheet before any reset request is sent.
+Opening the sheet fetches `GET /wham/rate-limit-reset-credits` with the
+confirmed account's bearer token and `ChatGPT-Account-Id`. The response's
+`available_count` updates the displayed count, and entries in `credits` with
+`status: "available"` are displayed by `expires_at`, earliest first. Each entry
+uses its `title` when present and shows the expiration date, time, and local
+time zone. Missing dates are shown as unavailable; fetch failures can be
+retried without consuming a reset. The account is checked before and after
+the read so another account's details cannot be displayed in the sheet.
+
 After confirmation, AIUM uses the existing Codex bearer token and the confirmed
 `ChatGPT-Account-Id` with:
 

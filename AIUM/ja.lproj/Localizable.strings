@@ -117,6 +117,11 @@
 "%lld remaining" = "残り%lld回";
 "Reset" = "実行";
 "Reset credits remaining: %lld" = "リセット残り回数：%lld回";
+"Reset credit expiration dates" = "リセット権の有効期限";
+"Loading expiration dates…" = "有効期限を取得中…";
+"Expires %@" = "有効期限：%@";
+"Expiration date unavailable" = "有効期限の情報がありません";
+"Could not load reset expiration dates. Try again." = "リセット権の有効期限を取得できませんでした。再試行してください。";
 "Reset usage" = "利用量をリセット";
 "Reset Codex usage?" = "利用量のリセット";
 "This uses one reset credit to reset your Codex usage limits." = "リセット権を1回分使って、Codexの利用量をリセットします。";

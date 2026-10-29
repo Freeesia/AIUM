@@ -9,6 +9,9 @@ final class DashboardViewModel: ObservableObject {
     @Published private(set) var isResettingCodexUsage = false
     @Published private(set) var codexResetError: String?
     @Published private(set) var codexResetOutcome: CodexUsageResetOutcome?
+    @Published private(set) var codexResetCreditDetails: CodexResetCreditDetails?
+    @Published private(set) var isLoadingCodexResetCreditDetails = false
+    @Published private(set) var codexResetCreditDetailsError: String?
     @Published var isRefreshing = false
     @Published var lastError: String?
     @Published var activeRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
@@ -23,6 +26,7 @@ final class DashboardViewModel: ObservableObject {
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
     private let resetRequestStore: CodexResetRequestStore
+    private var codexResetCreditDetailsRequestID: UUID?
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
     private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.storedAutomaticIntervalMinutes()
@@ -80,11 +84,45 @@ final class DashboardViewModel: ObservableObject {
         }
         codexResetError = nil
         codexResetOutcome = nil
+        codexResetCreditDetails = nil
+        codexResetCreditDetailsError = nil
+        codexResetCreditDetailsRequestID = nil
+        isLoadingCodexResetCreditDetails = false
         return CodexUsageResetConfirmation(
             accountId: accountId,
             accountDisplayName: identity.profileName,
             remainingCount: remainingCount
         )
+    }
+
+    func loadCodexResetCreditDetails(for confirmation: CodexUsageResetConfirmation) async {
+        guard !isDemoMode, !demoModeStore.isEnabled,
+              !isLoadingCodexResetCreditDetails, !isResettingCodexUsage,
+              codexResetOutcome == nil else { return }
+        let requestID = UUID()
+        codexResetCreditDetailsRequestID = requestID
+        isLoadingCodexResetCreditDetails = true
+        codexResetCreditDetails = nil
+        codexResetCreditDetailsError = nil
+        defer {
+            if codexResetCreditDetailsRequestID == requestID {
+                isLoadingCodexResetCreditDetails = false
+            }
+        }
+
+        do {
+            let details = try await codexProvider.fetchResetCreditDetails(accountId: confirmation.accountId)
+            try Task.checkCancellation()
+            guard codexResetCreditDetailsRequestID == requestID else { return }
+            codexResetCreditDetails = details
+        } catch {
+            guard !Task.isCancelled, codexResetCreditDetailsRequestID == requestID else { return }
+            if let error = error as? CodexUsageResetError {
+                codexResetCreditDetailsError = error.localizedDescription
+            } else {
+                codexResetCreditDetailsError = String(localized: "Could not load reset expiration dates. Try again.")
+            }
+        }
     }
 
     func resetCodexUsage(_ confirmation: CodexUsageResetConfirmation) async {

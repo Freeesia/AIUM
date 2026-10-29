@@ -27,8 +27,9 @@ struct CodexUsageResetSheet: View {
                             .disabled(viewModel.isResettingCodexUsage)
                     } else {
                         Text("This uses one reset credit to reset your Codex usage limits.")
-                        Text("Reset credits remaining: \(confirmation.remainingCount)")
+                        Text("Reset credits remaining: \(viewModel.codexResetCreditDetails?.availableCount ?? confirmation.remainingCount)")
                             .font(.headline)
+                        resetCreditExpirations
                         Text("This action cannot be undone.")
                             .foregroundStyle(.secondary)
 
@@ -49,7 +50,9 @@ struct CodexUsageResetSheet: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(viewModel.isResettingCodexUsage || viewModel.isRefreshing)
+                        .disabled(viewModel.isResettingCodexUsage || viewModel.isRefreshing
+                                  || viewModel.isLoadingCodexResetCreditDetails
+                                  || viewModel.codexResetCreditDetails?.availableCount == 0)
                         .accessibilityIdentifier("codex-confirm-usage-reset")
                     }
                 }
@@ -75,5 +78,54 @@ struct CodexUsageResetSheet: View {
         }
         .presentationDetents([.medium, .large])
         .interactiveDismissDisabled(viewModel.isResettingCodexUsage)
+        .task(id: confirmation.id) {
+            await viewModel.loadCodexResetCreditDetails(for: confirmation)
+        }
+    }
+
+    private var resetCreditExpirations: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Reset credit expiration dates")
+                .font(.headline)
+
+            if viewModel.isLoadingCodexResetCreditDetails {
+                ProgressView("Loading expiration dates…")
+            } else if let error = viewModel.codexResetCreditDetailsError {
+                Text(error)
+                    .foregroundStyle(.secondary)
+                Button("Retry") {
+                    Task { await viewModel.loadCodexResetCreditDetails(for: confirmation) }
+                }
+                .disabled(viewModel.isResettingCodexUsage)
+            } else if let details = viewModel.codexResetCreditDetails {
+                if details.credits.isEmpty {
+                    if details.availableCount == 0 {
+                        Text("No reset credits are available.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Expiration date unavailable")
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    ForEach(details.credits) { credit in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(credit.displayTitle)
+                                .font(.subheadline.weight(.medium))
+                            if let expiresAt = credit.expiresAt {
+                                Text("Expires \(Text(expiresAt, format: .dateTime.year().month().day().hour().minute().timeZone(.specificName(.short))))")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Expiration date unavailable")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 }

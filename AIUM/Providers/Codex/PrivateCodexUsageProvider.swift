@@ -87,6 +87,47 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
         }
     }
 
+    func fetchResetCreditDetails(accountId: String) async throws -> CodexResetCreditDetails {
+        let token = try await authProvider.validAccessToken()
+        guard !accountId.isEmpty, await authProvider.tokenBundle?.accountId == accountId else {
+            throw CodexUsageResetError.accountChanged
+        }
+
+        var request = makeBackendRequest(
+            path: "/wham/rate-limit-reset-credits",
+            token: token,
+            accountId: accountId
+        )
+        request.timeoutInterval = 10
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data, endpointName: "Codex reset credits")
+        guard await authProvider.tokenBundle?.accountId == accountId else {
+            throw CodexUsageResetError.accountChanged
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: value) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: value) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid reset credit expiration date")
+        }
+        let decoded = try decoder.decode(CodexResetCreditsResponse.self, from: data)
+        let credits = decoded.credits
+            .filter { $0.status == "available" }
+            .sorted {
+                let lhs = $0.expiresAt ?? .distantFuture
+                let rhs = $1.expiresAt ?? .distantFuture
+                return lhs == rhs ? $0.id < $1.id : lhs < rhs
+            }
+            .map { CodexResetCredit(id: $0.id, title: $0.title, expiresAt: $0.expiresAt) }
+        return CodexResetCreditDetails(availableCount: decoded.availableCount, credits: credits)
+    }
+
     /// Call only after confirming with the user. The request ID belongs to one
     /// logical attempt and must stay the same after an uncertain response.
     func resetUsage(requestID: UUID, accountId: String) async throws -> CodexUsageResetOutcome {
@@ -213,6 +254,28 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
 
 private struct CodexUsageResetResponse: Decodable {
     let code: CodexUsageResetOutcome
+}
+
+private struct CodexResetCreditsResponse: Decodable {
+    let availableCount: Int
+    let credits: [Credit]
+
+    enum CodingKeys: String, CodingKey {
+        case availableCount = "available_count"
+        case credits
+    }
+
+    struct Credit: Decodable {
+        let id: String
+        let title: String?
+        let status: String
+        let expiresAt: Date?
+
+        enum CodingKeys: String, CodingKey {
+            case id, title, status
+            case expiresAt = "expires_at"
+        }
+    }
 }
 
 // MARK: - Parser
