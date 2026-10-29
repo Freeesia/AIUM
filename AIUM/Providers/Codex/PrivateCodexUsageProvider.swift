@@ -99,6 +99,7 @@ actor PrivateCodexUsageProvider: CodexUsageProvider {
             accountId: accountId
         )
         request.timeoutInterval = 10
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data, endpointName: "Codex reset credits")
         guard await authProvider.tokenBundle?.accountId == accountId else {

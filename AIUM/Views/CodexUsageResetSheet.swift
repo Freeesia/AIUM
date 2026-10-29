@@ -88,16 +88,7 @@ struct CodexUsageResetSheet: View {
             Text("Reset credit expiration dates")
                 .font(.headline)
 
-            if viewModel.isLoadingCodexResetCreditDetails {
-                ProgressView("Loading expiration dates…")
-            } else if let error = viewModel.codexResetCreditDetailsError {
-                Text(error)
-                    .foregroundStyle(.secondary)
-                Button("Retry") {
-                    Task { await viewModel.loadCodexResetCreditDetails(for: confirmation) }
-                }
-                .disabled(viewModel.isResettingCodexUsage)
-            } else if let details = viewModel.codexResetCreditDetails {
+            if let details = viewModel.codexResetCreditDetails {
                 if details.credits.isEmpty {
                     if details.availableCount == 0 {
                         Text("No reset credits are available.")
@@ -122,6 +113,17 @@ struct CodexUsageResetSheet: View {
                         .accessibilityElement(children: .combine)
                     }
                 }
+            }
+
+            if viewModel.isLoadingCodexResetCreditDetails {
+                ProgressView("Loading expiration dates…")
+            } else if let error = viewModel.codexResetCreditDetailsError {
+                Text(error)
+                    .foregroundStyle(.secondary)
+                Button("Retry") {
+                    Task { await viewModel.loadCodexResetCreditDetails(for: confirmation) }
+                }
+                .disabled(viewModel.isResettingCodexUsage)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -32,7 +32,6 @@ final class CodexUsageResetTests: XCTestCase {
                 .environment(\.locale, Locale(identifier: "ja")),
             name: "Codex reset confirmation", height: 500
         )
-
     }
 
     func testLoadingResetCreditDetailsUsesAuthenticatedGetAndSortsAvailableCredits() async throws {
@@ -52,6 +51,7 @@ final class CodexUsageResetTests: XCTestCase {
         XCTAssertEqual(request.url?.path, "/backend-api/wham/rate-limit-reset-credits")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access")
         XCTAssertEqual(request.value(forHTTPHeaderField: "ChatGPT-Account-Id"), "account-a")
+        XCTAssertEqual(request.cachePolicy, .reloadIgnoringLocalCacheData)
         XCTAssertNil(request.httpBody)
         let details = try XCTUnwrap(fixture.model.codexResetCreditDetails)
         XCTAssertEqual(details.availableCount, 3)
@@ -112,7 +112,7 @@ final class CodexUsageResetTests: XCTestCase {
         XCTAssertNil(fixture.model.codexResetOutcome)
     }
 
-    func testReopeningConfirmationClearsDetailsAndAccountChangePreventsRead() async throws {
+    func testReopeningConfirmationKeepsCacheButAccountChangePreventsReuse() async throws {
         let fixture = try Fixture()
         var requests = 0
         ResetURLProtocol.handler = { request in
@@ -123,7 +123,7 @@ final class CodexUsageResetTests: XCTestCase {
         await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
         XCTAssertNotNil(fixture.model.codexResetCreditDetails)
         let confirmation = try await fixture.confirmation()
-        XCTAssertNil(fixture.model.codexResetCreditDetails)
+        XCTAssertNotNil(fixture.model.codexResetCreditDetails)
         await fixture.auth.updateAccount(accountId: "account-b", email: "other@example.com")
 
         await fixture.model.loadCodexResetCreditDetails(for: confirmation)
@@ -132,6 +132,151 @@ final class CodexUsageResetTests: XCTestCase {
         XCTAssertNil(fixture.model.codexResetCreditDetails)
         XCTAssertNotNil(fixture.model.codexResetCreditDetailsError)
         XCTAssertNil(fixture.model.codexResetOutcome)
+    }
+
+    func testResetCreditDetailsAreReusedUntilOneMinuteHasPassed() async throws {
+        let fixture = try Fixture()
+        var requests = 0
+        ResetURLProtocol.handler = { request in
+            requests += 1
+            return Self.response(request, body: Self.resetCreditDetails)
+        }
+        let firstConfirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+
+        fixture.clock.now.addTimeInterval(59)
+        let confirmation = try await fixture.confirmation()
+        XCTAssertNotNil(fixture.model.codexResetCreditDetails)
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+        XCTAssertEqual(requests, 1)
+
+        fixture.clock.now.addTimeInterval(1)
+        let staleConfirmation = try await fixture.confirmation()
+        XCTAssertEqual(requests, 1)
+        await fixture.model.loadCodexResetCreditDetails(for: staleConfirmation)
+        XCTAssertEqual(requests, 2)
+        XCTAssertNil(fixture.model.codexResetCreditDetailsError)
+    }
+
+    func testFailedCacheRefreshKeepsPreviousDetailsAndDoesNotExtendFreshness() async throws {
+        let fixture = try Fixture()
+        var requests = 0
+        ResetURLProtocol.handler = { request in
+            requests += 1
+            return requests == 2
+                ? Self.response(request, status: 503, body: "{}")
+                : Self.response(request, body: Self.resetCreditDetails)
+        }
+        let firstConfirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+
+        fixture.clock.now.addTimeInterval(60)
+        let confirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+        XCTAssertEqual(requests, 2)
+        XCTAssertEqual(fixture.model.codexResetCreditDetails?.credits.map(\.id), ["sooner", "later", "no-expiry"])
+        XCTAssertNotNil(fixture.model.codexResetCreditDetailsError)
+        XCTAssertFalse(fixture.model.isLoadingCodexResetCreditDetails)
+
+        fixture.clock.now.addTimeInterval(1)
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+        XCTAssertEqual(requests, 3)
+        XCTAssertNil(fixture.model.codexResetCreditDetailsError)
+
+        fixture.clock.now.addTimeInterval(59)
+        let reopened = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: reopened)
+        XCTAssertEqual(requests, 3)
+    }
+
+    func testCreditExpirationInvalidatesCacheBeforeOneMinute() async throws {
+        let fixture = try Fixture()
+        fixture.clock.now = Date(timeIntervalSince1970: 1_793_514_570.123456)
+        var requests = 0
+        ResetURLProtocol.handler = { request in
+            requests += 1
+            return Self.response(request, body: Self.resetCreditDetails)
+        }
+        let firstConfirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+
+        fixture.clock.now.addTimeInterval(31)
+        let confirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+
+        XCTAssertEqual(requests, 2)
+    }
+
+    func testChangingAccountClearsDetailsBeforeFetchingNewAccount() async throws {
+        let fixture = try Fixture()
+        var accounts: [String?] = []
+        ResetURLProtocol.handler = { request in
+            accounts.append(request.value(forHTTPHeaderField: "ChatGPT-Account-Id"))
+            return Self.response(request, body: Self.resetCreditDetails)
+        }
+        let firstConfirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+        await fixture.auth.updateAccount(accountId: "account-b", email: "other@example.com")
+        fixture.model.codexSnapshots = [UsageSnapshot(
+            provider: .codex, accountId: "account-b", used: 80, limit: 100,
+            source: "test", resetCredits: 2
+        )]
+
+        let confirmation = try await fixture.confirmation()
+        XCTAssertNil(fixture.model.codexResetCreditDetails)
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+
+        XCTAssertEqual(accounts, ["account-a", "account-b"])
+        XCTAssertNotNil(fixture.model.codexResetCreditDetails)
+    }
+
+    func testSignOutClearsCacheEvenWhenSigningBackIntoSameAccount() async throws {
+        let fixture = try Fixture()
+        var requests = 0
+        ResetURLProtocol.handler = { request in
+            requests += 1
+            return Self.response(request, body: Self.resetCreditDetails)
+        }
+        let firstConfirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+        let bundle = await fixture.auth.tokenBundle
+        await fixture.auth.logout()
+
+        let isAuthenticated = await fixture.model.codexIsAuthenticated
+        XCTAssertFalse(isAuthenticated)
+        XCTAssertNil(fixture.model.codexResetCreditDetails)
+        await fixture.auth.setTokenBundle(bundle)
+        let confirmation = try await fixture.confirmation()
+        await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+
+        XCTAssertEqual(requests, 2)
+    }
+
+    func testResetAttemptsInvalidateDetailsIncludingWhenTheResponseIsLost() async throws {
+        for outcome in ["reset", "already_redeemed", "no_credit", "nothing_to_reset", nil] as [String?] {
+            let fixture = try Fixture()
+            var detailRequests = 0
+            ResetURLProtocol.handler = { request in
+                if request.httpMethod == "POST" {
+                    guard let outcome else { throw URLError(.networkConnectionLost) }
+                    return Self.response(request, body: "{\"code\":\"\(outcome)\"}")
+                }
+                if request.url?.path == "/backend-api/wham/usage" {
+                    return Self.response(request, body: Self.usage(remaining: 1))
+                }
+                detailRequests += 1
+                return Self.response(request, body: Self.resetCreditDetails)
+            }
+            let firstConfirmation = try await fixture.confirmation()
+            await fixture.model.loadCodexResetCreditDetails(for: firstConfirmation)
+
+            await fixture.model.resetCodexUsage(firstConfirmation)
+
+            XCTAssertNil(fixture.model.codexResetCreditDetails)
+            let confirmation = try await fixture.confirmation()
+            await fixture.model.loadCodexResetCreditDetails(for: confirmation)
+            XCTAssertEqual(detailRequests, 2, "Outcome: \(outcome ?? "lost response")")
+        }
     }
 
     func testConfirmedResetUsesAuthenticatedPostAndRefreshesCache() async throws {
@@ -382,6 +527,7 @@ private final class Fixture {
     let defaults: UserDefaults
     let store: UsageStore
     let auth = ResetAuthProvider()
+    let clock = ResetTestClock()
     let provider: PrivateCodexUsageProvider
     lazy var model = makeModel()
 
@@ -402,11 +548,13 @@ private final class Fixture {
     }
 
     func makeModel() -> DashboardViewModel {
-        DashboardViewModel(
+        let clock = clock
+        return DashboardViewModel(
             usageStore: store,
             demoModeStore: DemoModeStore(defaults: defaults),
             codexProvider: provider,
-            resetRequestStore: CodexResetRequestStore(defaults: defaults)
+            resetRequestStore: CodexResetRequestStore(defaults: defaults),
+            now: { clock.now }
         )
     }
 
@@ -422,6 +570,11 @@ private final class Fixture {
     }
 }
 
+@MainActor
+private final class ResetTestClock {
+    var now = Date(timeIntervalSince1970: 1_793_200_000)
+}
+
 private actor ResetAuthProvider: CodexAuthProviding {
     var tokenBundle: CodexTokenBundle? = CodexTokenBundle(
         idToken: "id", accessToken: "access", refreshToken: "refresh",
@@ -435,6 +588,7 @@ private actor ResetAuthProvider: CodexAuthProviding {
         tokenBundle?.accountId = accountId
         tokenBundle?.email = email
     }
+    func setTokenBundle(_ bundle: CodexTokenBundle?) { tokenBundle = bundle }
     func startDeviceFlow() async throws -> CodexDeviceCodeResponse { throw CodexAuthError.notAuthenticated }
     func pollForToken(deviceCode: String, userCode: String, interval: Int) async throws -> CodexTokenBundle {
         throw CodexAuthError.notAuthenticated
