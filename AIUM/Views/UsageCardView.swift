@@ -24,11 +24,15 @@ struct UsageCardView: View {
                 cardHeader(relativeTo: referenceDate)
                 errorBanner(error)
             } else if dynamicTypeSize.isAccessibilitySize {
-                accessibilityUsageContent(relativeTo: referenceDate)
+                expandedUsageContent(relativeTo: referenceDate)
             } else {
-                compactUsageContent(relativeTo: referenceDate)
+                ViewThatFits(in: .horizontal) {
+                    compactUsageContent(relativeTo: referenceDate)
+                    expandedUsageContent(relativeTo: referenceDate)
+                }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -70,19 +74,34 @@ struct UsageCardView: View {
         }
     }
 
-    private func accessibilityUsageContent(relativeTo referenceDate: Date) -> some View {
+    private func expandedUsageContent(relativeTo referenceDate: Date) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             cardHeader(relativeTo: referenceDate)
 
-            HStack(alignment: .center, spacing: 16) {
-                progressRing(size: 72, lineWidth: 8)
-                usageStats
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 16) {
+                    progressRing(size: 72, lineWidth: 8)
+                    usageStats
+                }
+                .fixedSize(horizontal: true, vertical: false)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    progressRing(size: 72, lineWidth: 8)
+                    usageStats
+                }
             }
 
-            HStack {
-                resetInfo(relativeTo: referenceDate)
-                Spacer()
-                updatedInfo(relativeTo: referenceDate)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    resetInfo(relativeTo: referenceDate)
+                    Spacer(minLength: 16)
+                    updatedInfo(relativeTo: referenceDate)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    resetInfo(relativeTo: referenceDate)
+                    updatedInfo(relativeTo: referenceDate)
+                }
             }
         }
     }
@@ -104,6 +123,7 @@ struct UsageCardView: View {
             Spacer()
             staleIndicator(relativeTo: referenceDate)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func titleRow(relativeTo referenceDate: Date) -> some View {
@@ -166,7 +186,7 @@ struct UsageCardView: View {
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
-        .lineLimit(1)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func updatedInfo(relativeTo referenceDate: Date) -> some View {
@@ -177,7 +197,7 @@ struct UsageCardView: View {
         }
         .font(.caption2)
         .foregroundStyle(.tertiary)
-        .lineLimit(1)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func errorBanner(_ error: String) -> some View {
@@ -331,4 +351,17 @@ struct NotSignedInCardView: View {
         }
         .padding()
     }
+}
+
+#Preview("Narrow usage card", traits: .fixedLayout(width: 280, height: 420)) {
+    UsageCardView(snapshot: DemoUsageDataFactory.snapshots(for: .codex)[0])
+        .padding()
+}
+
+#Preview("Large text usage card", traits: .fixedLayout(width: 320, height: 700)) {
+    ScrollView {
+        UsageCardView(snapshot: DemoUsageDataFactory.snapshots(for: .githubCopilot)[0])
+            .padding()
+    }
+    .environment(\.dynamicTypeSize, .accessibility3)
 }

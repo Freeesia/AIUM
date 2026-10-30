@@ -7,53 +7,37 @@ struct DashboardView: View {
     @State private var codexAuthenticated = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var minimumProviderColumnWidth: CGFloat = 320
+
+    private let contentPadding: CGFloat = 16
+    private let sectionSpacing: CGFloat = 16
+    private let maximumContentWidth: CGFloat = 1120
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Demo mode banner
-                    if viewModel.isDemoMode {
-                        demoBanner
-                    }
+            GeometryReader { geometry in
+                let layout = providerLayout(for: geometry.size.width)
 
-                    // GitHub Copilot section
-                    sectionHeader(provider: .githubCopilot)
-                    if githubAuthenticated {
-                        if !showsGitHubAICredits && !showsGitHubPremiumRequests {
-                            hiddenUsageCard
-                        } else if visibleGitHubSnapshots.isEmpty {
-                            placeholderCard(provider: .githubCopilot)
-                        } else {
-                            ForEach(visibleGitHubSnapshots) { snapshot in
-                                UsageCardView(snapshot: snapshot)
-                            }
+                ScrollView {
+                    VStack(spacing: sectionSpacing) {
+                        if viewModel.isDemoMode {
+                            demoBanner
                         }
-                    } else {
-                        NotSignedInCardView(provider: .githubCopilot)
-                    }
 
-                    // OpenAI Codex section
-                    sectionHeader(provider: .codex)
-                    if codexAuthenticated {
-                        if viewModel.codexSnapshots.isEmpty {
-                            placeholderCard(provider: .codex)
-                        } else {
-                            ForEach(viewModel.codexSnapshots) { snapshot in
-                                UsageCardView(snapshot: snapshot)
-                            }
+                        layout {
+                            githubSection
+                            codexSection
                         }
-                        codexResetCreditsCard
-                    } else {
-                        NotSignedInCardView(provider: .codex)
-                    }
 
-                    // Error banner
-                    if let error = viewModel.lastError {
-                        errorBanner(message: error)
+                        if let error = viewModel.lastError {
+                            errorBanner(message: error)
+                        }
                     }
+                    .frame(maxWidth: maximumContentWidth)
+                    .padding(contentPadding)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding()
             }
             .navigationTitle("AIUM")
             .navigationBarTitleDisplayMode(.large)
@@ -64,6 +48,7 @@ struct DashboardView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
+                    .accessibilityLabel("Settings")
                     .disabled(viewModel.isResettingCodexUsage)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -77,6 +62,7 @@ struct DashboardView: View {
                             Image(systemName: "arrow.clockwise")
                         }
                     }
+                    .accessibilityLabel("Refresh")
                     .disabled(viewModel.isRefreshing || viewModel.isResettingCodexUsage)
                 }
             }
@@ -118,6 +104,56 @@ struct DashboardView: View {
     }
 
     // MARK: - Helpers
+
+    private func providerLayout(for availableWidth: CGFloat) -> AnyLayout {
+        let contentWidth = min(availableWidth - contentPadding * 2, maximumContentWidth)
+        let fitsColumns = contentWidth >= minimumProviderColumnWidth * 2 + sectionSpacing
+
+        // Keep the same view identity when folding, resizing, or changing text size.
+        if fitsColumns && !dynamicTypeSize.isAccessibilitySize {
+            return AnyLayout(HStackLayout(alignment: .top, spacing: sectionSpacing))
+        }
+        return AnyLayout(VStackLayout(alignment: .leading, spacing: sectionSpacing))
+    }
+
+    private var githubSection: some View {
+        VStack(alignment: .leading, spacing: sectionSpacing) {
+            sectionHeader(provider: .githubCopilot)
+            if githubAuthenticated {
+                if !showsGitHubAICredits && !showsGitHubPremiumRequests {
+                    hiddenUsageCard
+                } else if visibleGitHubSnapshots.isEmpty {
+                    placeholderCard(provider: .githubCopilot)
+                } else {
+                    ForEach(visibleGitHubSnapshots) { snapshot in
+                        UsageCardView(snapshot: snapshot)
+                    }
+                }
+            } else {
+                NotSignedInCardView(provider: .githubCopilot)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var codexSection: some View {
+        VStack(alignment: .leading, spacing: sectionSpacing) {
+            sectionHeader(provider: .codex)
+            if codexAuthenticated {
+                if viewModel.codexSnapshots.isEmpty {
+                    placeholderCard(provider: .codex)
+                } else {
+                    ForEach(viewModel.codexSnapshots) { snapshot in
+                        UsageCardView(snapshot: snapshot)
+                    }
+                }
+                codexResetCreditsCard
+            } else {
+                NotSignedInCardView(provider: .codex)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
 
     private var visibleGitHubSnapshots: [UsageSnapshot] {
         viewModel.githubSnapshots.filter { snapshot in
@@ -231,6 +267,10 @@ private enum DashboardSheet: Identifiable {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Compact dashboard", traits: .fixedLayout(width: 320, height: 568)) {
+    DashboardView()
+}
+
+#Preview("Expanded dashboard", traits: .fixedLayout(width: 1000, height: 720)) {
     DashboardView()
 }
