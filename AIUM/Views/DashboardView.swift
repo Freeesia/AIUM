@@ -48,7 +48,6 @@ struct DashboardView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
-                    .accessibilityLabel("Settings")
                     .disabled(viewModel.isResettingCodexUsage)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -62,7 +61,6 @@ struct DashboardView: View {
                             Image(systemName: "arrow.clockwise")
                         }
                     }
-                    .accessibilityLabel("Refresh")
                     .disabled(viewModel.isRefreshing || viewModel.isResettingCodexUsage)
                 }
             }
@@ -267,10 +265,6 @@ private enum DashboardSheet: Identifiable {
 
 // MARK: - Preview
 
-#Preview("Compact dashboard", traits: .fixedLayout(width: 320, height: 568)) {
-    DashboardView()
-}
-
-#Preview("Expanded dashboard", traits: .fixedLayout(width: 1000, height: 720)) {
+#Preview {
     DashboardView()
 }

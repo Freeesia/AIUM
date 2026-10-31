@@ -507,11 +507,7 @@ final class CodexUsageResetTests: XCTestCase {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: height))
         window.rootViewController = controller
         window.isHidden = false
-        defer {
-            window.isHidden = true
-            // Removing the hosted view cancels its task before the fixture is released.
-            window.rootViewController = nil
-        }
+        defer { window.isHidden = true }
         controller.view.frame = window.bounds
         controller.view.layoutIfNeeded()
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in

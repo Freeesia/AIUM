@@ -352,16 +352,3 @@ struct NotSignedInCardView: View {
         .padding()
     }
 }
-
-#Preview("Narrow usage card", traits: .fixedLayout(width: 280, height: 420)) {
-    UsageCardView(snapshot: DemoUsageDataFactory.snapshots(for: .codex)[0])
-        .padding()
-}
-
-#Preview("Large text usage card", traits: .fixedLayout(width: 320, height: 700)) {
-    ScrollView {
-        UsageCardView(snapshot: DemoUsageDataFactory.snapshots(for: .githubCopilot)[0])
-            .padding()
-    }
-    .environment(\.dynamicTypeSize, .accessibility3)
-}

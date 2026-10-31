@@ -1,6 +1,6 @@
 # AIUM — AI Usage Monitor
 
-AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するための、iPhone・iPad 向け個人用アプリです。
+AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するための個人用 iOS アプリです。
 
 アプリ本体で利用状況を取得し、ホーム画面やロック画面のウィジェットからすぐ確認できるようにします。主な用途は、利用上限までの残量やリセット時刻の目安を日常的に把握することです。
 
@@ -31,8 +31,6 @@ AIUM は、アプリ本体で認証・取得・保存を行い、ウィジェッ
 
 ## セットアップ
 
-Xcode 27.1 以降を使用してください。iOS 27.1 SDK 以降でビルドすると、iPhone Duo の内側・外側ディスプレイ全体を使う表示に対応します。アプリの最低対応 OS は iOS / iPadOS 18.0 です。
-
 ### 1. XcodeGen をインストールする
 
 ```sh
@@ -45,7 +43,7 @@ brew install xcodegen
 xcodegen generate
 ```
 
-生成された `AIUM.xcodeproj` を Xcode で開き、`AIUM` scheme で iPhone または iPad を選んで実行します。`AIUM.xcodeproj` は生成物のため、リポジトリにはコミットしません。
+生成された `AIUM.xcodeproj` を Xcode で開き、`AIUM` アプリターゲットを実行します。`AIUM.xcodeproj` は生成物のため、リポジトリにはコミットしません。
 
 ### 3. Signing & Capabilities を設定する
 
@@ -104,18 +102,6 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 ### 6. 実行する
 
 アプリを起動し、各サービスにログインして利用状況を更新します。その後、iOS のウィジェット追加画面から AIUM のウィジェットを追加します。
-
-## iPhone Duo の表示と確認
-
-ダッシュボードは表示領域と文字サイズに応じて、GitHub Copilot と OpenAI Codex を1列または2列で表示します。利用状況カードも、横並びで収まらない場合は縦に配置します。
-
-開閉・回転・Split View とシート表示中の確認手順は [iPhone Duo 対応](docs/IPHONE_DUO.md) を参照してください。
-
-## iPad の表示と確認
-
-アプリ本体・ウィジェット・テストを iPhone / iPad 共通にし、iPad では縦・横・上下反転に対応します。全画面表示を強制せず、表示幅と文字サイズに応じてダッシュボードを1列または2列に配置します。
-
-iPad シミュレータでのテストと、ウィンドウ幅・文字サイズ・シート表示の確認手順は [iPad 対応](docs/IPAD.md) を参照してください。
 
 ## 使い方
 
