@@ -60,7 +60,9 @@ struct CodexUsageResetSheet: View {
                 .padding()
             }
             .navigationTitle("Reset Codex usage?")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -76,7 +78,11 @@ struct CodexUsageResetSheet: View {
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium, .large])
+        #else
+        .frame(minWidth: 480, idealWidth: 540, minHeight: 420, idealHeight: 600)
+        #endif
         .interactiveDismissDisabled(viewModel.isResettingCodexUsage)
         .task(id: confirmation.id) {
             await viewModel.loadCodexResetCreditDetails(for: confirmation)

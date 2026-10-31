@@ -14,9 +14,20 @@ final class UsageStoreTests: XCTestCase {
             try appGroups(in: repositoryRoot().appendingPathComponent("AIUMWidget/AIUMWidget.entitlements")),
             [expectedIdentifier]
         )
+        XCTAssertEqual(
+            try appGroups(in: repositoryRoot().appendingPathComponent("AIUMMac/AIUMMac.entitlements")),
+            [expectedIdentifier]
+        )
+        XCTAssertEqual(
+            try appGroups(in: repositoryRoot().appendingPathComponent("AIUMMac/AIUMWidgetMac.entitlements")),
+            [expectedIdentifier]
+        )
     }
 
     func testWidgetReadPathLoadsSnapshotsFromSharedAppGroup() throws {
+        #if os(macOS)
+        try MacSigningTestSupport.requireProvisionedHost()
+        #endif
         let containerURL = try XCTUnwrap(
             UsageStore.sharedContainerURL(),
             "App Group container is unavailable. Check Signing & Capabilities for AIUM."

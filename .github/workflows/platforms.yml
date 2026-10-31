@@ -1,0 +1,69 @@
+name: Platform validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platforms-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Select available iPad simulator
+        run: |
+          simulator_id=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          ipads = [device for runtime, entries in devices.items()
+                   if ".iOS-" in runtime for device in entries
+                   if device.get("isAvailable") and device["name"].startswith("iPad")]
+          if not ipads:
+              sys.exit("No available iPad simulator")
+          print(ipads[0]["udid"])
+          ')
+          echo "IPAD_SIMULATOR_ID=$simulator_id" >> "$GITHUB_ENV"
+
+      - name: Test iPad app and widget
+        run: |
+          xcodebuild test \
+            -project AIUM.xcodeproj -scheme AIUM -configuration Debug \
+            -destination "platform=iOS Simulator,id=$IPAD_SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/AIUM-iPad" \
+            -resultBundlePath "$RUNNER_TEMP/AIUM-iPad.xcresult" \
+            -parallel-testing-enabled NO
+
+      - name: Test native Mac app and widget without provisioning
+        run: |
+          xcodebuild test \
+            -project AIUM.xcodeproj -scheme AIUMMac -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/AIUM-Mac" \
+            -resultBundlePath "$RUNNER_TEMP/AIUM-Mac.xcresult" \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: platform-test-results
+          path: ${{ runner.temp }}/AIUM-*.xcresult

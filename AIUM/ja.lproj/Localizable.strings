@@ -24,6 +24,8 @@
 "Demo GitHub Account" = "デモGitHubアカウント";
 
 /* Settings */
+"Demo Mode" = "デモモード";
+"Opens in your browser" = "ブラウザで開きます";
 "GitHub" = "GitHub";
 "Codex" = "Codex";
 "AI Credit Limit" = "AIクレジット上限";

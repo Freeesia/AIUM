@@ -186,6 +186,7 @@ struct AIUMSmallWidget: Widget {
 
 // MARK: - Lock Screen Widget (configurable provider)
 
+#if os(iOS)
 struct AIUMLockScreenWidget: Widget {
     static let kind = "AIUMLockScreenUsageWidget"
 
@@ -204,6 +205,7 @@ struct AIUMLockScreenWidget: Widget {
         .promptsForUserConfiguration()
     }
 }
+#endif
 
 // MARK: - Medium Widget (both providers)
 

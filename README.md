@@ -1,8 +1,8 @@
 # AIUM — AI Usage Monitor
 
-AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するための個人用 iOS アプリです。
+AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するための、iPhone・iPad・Mac 向け個人用アプリです。
 
-アプリ本体で利用状況を取得し、ホーム画面やロック画面のウィジェットからすぐ確認できるようにします。主な用途は、利用上限までの残量やリセット時刻の目安を日常的に把握することです。
+アプリ本体で利用状況を取得し、ホーム画面やデスクトップのウィジェットからすぐ確認できるようにします。iPhone・iPad ではロック画面ウィジェットにも対応します。主な用途は、利用上限までの残量やリセット時刻の目安を日常的に把握することです。
 
 ## 重要な注意
 
@@ -14,7 +14,8 @@ AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するため�
 - GitHub Copilot の利用状況表示
 - OpenAI Codex の利用状況表示
 - ホーム画面ウィジェット
-- ロック画面ウィジェット
+- ロック画面ウィジェット（iPhone・iPad）
+- デスクトップ／通知センターウィジェット（Mac）
 - GitHub / Codex のログイン状態管理
 - 利用上限値の手動補正
 - アプリとウィジェット間の利用状況キャッシュ共有
@@ -31,7 +32,7 @@ AIUM は、アプリ本体で認証・取得・保存を行い、ウィジェッ
 
 ## セットアップ
 
-Xcode 27.1 以降を使用してください。iOS 27.1 SDK 以降でビルドすると、iPhone Duo の内側・外側ディスプレイ全体を使う表示に対応します。アプリの最低対応 OS は iOS 18.0 です。
+Xcode 27.1 以降を使用してください。最低対応 OS は iOS / iPadOS 18.0、macOS 15.0 です。iPhone Duo のシミュレータ確認には、Duo に対応する iOS 27.1 ランタイムを使用します（iOS 27.2 ランタイムでは作成できません）。
 
 ### 1. XcodeGen をインストールする
 
@@ -45,19 +46,19 @@ brew install xcodegen
 xcodegen generate
 ```
 
-生成された `AIUM.xcodeproj` を Xcode で開き、`AIUM` アプリターゲットを実行します。`AIUM.xcodeproj` は生成物のため、リポジトリにはコミットしません。
+生成された `AIUM.xcodeproj` を Xcode で開き、iPhone・iPad は `AIUM`、Mac は `AIUMMac` scheme を実行します。Mac 版は SwiftUI のネイティブアプリです。`AIUM.xcodeproj` は生成物のため、リポジトリにはコミットしません。
 
 ### 3. Signing & Capabilities を設定する
 
-`AIUM` と `AIUMWidget` の両方で、以下を設定します。
+実行する OS のアプリとウィジェット（`AIUM` / `AIUMWidget` または `AIUMMac` / `AIUMWidgetMac`）で、以下を設定します。
 
 - Team
 - Bundle Identifier
 - App Groups
 
-標準設定では、App Groups の識別子は `group.com.studiofreesia.aium` です。`AIUM/AIUM.entitlements`、`AIUMWidget/AIUMWidget.entitlements`、`UsageStore.appGroupIdentifier` は同じ値にしてください。
+標準設定では、App Groups の識別子は `group.com.studiofreesia.aium` です。iOS の2つの entitlements と、`AIUMMac/AIUMMac.entitlements`、`AIUMMac/AIUMWidgetMac.entitlements`、`UsageStore.appGroupIdentifier` は同じ値にしてください。Mac には macOS 用のプロビジョニングプロファイルが別途必要です。
 
-App Group container を取得できない場合、アプリ本体は app-only の Documents 領域にフォールバックして使用量スナップショットを保存します。この領域は Widget Extension から読めないため、ウィジェットには保存済み使用量が表示されません。設定画面の App Group セクションで `Status` が `Shared` になっていることを確認してください。
+App Group container を利用できない場合、アプリ本体は自分専用の保存領域（iOS は Documents、Mac は Application Support/AIUM）に使用量スナップショットを保存します。この領域はウィジェットから読めません。Mac の認証トークンは Data Protection Keychain に保存するため、認証の確認にも適切な署名が必要です。
 
 ### 4. GitHub App を設定する
 
@@ -78,7 +79,7 @@ GITHUB_OAUTH_CLIENT_ID = your_client_id
 
 GitHub Appの権限はOAuth scopeではなくApp設定で決まります。Device Flowで取得したGitHub App user access tokenとrefresh tokenはKeychainに保存し、access tokenの期限切れ前に自動更新します。
 
-設定画面では認証コードをコピーしてアプリ内Safariを開きます。GitHubで承認が完了するとブラウザシートは自動で閉じます。
+設定画面では認証コードをコピーして、iPhone・iPad はアプリ内 Safari、Mac は既定のブラウザを開きます。iPhone・iPad では承認が完了するとブラウザシートが自動で閉じます。
 
 利用状況取得はGitHub Billing APIの`2026-03-10` versionに依存します。OrganizationやEnterpriseで管理・課金されているCopilot seatは個人向けendpointの対象外です。
 
@@ -103,13 +104,23 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 
 ### 6. 実行する
 
-アプリを起動し、各サービスにログインして利用状況を更新します。その後、iOS のウィジェット追加画面から AIUM のウィジェットを追加します。
+アプリを起動し、各サービスにログインして利用状況を更新します。その後、各 OS のウィジェット追加画面から AIUM のウィジェットを追加します。Mac は small / medium に対応します。
+
+Mac は Codex の Run ボタン、または次のコマンドでもビルド・起動できます。
+
+```sh
+./script/build_and_run.sh --verify
+```
+
+`--demo` でサンプル表示、`--debug` で LLDB、`--logs` / `--telemetry` でログ表示を開始できます。署名なしで画面だけ確認する場合は `AIUM_MAC_CODE_SIGNING_ALLOWED=NO ./script/build_and_run.sh --verify --demo` を使います。この実行では認証やウィジェットとのデータ共有を検証できません。
 
 ## iPhone Duo の表示と確認
 
 ダッシュボードは表示領域と文字サイズに応じて、GitHub Copilot と OpenAI Codex を1列または2列で表示します。利用状況カードも、横並びで収まらない場合は縦に配置します。
 
 開閉・回転・Split View とシート表示中の確認手順は [iPhone Duo 対応](docs/IPHONE_DUO.md) を参照してください。
+
+iPad のウィンドウサイズ変更、Mac の設定・署名・テストについては [iPad・macOS 対応](docs/PLATFORMS.md) を参照してください。
 
 ## 使い方
 
@@ -119,7 +130,9 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 4. 必要に応じて利用上限値を手動で補正する
 5. ホーム画面またはロック画面にウィジェットを追加する
 
-ウィジェットは 5 分ごとに App Group 共有領域の利用状況キャッシュを読み直すように要求します。実際の再描画タイミングは iOS の更新スケジュールに従うため、リアルタイム更新を保証するものではありません。
+Mac は `⌘,` で設定、`⌘R` で更新できます。自動取得はアプリプロセスの動作中に行い、終了中のバックグラウンド取得は行いません。
+
+ウィジェットは 5 分ごとに App Group 共有領域の利用状況キャッシュを読み直すように要求します。実際の再描画タイミングは各 OS の更新スケジュールに従うため、リアルタイム更新を保証するものではありません。
 
 ## データの扱い
 
@@ -135,7 +148,7 @@ AIUM は、利用状況の表示に必要な情報を端末内に保存します
 
 - Codex の利用状況取得は、サービス側の変更で突然動作しなくなる可能性があります。
 - 取得できる利用状況は、アカウント種別・契約プラン・サービス側の状態によって変わる可能性があります。
-- ウィジェットの更新タイミングは iOS によって制御されます。
+- ウィジェットの更新タイミングは各 OS によって制御されます。
 - 公開配布する場合は、利用規約の確認、プライバシーポリシーの整備が必要です。
 
 ## ライセンス
@@ -167,6 +180,8 @@ git push origin v1.2.0
 ```
 
 タグを打つと TestFlight ワークフローが実行され、対応するバージョン（例: `1.2.0`）で公開用の TestFlight ビルドとしてアップロードされます。
+
+現在の TestFlight ワークフローは iPhone・iPad 用です。Mac 版の配布には、macOS 向けの署名・配布設定を別途用意します。
 
 ### タグなし通常ビルドのバージョン
 

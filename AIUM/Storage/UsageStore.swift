@@ -16,16 +16,14 @@ final class UsageStore: ObservableObject {
     // MARK: - Configuration
 
     /// The App Group identifier shared between the app and the widget extension.
-    /// This must match both entitlement files:
-    /// - AIUM/AIUM.entitlements
-    /// - AIUMWidget/AIUMWidget.entitlements
+    /// This must match the app and widget entitlements on each platform.
     nonisolated static let appGroupIdentifier = "group.com.studiofreesia.aium"
 
     private nonisolated static let snapshotsFilename = "usage_snapshots.json"
 
     /// Whether the configured App Group container is available at runtime.
     ///
-    /// When this is false the app falls back to its own Documents directory,
+    /// When this is false the app falls back to its own storage directory,
     /// which is intentionally not visible to the widget extension.
     nonisolated static var isSharedContainerAvailable: Bool {
         sharedContainerURL() != nil
@@ -44,8 +42,7 @@ final class UsageStore: ObservableObject {
         if let sharedStoreURL = Self.sharedStoreURL() {
             storeURL = sharedStoreURL
         } else {
-            // Fall back to app's Documents directory (widget won't see this).
-            storeURL = Self.documentsStoreURL()
+            storeURL = Self.appOnlyStoreURL()
         }
         reloadWidgetTimelines = { WidgetCenter.shared.reloadAllTimelines() }
         load()
@@ -127,20 +124,39 @@ final class UsageStore: ObservableObject {
 
 extension UsageStore {
     nonisolated static func sharedContainerURL() -> URL? {
-        FileManager.default.containerURL(
+        guard let url = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        )
+        ) else { return nil }
+        #if os(macOS)
+        // macOS may return a URL even when the process cannot access the group.
+        guard FileManager.default.isWritableFile(atPath: url.path) else { return nil }
+        #endif
+        return url
     }
 
     private nonisolated static func sharedStoreURL() -> URL? {
         sharedContainerURL()?.appendingPathComponent(snapshotsFilename)
     }
 
-    private nonisolated static func documentsStoreURL() -> URL? {
-        FileManager.default
+    private nonisolated static func appOnlyStoreURL() -> URL? {
+        #if os(macOS)
+        guard let directory = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("AIUM", isDirectory: true)
+        else { return nil }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            return nil
+        }
+        return directory.appendingPathComponent(snapshotsFilename)
+        #else
+        return FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)
             .first?
             .appendingPathComponent(snapshotsFilename)
+        #endif
     }
 
     /// Loads snapshots directly from the shared container without needing a

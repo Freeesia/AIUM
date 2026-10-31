@@ -14,6 +14,9 @@ final class UsageRefreshServiceTests: XCTestCase {
     }
 
     func testKeychainSaveUsesBackgroundAccessibleProtection() throws {
+        #if os(macOS)
+        try MacSigningTestSupport.requireProvisionedHost()
+        #endif
         let service = "com.studiofreesia.aium.tests.\(UUID().uuidString)"
         let account = "save-accessibility"
         defer { try? KeychainHelper.delete(service: service, account: account) }
@@ -21,6 +24,12 @@ final class UsageRefreshServiceTests: XCTestCase {
         try KeychainHelper.save("token", service: service, account: account)
 
         XCTAssertTrue(try keychainAccessibility(service: service, account: account))
+        XCTAssertEqual(try KeychainHelper.load(service: service, account: account), "token")
+        try KeychainHelper.save("updated-token", service: service, account: account)
+        XCTAssertEqual(try KeychainHelper.load(service: service, account: account), "updated-token")
+        XCTAssertTrue(try keychainAccessibility(service: service, account: account))
+        try KeychainHelper.delete(service: service, account: account)
+        XCTAssertNil(try KeychainHelper.load(service: service, account: account))
     }
 
     func testCachedProviderReportsCredentialLoadFailure() async throws {
@@ -181,13 +190,16 @@ final class UsageRefreshServiceTests: XCTestCase {
     }
 
     private func keychainAccessibility(service: String, account: String) throws -> Bool {
-        let query: [CFString: Any] = [
+        var query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account,
             kSecReturnAttributes: true,
             kSecMatchLimit: kSecMatchLimitOne,
         ]
+        #if os(macOS)
+        query[kSecUseDataProtectionKeychain] = true
+        #endif
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         XCTAssertEqual(status, errSecSuccess)

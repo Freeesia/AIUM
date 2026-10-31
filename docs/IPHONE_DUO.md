@@ -5,6 +5,7 @@
 - Xcode 27.1 以降、iOS 27.1 SDK 以降でビルドします。
 - 最低対応 OS は iOS 18.0 です。
 - TestFlight ワークフローは `xcode-27` runner の Xcode 27.1 を指定します。
+- シミュレータは Duo に対応する iOS 27.1 ランタイムを使用します。iOS 27.2 ランタイムは Duo に対応しません。
 
 `xcode-27` は GitHub がプレビューとして提供している runner です。
 
@@ -42,4 +43,5 @@ App Store 用の Duo スクリーンショットは、Device Hub で対象の表
 
 - [Apple: Three steps to make your app shine on iPhone Duo](https://developer.apple.com/iphone-duo/prepare/)
 - [Apple: Prepare your app for iPhone Duo](https://developer.apple.com/videos/play/tech-talks/111461/)
+- [Apple: Xcode 27.2 Release Notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27_2-release-notes)
 - [GitHub Actions: Xcode 27 runner の搭載ソフトウェア](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md)

@@ -1,5 +1,10 @@
 import SwiftUI
+import Combine
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 
 private struct BrowserDestination: Identifiable {
     let url: URL
@@ -12,118 +17,50 @@ private struct BrowserDestination: Identifiable {
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var browserDestination: BrowserDestination?
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
+    @AppStorage(DemoModeStore.enabledKey) private var demoModeEnabled = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                // GitHub section
-                Section {
-                    Toggle("Show AI Credits", isOn: $showsGitHubAICredits)
-                    Toggle("Show Premium Requests", isOn: $showsGitHubPremiumRequests)
-                    if viewModel.isDemoMode {
-                        demoModeAuthMessage
-                    } else {
-                        if !viewModel.isGitHubClientIdConfigured {
-                            clientIdWarning
-                        }
-                        githubAuthRow
-                        if viewModel.isGitHubAuthenticated {
-                            limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
-                                     placeholder: "e.g. 1000")
-                            limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
-                                     placeholder: "e.g. 300")
-                        }
-                    }
-                } header: {
-                    Text("GitHub Copilot")
-                } footer: {
-                    if !viewModel.isDemoMode {
-                        githubFooter
-                    }
-                }
-
-                // Codex section
-                Section {
-                    if viewModel.isDemoMode {
-                        demoModeAuthMessage
-                    } else {
-                        if !viewModel.isCodexClientIdConfigured {
-                            codexClientIdWarning
-                        }
-                        codexAuthRow
-                        if viewModel.isCodexAuthenticated,
-                           let account = viewModel.codexAccountDisplayName {
-                            HStack {
-                                Text("Account")
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text(account)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.trailing)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("OpenAI Codex")
-                }
-
-                // Refresh interval
-                Section {
-                    Picker("Interval", selection: $viewModel.refreshSetting) {
-                        ForEach(UsageRefreshSetting.allCases) { setting in
-                            Text(setting.displayName).tag(setting)
-                        }
-                    }
-                } header: {
-                    Text("Refresh")
-                }
-
-                Section("About") {
-                    externalLinkRow(
-                        title: "Privacy Policy",
-                        systemImage: "hand.raised",
-                        url: AppLinks.privacyPolicy
-                    )
-                    externalLinkRow(
-                        title: "Support",
-                        systemImage: "questionmark.circle",
-                        url: AppLinks.support
-                    )
-                }
-
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
+        settingsContent
             .onAppear {
                 viewModel.checkAuthStatus()
             }
+            #if os(iOS)
             .sheet(item: $browserDestination) { destination in
                 SafariBrowserView(url: destination.url)
                     .ignoresSafeArea()
             }
+            #else
+            .onDisappear(perform: notifySettingsChanged)
+            .onChange(of: demoModeEnabled) { _, _ in
+                viewModel.checkDemoMode()
+                notifySettingsChanged()
+            }
+            .onChange(of: viewModel.refreshSetting) { _, _ in
+                notifySettingsChanged()
+            }
+            .onReceive(
+                viewModel.$aiCreditMonthlyLimit
+                    .combineLatest(viewModel.$premiumRequestMonthlyLimit)
+                    .dropFirst()
+                    .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
+            ) { _ in
+                notifySettingsChanged()
+            }
+            #endif
             .onChange(of: viewModel.isGitHubAuthenticated) { _, isAuthenticated in
-                if isAuthenticated {
-                    browserDestination = nil
-                }
+                if isAuthenticated { browserDestination = nil }
+                notifySettingsChanged()
             }
             .onChange(of: viewModel.isCodexAuthenticated) { _, isAuthenticated in
-                if isAuthenticated {
-                    browserDestination = nil
-                }
+                if isAuthenticated { browserDestination = nil }
+                notifySettingsChanged()
             }
             .onChange(of: viewModel.authError) { _, authError in
-                if authError != nil {
-                    browserDestination = nil
-                }
+                if authError != nil { browserDestination = nil }
             }
             .alert("Auth Error", isPresented: .init(
                 get: { viewModel.authError != nil },
@@ -133,7 +70,136 @@ struct SettingsView: View {
             } message: {
                 Text(viewModel.authError ?? "")
             }
+    }
+
+    @ViewBuilder
+    private var settingsContent: some View {
+        #if os(macOS)
+        settingsForm
+            .formStyle(.grouped)
+        #else
+        NavigationStack {
+            settingsForm
+                .navigationTitle("Settings")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { dismiss() }
+                    }
+                }
         }
+        #endif
+    }
+
+    private var settingsForm: some View {
+        Form {
+            // GitHub section
+            Section {
+                Toggle("Show AI Credits", isOn: $showsGitHubAICredits)
+                Toggle("Show Premium Requests", isOn: $showsGitHubPremiumRequests)
+                if viewModel.isDemoMode {
+                    demoModeAuthMessage
+                } else {
+                    if !viewModel.isGitHubClientIdConfigured {
+                        clientIdWarning
+                    }
+                    githubAuthRow
+                    if viewModel.isGitHubAuthenticated {
+                        limitRow(label: "AI Credit Limit", value: $viewModel.aiCreditMonthlyLimit,
+                                 placeholder: "e.g. 1000")
+                        limitRow(label: "Premium Request Limit", value: $viewModel.premiumRequestMonthlyLimit,
+                                 placeholder: "e.g. 300")
+                    }
+                }
+            } header: {
+                Text("GitHub Copilot")
+            } footer: {
+                if !viewModel.isDemoMode {
+                    githubFooter
+                }
+            }
+
+            // Codex section
+            Section {
+                if viewModel.isDemoMode {
+                    demoModeAuthMessage
+                } else {
+                    if !viewModel.isCodexClientIdConfigured {
+                        codexClientIdWarning
+                    }
+                    codexAuthRow
+                    if viewModel.isCodexAuthenticated,
+                       let account = viewModel.codexAccountDisplayName {
+                        HStack {
+                            Text("Account")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(account)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+            } header: {
+                Text("OpenAI Codex")
+            }
+
+            // Refresh interval
+            Section {
+                Picker("Interval", selection: $viewModel.refreshSetting) {
+                    ForEach(UsageRefreshSetting.allCases) { setting in
+                        Text(setting.displayName).tag(setting)
+                    }
+                }
+            } header: {
+                Text("Refresh")
+            }
+
+            #if os(macOS)
+            Section {
+                Toggle("Demo Mode", isOn: $demoModeEnabled)
+            } footer: {
+                if viewModel.isDemoMode { demoModeAuthMessage }
+            }
+            #endif
+
+            Section("About") {
+                externalLinkRow(
+                    title: "Privacy Policy",
+                    systemImage: "hand.raised",
+                    url: AppLinks.privacyPolicy
+                )
+                externalLinkRow(
+                    title: "Support",
+                    systemImage: "questionmark.circle",
+                    url: AppLinks.support
+                )
+            }
+        }
+    }
+
+    private func notifySettingsChanged() {
+        #if os(macOS)
+        NotificationCenter.default.post(name: AppSettings.didChangeNotification, object: nil)
+        #endif
+    }
+
+    private func openBrowser(_ url: URL) {
+        #if os(macOS)
+        openURL(url)
+        #else
+        browserDestination = BrowserDestination(url: url)
+        #endif
+    }
+
+    private func copyCode(_ code: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(code, forType: .string)
+        #else
+        UIPasteboard.general.string = code
+        #endif
     }
 
     // MARK: - Demo mode message
@@ -250,8 +316,8 @@ struct SettingsView: View {
                 .textSelection(.enabled)
             if let verificationURL = URL(string: url) {
                 Button {
-                    UIPasteboard.general.string = userCode
-                    browserDestination = BrowserDestination(url: verificationURL)
+                    copyCode(userCode)
+                    openBrowser(verificationURL)
                 } label: {
                     Label("Copy Code and Open Browser", systemImage: "safari")
                 }
@@ -277,7 +343,9 @@ struct SettingsView: View {
             Text(label)
             Spacer()
             TextField(placeholder, text: value)
+                #if os(iOS)
                 .keyboardType(.numberPad)
+                #endif
                 .multilineTextAlignment(.trailing)
                 .frame(width: 100)
         }
@@ -285,7 +353,7 @@ struct SettingsView: View {
 
     private func externalLinkRow(title: String, systemImage: String, url: URL) -> some View {
         Button {
-            browserDestination = BrowserDestination(url: url)
+            openBrowser(url)
         } label: {
             HStack {
                 Label(title, systemImage: systemImage)
@@ -297,7 +365,11 @@ struct SettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        #if os(macOS)
+        .accessibilityHint("Opens in your browser")
+        #else
         .accessibilityHint("Opens in the in-app browser")
+        #endif
     }
 
 }

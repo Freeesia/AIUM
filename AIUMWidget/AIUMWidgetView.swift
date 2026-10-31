@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - Configurable Widget View
 
+#if os(iOS)
 struct AIUMConfigurableWidgetView: View {
     @Environment(\.widgetFamily) private var widgetFamily
     var entry: AIUMWidgetEntry
@@ -19,6 +20,7 @@ struct AIUMConfigurableWidgetView: View {
         }
     }
 }
+#endif
 
 // MARK: - Small Widget View
 
@@ -556,6 +558,7 @@ private enum WidgetPreviewData {
     WidgetPreviewData.entry(provider: .githubCopilot)
 }
 
+#if os(iOS)
 #Preview("Codex Circular", as: .accessoryCircular) {
     AIUMLockScreenWidget()
 } timeline: {
@@ -592,6 +595,8 @@ private enum WidgetPreviewData {
     WidgetPreviewData.entry(provider: .githubCopilot)
 }
 
+#endif
+
 #Preview("Medium", as: .systemMedium) {
     AIUMMediumWidget()
 } timeline: {
@@ -624,8 +629,10 @@ private enum WidgetPreviewData {
     AIUMWidgetEntry(date: Date(), snapshots: [], provider: .githubCopilot)
 }
 
+#if os(iOS)
 #Preview("Copilot Circular", as: .accessoryCircular) {
     AIUMLockScreenWidget()
 } timeline: {
     WidgetPreviewData.entry(provider: .githubCopilot)
 }
+#endif
