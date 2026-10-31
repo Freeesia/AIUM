@@ -1,14 +1,13 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @ObservedObject var viewModel: DashboardViewModel
+    @StateObject private var viewModel = DashboardViewModel()
     @State private var presentedSheet: DashboardSheet? = ScreenshotLaunchConfiguration.showSettings ? .settings : nil
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var minimumProviderColumnWidth: CGFloat = 320
 
     private let contentPadding: CGFloat = 16
@@ -41,19 +40,8 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("AIUM")
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
-            #endif
             .toolbar {
-                #if os(macOS)
-                ToolbarItem(placement: .navigation) {
-                    SettingsLink {
-                        Image(systemName: "gear")
-                    }
-                    .help("Settings")
-                    .disabled(viewModel.isResettingCodexUsage)
-                }
-                #else
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         presentedSheet = .settings
@@ -63,8 +51,7 @@ struct DashboardView: View {
                     .accessibilityLabel("Settings")
                     .disabled(viewModel.isResettingCodexUsage)
                 }
-                #endif
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         viewModel.refresh()
                     } label: {
@@ -76,8 +63,6 @@ struct DashboardView: View {
                         }
                     }
                     .accessibilityLabel("Refresh")
-                    .help("Refresh")
-                    .keyboardShortcut("r", modifiers: .command)
                     .disabled(viewModel.isRefreshing || viewModel.isResettingCodexUsage)
                 }
             }
@@ -91,7 +76,12 @@ struct DashboardView: View {
             }
             .onChange(of: presentedSheet?.id) { oldID, _ in
                 guard oldID == DashboardSheet.settings.id else { return }
-                reloadSettings()
+                viewModel.reloadDemoMode()
+                Task {
+                    await updateAuthStatus()
+                    viewModel.restartPeriodicRefresh()
+                    viewModel.refresh()
+                }
             }
             .task {
                 viewModel.reloadDemoMode()
@@ -99,16 +89,14 @@ struct DashboardView: View {
                 viewModel.refreshIfNeeded()
                 viewModel.startPeriodicRefresh()
             }
-            .onChange(of: scenePhase) { _, phase in
-                guard phase == .active else { return }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification
+                )
+            ) { _ in
                 viewModel.reloadDemoMode()
                 Task { await updateAuthStatus() }
             }
-            #if os(macOS)
-            .onReceive(NotificationCenter.default.publisher(for: AppSettings.didChangeNotification)) { _ in
-                reloadSettings()
-            }
-            #endif
             .refreshable {
                 viewModel.refresh()
             }
@@ -116,15 +104,6 @@ struct DashboardView: View {
     }
 
     // MARK: - Helpers
-
-    private func reloadSettings() {
-        viewModel.reloadDemoMode()
-        Task {
-            await updateAuthStatus()
-            viewModel.restartPeriodicRefresh()
-            viewModel.refresh()
-        }
-    }
 
     private func providerLayout(for availableWidth: CGFloat) -> AnyLayout {
         let contentWidth = min(availableWidth - contentPadding * 2, maximumContentWidth)
@@ -289,9 +268,9 @@ private enum DashboardSheet: Identifiable {
 // MARK: - Preview
 
 #Preview("Compact dashboard", traits: .fixedLayout(width: 320, height: 568)) {
-    DashboardView(viewModel: DashboardViewModel())
+    DashboardView()
 }
 
 #Preview("Expanded dashboard", traits: .fixedLayout(width: 1000, height: 720)) {
-    DashboardView(viewModel: DashboardViewModel())
+    DashboardView()
 }

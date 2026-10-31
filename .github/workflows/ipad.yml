@@ -1,4 +1,4 @@
-name: Platform validation
+name: iPad validation
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: platforms-${{ github.ref }}
+  group: ipad-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -51,19 +51,9 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/AIUM-iPad.xcresult" \
             -parallel-testing-enabled NO
 
-      - name: Test native Mac app and widget without provisioning
-        run: |
-          xcodebuild test \
-            -project AIUM.xcodeproj -scheme AIUMMac -configuration Debug \
-            -destination 'platform=macOS' \
-            -derivedDataPath "$RUNNER_TEMP/AIUM-Mac" \
-            -resultBundlePath "$RUNNER_TEMP/AIUM-Mac.xcresult" \
-            -parallel-testing-enabled NO \
-            CODE_SIGNING_ALLOWED=NO
-
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: platform-test-results
-          path: ${{ runner.temp }}/AIUM-*.xcresult
+          name: ipad-test-results
+          path: ${{ runner.temp }}/AIUM-iPad.xcresult

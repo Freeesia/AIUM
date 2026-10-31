@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads the demo mode flag from the app's preferences.
+/// Reads the demo mode flag set via the iOS Settings app.
 final class DemoModeStore {
     static let enabledKey = "demo_mode_enabled"
 

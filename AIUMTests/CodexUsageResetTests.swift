@@ -503,14 +503,15 @@ final class CodexUsageResetTests: XCTestCase {
     }
 
     private func attachPreview<Content: View>(_ content: Content, name: String, height: CGFloat) {
-        // These diagnostic attachments require a UIKit view lifecycle. ImageRenderer
-        // can leave the sheet's asynchronous task running beyond the test fixture.
-        #if os(iOS)
         let controller = UIHostingController(rootView: content)
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: height))
         window.rootViewController = controller
         window.isHidden = false
-        defer { window.isHidden = true }
+        defer {
+            window.isHidden = true
+            // Removing the hosted view cancels its task before the fixture is released.
+            window.rootViewController = nil
+        }
         controller.view.frame = window.bounds
         controller.view.layoutIfNeeded()
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
@@ -520,7 +521,6 @@ final class CodexUsageResetTests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        #endif
     }
 }
 

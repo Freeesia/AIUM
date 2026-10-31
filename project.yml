@@ -7,7 +7,6 @@ options:
   developmentLanguage: en
   deploymentTarget:
     iOS: "18.0"
-    macOS: "15.0"
 configs:
   Debug: debug
   Release: release
@@ -114,7 +113,6 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: "YES"
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
-        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
       configs:
         Release:
           PROVISIONING_PROFILE_SPECIFIER: $(AIUM_PROVISIONING_PROFILE_SPECIFIER)
@@ -172,93 +170,6 @@ targets:
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/AIUM.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIUM
-  AIUMMac:
-    type: application
-    platform: macOS
-    deploymentTarget: "15.0"
-    configFiles:
-      Debug: Config/AIUM.xcconfig
-      Release: Config/AIUM.xcconfig
-    sources:
-      - path: AIUM
-        excludes:
-          - Services/UsageBackgroundRefreshScheduler.swift
-          - Views/SafariBrowserView.swift
-          - Settings.bundle
-      - path: Shared
-    dependencies:
-      - target: AIUMWidgetMac
-    settings:
-      base:
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        CODE_SIGN_ENTITLEMENTS: AIUMMac/AIUMMac.entitlements
-        CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
-        ENABLE_APP_SANDBOX: "YES"
-        ENABLE_HARDENED_RUNTIME: "YES"
-        ENABLE_PREVIEWS: "YES"
-        GENERATE_INFOPLIST_FILE: "NO"
-        INFOPLIST_FILE: AIUMMac/Info.plist
-        LD_RUNPATH_SEARCH_PATHS:
-          - $(inherited)
-          - "@executable_path/../Frameworks"
-        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
-        PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium
-        PRODUCT_NAME: AIUM
-        PRODUCT_MODULE_NAME: AIUM
-        SDKROOT: macosx
-        SWIFT_EMIT_LOC_STRINGS: "YES"
-        SWIFT_VERSION: "5.9"
-  AIUMWidgetMac:
-    type: app-extension
-    platform: macOS
-    deploymentTarget: "15.0"
-    configFiles:
-      Debug: Config/AIUM.xcconfig
-      Release: Config/AIUM.xcconfig
-    sources:
-      - path: AIUMWidget
-      - path: AIUM/Models/UsageSnapshot.swift
-      - path: AIUM/Storage/UsageStore.swift
-      - path: Shared
-    settings:
-      base:
-        CODE_SIGN_ENTITLEMENTS: AIUMMac/AIUMWidgetMac.entitlements
-        CODE_SIGN_STYLE: Automatic
-        CURRENT_PROJECT_VERSION: $(AIUM_CURRENT_PROJECT_VERSION)
-        ENABLE_APP_SANDBOX: "YES"
-        ENABLE_HARDENED_RUNTIME: "YES"
-        GENERATE_INFOPLIST_FILE: "NO"
-        INFOPLIST_FILE: AIUMWidget/Info.plist
-        LD_RUNPATH_SEARCH_PATHS:
-          - $(inherited)
-          - "@executable_path/../Frameworks"
-          - "@executable_path/../../../../Frameworks"
-        MARKETING_VERSION: $(AIUM_MARKETING_VERSION)
-        PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.widget
-        PRODUCT_NAME: AIUMWidget
-        SDKROOT: macosx
-        SKIP_INSTALL: "YES"
-        SWIFT_EMIT_LOC_STRINGS: "YES"
-        SWIFT_VERSION: "5.9"
-  AIUMMacTests:
-    type: bundle.unit-test
-    platform: macOS
-    deploymentTarget: "15.0"
-    sources:
-      - path: AIUMTests
-    dependencies:
-      - target: AIUMMac
-    settings:
-      base:
-        BUNDLE_LOADER: $(TEST_HOST)
-        CODE_SIGN_STYLE: Automatic
-        GENERATE_INFOPLIST_FILE: "YES"
-        PRODUCT_BUNDLE_IDENTIFIER: com.studiofreesia.aium.mac-tests
-        SDKROOT: macosx
-        SWIFT_VERSION: "5.9"
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/AIUM.app/Contents/MacOS/AIUM
 schemes:
   AIUM:
     build:
@@ -283,23 +194,6 @@ schemes:
         AIUMWidget: all
     run:
       config: Debug
-    archive:
-      config: Release
-    profile:
-      config: Release
-    analyze:
-      config: Debug
-  AIUMMac:
-    build:
-      targets:
-        AIUMMac: all
-        AIUMWidgetMac: all
-    run:
-      config: Debug
-    test:
-      config: Debug
-      targets:
-        - AIUMMacTests
     archive:
       config: Release
     profile:

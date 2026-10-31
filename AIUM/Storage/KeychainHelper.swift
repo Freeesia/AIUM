@@ -13,7 +13,11 @@ enum KeychainHelper {
             throw KeychainError.encodingFailed
         }
 
-        let query = itemQuery(service: service, account: account)
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+        ]
 
         let updatedAttributes: [CFString: Any] = [
             kSecValueData: data,
@@ -38,9 +42,13 @@ enum KeychainHelper {
     }
 
     static func load(service: String, account: String) throws -> String? {
-        var query = itemQuery(service: service, account: account)
-        query[kSecReturnData] = true
-        query[kSecMatchLimit] = kSecMatchLimitOne
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecReturnData: true,
+            kSecMatchLimit: kSecMatchLimitOne,
+        ]
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -57,24 +65,15 @@ enum KeychainHelper {
     }
 
     static func delete(service: String, account: String) throws {
-        let query = itemQuery(service: service, account: account)
-        let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.unexpectedStatus(operation: "delete", status: status)
-        }
-    }
-
-    private static func itemQuery(service: String, account: String) -> [CFString: Any] {
-        var query: [CFString: Any] = [
+        let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account,
         ]
-        #if os(macOS)
-        // The legacy Mac keychain does not apply kSecAttrAccessible protection.
-        query[kSecUseDataProtectionKeychain] = true
-        #endif
-        return query
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(operation: "delete", status: status)
+        }
     }
 
     // MARK: - Codable convenience
