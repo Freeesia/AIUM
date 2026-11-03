@@ -25,17 +25,14 @@ enum AIUMWidgetProviderOption: String, AppEnum {
 
 struct AIUMWidgetConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Usage Provider"
-    static var description = IntentDescription(
-        "Choose the usage provider and, on iOS 27, the app or shortcut to run when tapped."
-    )
+    static var description = IntentDescription("Choose the provider whose usage is shown.")
 
     @Parameter(title: "Provider", default: .githubCopilot)
     var provider: AIUMWidgetProviderOption
 
-    // Optional so placeholders and widgets awaiting configuration still render.
-    @available(iOS 27.0, *)
-    @Parameter(title: "Action")
-    var shortcut: SystemShortcut?
+    static var parameterSummary: some ParameterSummary {
+        Summary("Provider: \(\.$provider)")
+    }
 }
 
 // MARK: - Timeline Entry
@@ -44,7 +41,6 @@ struct AIUMWidgetEntry: TimelineEntry {
     let date: Date
     let snapshots: [UsageSnapshot]
     let provider: Provider
-    var configuration: AIUMWidgetConfigurationIntent? = nil
 
     var displaySnapshot: UsageSnapshot? {
         UsageSnapshot.displaySnapshot(from: snapshots, for: provider)
@@ -68,8 +64,7 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
         return AIUMWidgetEntry(
             date: Date(),
             snapshots: snapshots,
-            provider: configuration.provider.provider,
-            configuration: configuration
+            provider: configuration.provider.provider
         )
     }
 
@@ -82,8 +77,7 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
         let entry = AIUMWidgetEntry(
             date: now,
             snapshots: snapshots,
-            provider: configuration.provider.provider,
-            configuration: configuration
+            provider: configuration.provider.provider
         )
 
         // Re-read cached snapshots every 5 minutes. WidgetKit may coalesce updates.
@@ -173,31 +167,6 @@ struct AIUMStaticWidgetProvider: TimelineProvider {
     }
 }
 
-// A system-shortcut button is the only interaction on iOS 27+. There is
-// deliberately no URL Scheme or network call in this widget extension.
-struct AIUMLockScreenWidgetView: View {
-    let entry: AIUMWidgetEntry
-
-    @ViewBuilder
-    var body: some View {
-        if #available(iOS 27.0, *),
-           let shortcut = entry.configuration?.shortcut {
-            Button(intent: RunSystemShortcutIntent(shortcut: shortcut)) {
-                usageView
-            }
-            .buttonStyle(.plain)
-        } else {
-            usageView
-        }
-    }
-
-    private var usageView: some View {
-        AIUMConfigurableWidgetView(entry: entry)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-    }
-}
-
 // MARK: - Small Widget (single provider)
 
 struct AIUMSmallWidget: Widget {
@@ -226,11 +195,11 @@ struct AIUMLockScreenWidget: Widget {
             intent: AIUMWidgetConfigurationIntent.self,
             provider: AIUMLockScreenWidgetProvider()
         ) { entry in
-            AIUMLockScreenWidgetView(entry: entry)
+            AIUMConfigurableWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Lock Screen Usage")
-        .description("Shows usage for your selected provider and can run a configured action on iOS 27.")
+        .description("Shows usage for your selected provider, with three rings for Codex limits.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         .promptsForUserConfiguration()
     }
