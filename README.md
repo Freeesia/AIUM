@@ -113,6 +113,8 @@ CLAUDE_CODE_OAUTH_CLIENT_ID = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 この OAuth クライアントはリダイレクト先として `http://localhost:<port>/callback` のみを受け付けます。そのため、サインイン中はアプリがループバックインターフェースで一時的に待ち受け、`ASWebAuthenticationSession` で開いた認可画面からのリダイレクトを受け取ります。受け取った後はアプリ専用スキーム `aium-claude-code://` に転送してシートを閉じ、`state` を検証してからトークンを交換します。
 
+設定画面と使用量カードの接続先には、`https://api.anthropic.com/api/oauth/profile` の `account.display_name`（未設定なら `full_name`）を表示します。メールアドレスは表示しません。取得に失敗した場合は保存済みの名前を使い、名前がない場合は名前欄を表示しません。
+
 エンドポイント・レスポンス形式・認証フローは非公開仕様のため、予告なく変わる可能性があります。取得に失敗した場合は Claude Code のエラーとしてカードに表示します。詳細は `docs/API_NOTES.md` を参照してください。
 
 ### 7. 実行する

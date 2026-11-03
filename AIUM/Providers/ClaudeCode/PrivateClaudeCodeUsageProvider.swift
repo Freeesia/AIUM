@@ -152,7 +152,7 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
 
     func fetchUsage() async throws -> [UsageSnapshot] {
         let token = try await authProvider.validAccessToken()
-        let tokenBundle = await authProvider.tokenBundle
+        var tokenBundle = await authProvider.tokenBundle
 
         var request = URLRequest(url: apiBaseURL.appending(path: usageEndpointPath), timeoutInterval: 15)
         request.httpMethod = "GET"
@@ -174,6 +174,9 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
             throw ClaudeCodeUsageError.noUsageData(body: String(data: data, encoding: .utf8))
         }
 
+        if let profile = await authProvider.refreshAccountProfile(accessToken: token) {
+            tokenBundle?.profile = profile
+        }
         let snapshots = Self.normalizeSnapshots(decoded, tokenBundle: tokenBundle)
         debugLog("Decoded \(snapshots.count) Claude Code usage snapshot(s).")
         return snapshots

@@ -225,7 +225,18 @@ The response contains `access_token`, `refresh_token`, `expires_in`, `scope`, `a
 
 **Token refresh (JSON body):** `grant_type=refresh_token`, `refresh_token`, `client_id`, `scope` (the granted scopes). Refresh uses the same single-flight protection as Codex.
 
-**Token bundle stored in Keychain** (`claude_code_token_bundle`): access token, refresh token, expiry, granted scopes, account UUID, email, organization UUID.
+**Token bundle stored in Keychain** (`claude_code_token_bundle`): access token, refresh token, expiry, granted scopes, account UUID, email, organization UUID, and the cached profile name.
+
+### Claude Account Profile
+
+```
+GET https://api.anthropic.com/api/oauth/profile
+Authorization: Bearer {access_token}
+```
+
+AIUM shows `account.display_name` (falling back to `account.full_name`) in settings and on usage cards, like the Codex profile name. The email address is not displayed. When neither name is available, the name row is omitted.
+
+The profile is refreshed after sign-in, during usage refresh, and when opening settings. Requests use a 10-second timeout; HTTP errors, malformed responses, and network failures keep the cached name without failing sign-in or usage refresh. Token refresh keeps the profile for the same account, and a response is discarded if the sign-in or account changes while it is in flight.
 
 ### Claude Code Usage
 

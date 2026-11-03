@@ -18,6 +18,7 @@ struct ClaudeCodeOAuthConfig {
     static let tokenURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
     static let apiBaseURL = URL(string: "https://api.anthropic.com")!
     static let usageEndpointPath = "/api/oauth/usage"
+    static let profileEndpointPath = "/api/oauth/profile"
     static let betaHeader = "oauth-2025-04-20"
 
     /// Only the profile scope is needed to read plan rate limits. AIUM never
@@ -128,6 +129,7 @@ protocol ClaudeCodeAuthProviding: Actor {
 
     func signIn(using session: any ClaudeCodeAuthorizationSession) async throws -> ClaudeCodeTokenBundle
     func validAccessToken() async throws -> String
+    func refreshAccountProfile(accessToken: String) async -> ClaudeCodeAccountProfile?
     func logout()
 }
 
@@ -142,15 +144,42 @@ struct ClaudeCodeTokenBundle: Codable, Sendable {
     var accountId: String?
     var email: String?
     var organizationId: String?
+    var profile: ClaudeCodeAccountProfile?
 
     var isExpired: Bool {
         Date() >= expiresAt.addingTimeInterval(-60) // refresh 1 min early
     }
 
     var accountDisplayName: String? {
-        guard let email = email?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !email.isEmpty else { return nil }
-        return email
+        profile?.name
+    }
+}
+
+// MARK: - Account Profile
+
+/// Claude account profile data used for account display.
+struct ClaudeCodeAccountProfile: Codable, Equatable, Sendable {
+    let displayName: String?
+    let fullName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
+        case fullName = "full_name"
+    }
+
+    /// The name shown in the app: the Claude display name, or the full name
+    /// when no display name is set.
+    var name: String? {
+        [displayName, fullName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
+
+    static func decode(from data: Data) throws -> ClaudeCodeAccountProfile {
+        struct Response: Decodable {
+            let account: ClaudeCodeAccountProfile
+        }
+        return try JSONDecoder().decode(Response.self, from: data).account
     }
 }
 
@@ -279,7 +308,7 @@ actor ClaudeCodeAuthProvider: ClaudeCodeAuthProviding {
         }
 
         let code = try Self.authorizationCode(from: callback.url, expectedState: state)
-        let bundle = try await exchangeAuthorizationCode(
+        var bundle = try await exchangeAuthorizationCode(
             code,
             state: state,
             codeVerifier: pkce.codeVerifier,
@@ -287,6 +316,7 @@ actor ClaudeCodeAuthProvider: ClaudeCodeAuthProviding {
             clientId: clientId
         )
         try saveBundle(bundle)
+        bundle.profile = await refreshAccountProfile(accessToken: bundle.accessToken)
         debugLog("Claude Code authorization succeeded.")
         return bundle
     }
@@ -427,18 +457,58 @@ actor ClaudeCodeAuthProvider: ClaudeCodeAuthProviding {
         }
         try validate(response: response, data: data)
 
+        let accountId = tokenResponse.account?.uuid
         let updated = ClaudeCodeTokenBundle(
             accessToken: accessToken,
             refreshToken: tokenResponse.refreshToken ?? bundle.refreshToken,
             expiresAt: Date().addingTimeInterval(Double(tokenResponse.expiresIn ?? 3600)),
             scopes: Self.scopes(from: tokenResponse.scope) ?? bundle.scopes,
-            accountId: tokenResponse.account?.uuid ?? bundle.accountId,
+            accountId: accountId ?? bundle.accountId,
             email: tokenResponse.account?.emailAddress ?? bundle.email,
-            organizationId: tokenResponse.organization?.uuid ?? bundle.organizationId
+            organizationId: tokenResponse.organization?.uuid ?? bundle.organizationId,
+            profile: accountId == nil || accountId == bundle.accountId ? bundle.profile : nil
         )
         try saveBundle(updated)
         debugLog("Claude Code token refresh succeeded.")
         return updated
+    }
+
+    /// Profile lookup is optional: failure must not prevent login or usage refresh.
+    func refreshAccountProfile(accessToken: String) async -> ClaudeCodeAccountProfile? {
+        do {
+            guard let originalBundle = try synchronizedTokenBundle(),
+                  originalBundle.accessToken == accessToken else { return nil }
+
+            var request = URLRequest(
+                url: ClaudeCodeOAuthConfig.apiBaseURL.appending(path: ClaudeCodeOAuthConfig.profileEndpointPath),
+                timeoutInterval: 10
+            )
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("AIUM", forHTTPHeaderField: "User-Agent")
+
+            let (data, response) = try await session.data(for: request)
+            guard let response = response as? HTTPURLResponse,
+                  (200..<300).contains(response.statusCode) else {
+                debugLog("Claude Code profile request failed; keeping cached account display.")
+                return nil
+            }
+            let profile = try ClaudeCodeAccountProfile.decode(from: data)
+
+            // Do not attach an in-flight response to a different login or account.
+            guard var bundle = try synchronizedTokenBundle(),
+                  bundle.accessToken == accessToken,
+                  bundle.accountId == originalBundle.accountId else { return nil }
+            if bundle.profile != profile {
+                bundle.profile = profile
+                try saveBundle(bundle)
+            }
+            return profile
+        } catch {
+            debugLog("Unable to refresh Claude Code profile; keeping cached account display.")
+            return nil
+        }
     }
 
     private func makeTokenRequest(body: [String: String]) throws -> URLRequest {

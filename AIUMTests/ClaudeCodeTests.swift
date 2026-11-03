@@ -112,7 +112,22 @@ final class ClaudeCodeTests: XCTestCase {
 
     func testSignInExchangesCodeAndSavesTokenBundle() async throws {
         var tokenRequestBody: [String: Any] = [:]
+        var profileAuthorization: String?
         ClaudeCodeMockURLProtocol.requestHandler = { request in
+            if request.url?.path == "/api/oauth/profile" {
+                profileAuthorization = request.value(forHTTPHeaderField: "Authorization")
+                return (Self.httpResponse(for: request), Data("""
+                {
+                  "account": {
+                    "uuid": "account-uuid",
+                    "email": "user@example.com",
+                    "display_name": "Freesia",
+                    "full_name": "Freesia Studio"
+                  },
+                  "organization": { "uuid": "org-uuid" }
+                }
+                """.utf8))
+            }
             XCTAssertEqual(request.url, ClaudeCodeOAuthConfig.tokenURL)
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
@@ -142,9 +157,11 @@ final class ClaudeCodeTests: XCTestCase {
         XCTAssertEqual(bundle.accessToken, "access-token")
         XCTAssertEqual(bundle.refreshToken, "refresh-token")
         XCTAssertEqual(bundle.accountId, "account-uuid")
-        XCTAssertEqual(bundle.accountDisplayName, "user@example.com")
+        XCTAssertEqual(bundle.accountDisplayName, "Freesia")
         XCTAssertEqual(bundle.scopes, ["user:profile"])
         XCTAssertEqual(try persistence.load()?.accessToken, "access-token")
+        XCTAssertEqual(try persistence.load()?.accountDisplayName, "Freesia")
+        XCTAssertEqual(profileAuthorization, "Bearer access-token")
         let isAuthenticated = await provider.isAuthenticated
         XCTAssertTrue(isAuthenticated)
 
@@ -171,7 +188,8 @@ final class ClaudeCodeTests: XCTestCase {
             expiresAt: Date().addingTimeInterval(-10),
             scopes: ["user:profile"],
             accountId: "account-uuid",
-            email: "user@example.com"
+            email: "user@example.com",
+            profile: ClaudeCodeAccountProfile(displayName: "Freesia", fullName: nil)
         ))
         let provider = makeAuthProvider(persistence: persistence)
 
@@ -185,7 +203,46 @@ final class ClaudeCodeTests: XCTestCase {
         XCTAssertEqual(saved.accessToken, "new-access")
         XCTAssertEqual(saved.refreshToken, "new-refresh")
         XCTAssertEqual(saved.email, "user@example.com")
+        XCTAssertEqual(saved.accountDisplayName, "Freesia")
         XCTAssertFalse(saved.isExpired)
+    }
+
+    // MARK: - Account profile
+
+    func testProfileNamePrefersDisplayNameThenFullNameAndNeverEmail() throws {
+        let both = try ClaudeCodeAccountProfile.decode(from: Data(
+            #"{"account":{"email":"user@example.com","display_name":" Freesia ","full_name":"Freesia Studio"}}"#.utf8
+        ))
+        let fullOnly = try ClaudeCodeAccountProfile.decode(from: Data(
+            #"{"account":{"email":"user@example.com","display_name":"","full_name":"Freesia Studio"}}"#.utf8
+        ))
+        let none = try ClaudeCodeAccountProfile.decode(from: Data(
+            #"{"account":{"email":"user@example.com","display_name":null}}"#.utf8
+        ))
+
+        XCTAssertEqual(both.name, "Freesia")
+        XCTAssertEqual(fullOnly.name, "Freesia Studio")
+        XCTAssertNil(none.name)
+        XCTAssertNil(ClaudeCodeTokenBundle(accessToken: "a", expiresAt: Date(), email: "user@example.com").accountDisplayName)
+    }
+
+    func testProfileFailureKeepsCachedName() async throws {
+        ClaudeCodeMockURLProtocol.requestHandler = { request in
+            (Self.httpResponse(for: request, statusCode: 500), Data())
+        }
+        let persistence = inMemoryPersistence()
+        try persistence.save(ClaudeCodeTokenBundle(
+            accessToken: "access",
+            expiresAt: Date().addingTimeInterval(3600),
+            accountId: "account-uuid",
+            profile: ClaudeCodeAccountProfile(displayName: "Cached", fullName: nil)
+        ))
+        let provider = makeAuthProvider(persistence: persistence)
+
+        let profile = await provider.refreshAccountProfile(accessToken: "access")
+
+        XCTAssertNil(profile)
+        XCTAssertEqual(try persistence.load()?.accountDisplayName, "Cached")
     }
 
     // MARK: - Usage parsing
@@ -201,7 +258,8 @@ final class ClaudeCodeTests: XCTestCase {
         """.utf8)
         let now = Date(timeIntervalSince1970: 1_790_000_000)
         let bundle = ClaudeCodeTokenBundle(
-            accessToken: "a", expiresAt: now, accountId: "account-uuid", email: "user@example.com"
+            accessToken: "a", expiresAt: now, accountId: "account-uuid", email: "user@example.com",
+            profile: ClaudeCodeAccountProfile(displayName: "Freesia", fullName: nil)
         )
 
         let response = try ClaudeCodeUsageResponse.decode(from: json)
@@ -217,7 +275,7 @@ final class ClaudeCodeTests: XCTestCase {
         XCTAssertEqual(fiveHour.windowKind, .custom)
         XCTAssertEqual(fiveHour.source, "claude-code-private-api")
         XCTAssertEqual(fiveHour.accountId, "account-uuid")
-        XCTAssertEqual(fiveHour.displayName, "user@example.com")
+        XCTAssertEqual(fiveHour.displayName, "Freesia")
         XCTAssertEqual(fiveHour.fetchedAt, now)
         XCTAssertEqual(
             try XCTUnwrap(fiveHour.resetAt).timeIntervalSince1970,
@@ -299,6 +357,7 @@ final class ClaudeCodeTests: XCTestCase {
         XCTAssertEqual(usageRequest?.url?.absoluteString, "https://api.anthropic.com/api/oauth/usage")
         XCTAssertEqual(usageRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer fake-access")
         XCTAssertEqual(usageRequest?.value(forHTTPHeaderField: "anthropic-beta"), "oauth-2025-04-20")
+        XCTAssertTrue(snapshots.allSatisfy { $0.displayName == "Profile Name" })
     }
 
     func testFetchUsageThrowsHTTPErrorForRateLimit() async {
@@ -489,6 +548,10 @@ private actor FakeClaudeCodeAuthProvider: ClaudeCodeAuthProviding {
     }
 
     func validAccessToken() async throws -> String { "fake-access" }
+
+    func refreshAccountProfile(accessToken: String) async -> ClaudeCodeAccountProfile? {
+        ClaudeCodeAccountProfile(displayName: "Profile Name", fullName: nil)
+    }
 
     func logout() {}
 }

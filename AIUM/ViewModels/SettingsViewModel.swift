@@ -98,6 +98,10 @@ final class SettingsViewModel: ObservableObject {
                 _ = await codexAuth.refreshAccountProfile(accessToken: accessToken)
                 codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
             }
+            if isClaudeCodeAuthenticated, let accessToken = try? await claudeCodeAuth.validAccessToken() {
+                _ = await claudeCodeAuth.refreshAccountProfile(accessToken: accessToken)
+                claudeCodeAccountDisplayName = await claudeCodeAuth.tokenBundle?.accountDisplayName
+            }
         }
     }
 
