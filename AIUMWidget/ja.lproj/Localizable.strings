@@ -3,6 +3,7 @@
 "Shows your primary usage at a glance." = "主な利用状況をひと目で確認できます。";
 "AIUM — Lock Screen Usage" = "AIUM — ロック画面の利用状況";
 "Shows usage for your selected provider, with three rings for Codex limits." = "選択したプロバイダーの利用状況を表示します。Codexの各リミットは3つの輪で確認できます。";
+"Shows usage and runs your configured app or shortcut when tapped." = "利用状況を表示し、タップすると設定したアプリやショートカットを実行します。";
 "AIUM — Copilot & Codex" = "AIUM — CopilotとCodex";
 "Shows GitHub Copilot and Codex usage side by side." = "GitHub CopilotとCodexの利用状況を並べて表示します。";
 
@@ -41,6 +42,9 @@
 "Usage Provider" = "利用状況プロバイダー";
 "Choose the provider whose usage is shown." = "利用状況を表示するプロバイダーを選択します。";
 "Provider: ${provider}" = "プロバイダー：${provider}";
+"Action" = "アクション";
+"Usage Provider & Action" = "利用状況プロバイダーとアクション";
+"Choose the usage provider and the app or shortcut to run when tapped." = "利用状況を表示するプロバイダーと、タップ時に実行するアプリやショートカットを選択します。";
 
 /* Units */
 "AI credits" = "AIクレジット";
