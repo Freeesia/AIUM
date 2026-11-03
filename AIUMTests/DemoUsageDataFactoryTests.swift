@@ -36,6 +36,12 @@ final class DemoUsageDataFactoryTests: XCTestCase {
         XCTAssertEqual(snapshots.map(\.windowDurationMins), [5 * 60, 7 * 24 * 60])
     }
 
+    func testClaudeCodeSnapshotsContainFiveHourAndWeeklyDemoWindows() {
+        let snapshots = DemoUsageDataFactory.snapshots(for: .claudeCode, now: now)
+        XCTAssertEqual(snapshots.map(\.windowDurationMins), [5 * 60, 7 * 24 * 60])
+        XCTAssertTrue(snapshots.allSatisfy { $0.provider == .claudeCode && $0.source == "demo" })
+    }
+
     func testGithubAICreditsValues() {
         let snapshots = DemoUsageDataFactory.snapshots(for: .githubCopilot, now: now)
         let aiCredits = snapshots.first { $0.planKind == .aiCredits }

@@ -39,6 +39,7 @@
 "Provider" = "Provider";
 "GitHub Copilot" = "GitHub Copilot";
 "OpenAI Codex" = "OpenAI Codex";
+"Claude Code" = "Claude Code";
 "Usage Provider" = "Usage Provider";
 "Choose the provider whose usage is shown." = "Choose the provider whose usage is shown.";
 "Provider: ${provider}" = "Provider: ${provider}";

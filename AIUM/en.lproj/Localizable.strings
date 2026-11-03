@@ -137,3 +137,22 @@
 "Refresh Codex usage before resetting it." = "Refresh Codex usage before resetting it.";
 "Could not confirm the reset. Retry to check the same request without using an additional reset." = "Could not confirm the reset. Retry to check the same request without using an additional reset.";
 "Could not refresh usage. Close this sheet and refresh the dashboard." = "Could not refresh usage. Close this sheet and refresh the dashboard.";
+
+/* Claude Code */
+"Claude Code" = "Claude Code";
+"Connecting to Claude Code…" = "Connecting to Claude Code…";
+"Sign in with Claude Code" = "Sign in with Claude Code";
+"Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings before signing in." = "Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings before signing in.";
+"Sign in with your Claude Pro or Max account. AIUM requests only profile access to read your Claude Code usage limits." = "Sign in with your Claude Pro or Max account. AIUM requests only profile access to read your Claude Code usage limits.";
+"Claude Code OAuth Client ID is not configured. Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings." = "Claude Code OAuth Client ID is not configured. Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings.";
+"Not signed in to Claude Code." = "Not signed in to Claude Code.";
+"Sign-in was cancelled." = "Sign-in was cancelled.";
+"Claude Code sign-in returned an unexpected state. Please try again." = "Claude Code sign-in returned an unexpected state. Please try again.";
+"Claude Code sign-in did not return an authorization code." = "Claude Code sign-in did not return an authorization code.";
+"Could not start the local sign-in listener: %@" = "Could not start the local sign-in listener: %@";
+"The sign-in browser could not be opened." = "The sign-in browser could not be opened.";
+"Claude Code auth error %lld: %@" = "Claude Code auth error %lld: %@";
+"Claude Code authorization failed: %@" = "Claude Code authorization failed: %@";
+"Claude Code token exchange did not return an access token." = "Claude Code token exchange did not return an access token.";
+"Claude Code usage response was not a JSON object." = "Claude Code usage response was not a JSON object.";
+"Claude Code usage response did not include rate-limit data. Body: %@" = "Claude Code usage response did not include rate-limit data. Body: %@";

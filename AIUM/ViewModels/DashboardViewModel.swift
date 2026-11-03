@@ -8,6 +8,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var githubSnapshots: [UsageSnapshot] = []
     @Published var codexSnapshots: [UsageSnapshot] = []
+    @Published var claudeCodeSnapshots: [UsageSnapshot] = []
     @Published private(set) var isResettingCodexUsage = false
     @Published private(set) var codexResetError: String?
     @Published private(set) var codexResetOutcome: CodexUsageResetOutcome?
@@ -27,6 +28,7 @@ final class DashboardViewModel: ObservableObject {
     private let demoModeStore: DemoModeStore
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
+    private let claudeCodeProvider: PrivateClaudeCodeUsageProvider
     private let resetRequestStore: CodexResetRequestStore
     private let now: () -> Date
     private var codexResetCreditDetailsAccountId: String?
@@ -43,6 +45,7 @@ final class DashboardViewModel: ObservableObject {
         demoModeStore: DemoModeStore = DemoModeStore(),
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
         codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider(),
+        claudeCodeProvider: PrivateClaudeCodeUsageProvider = PrivateClaudeCodeUsageProvider(),
         resetRequestStore: CodexResetRequestStore? = nil,
         now: @escaping () -> Date = Date.init
     ) {
@@ -51,6 +54,7 @@ final class DashboardViewModel: ObservableObject {
         self.demoModeStore = demoModeStore
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
+        self.claudeCodeProvider = claudeCodeProvider
         self.resetRequestStore = resetRequestStore ?? CodexResetRequestStore()
         self.now = now
         self.refreshService = UsageRefreshService(
@@ -58,7 +62,8 @@ final class DashboardViewModel: ObservableObject {
             resolver: AppUsageProviderResolver(
                 demoModeStore: demoModeStore,
                 githubProvider: githubProvider,
-                codexProvider: codexProvider
+                codexProvider: codexProvider,
+                claudeCodeProvider: claudeCodeProvider
             )
         )
         loadFromStore()
@@ -190,7 +195,7 @@ final class DashboardViewModel: ObservableObject {
 
     func refreshIfNeeded() {
         guard !isRefreshing else { return }
-        let snapshots = githubSnapshots + codexSnapshots
+        let snapshots = githubSnapshots + codexSnapshots + claudeCodeSnapshots
         guard snapshots.isEmpty || snapshots.contains(where: \.isStale) else { return }
         Task {
             await refreshNow(shouldReschedulePeriodicRefresh: true)
@@ -246,6 +251,13 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    var claudeCodeIsAuthenticated: Bool {
+        get async {
+            if isDemoMode { return true }
+            return await claudeCodeProvider.isAuthenticated
+        }
+    }
+
     /// Reads the current demo mode flag and applies any state changes needed.
     func reloadDemoMode() {
         let wasEnabled = isDemoMode
@@ -264,11 +276,16 @@ final class DashboardViewModel: ObservableObject {
                 provider: .codex,
                 with: DemoUsageDataFactory.snapshots(for: .codex, now: now)
             )
+            usageStore.replace(
+                provider: .claudeCode,
+                with: DemoUsageDataFactory.snapshots(for: .claudeCode, now: now)
+            )
             loadFromStore()
         } else if wasEnabled && !isEnabled {
             // Demo mode turned OFF: clear the demo cache
             usageStore.clear(provider: .githubCopilot)
             usageStore.clear(provider: .codex)
+            usageStore.clear(provider: .claudeCode)
             loadFromStore()
         }
     }
@@ -299,6 +316,7 @@ final class DashboardViewModel: ObservableObject {
     private func loadFromStore() {
         githubSnapshots = usageStore.snapshots(for: .githubCopilot)
         codexSnapshots = usageStore.snapshots(for: .codex)
+        claudeCodeSnapshots = usageStore.snapshots(for: .claudeCode)
     }
 
     private func refreshNow(shouldReschedulePeriodicRefresh: Bool) async {

@@ -39,6 +39,7 @@
 "Provider" = "プロバイダー";
 "GitHub Copilot" = "GitHub Copilot";
 "OpenAI Codex" = "OpenAI Codex";
+"Claude Code" = "Claude Code";
 "Usage Provider" = "利用状況プロバイダー";
 "Choose the provider whose usage is shown." = "利用状況を表示するプロバイダーを選択します。";
 "Provider: ${provider}" = "プロバイダー：${provider}";

@@ -427,6 +427,7 @@ private func providerAbbreviation(_ provider: Provider) -> String {
     switch provider {
     case .githubCopilot: "GH"
     case .codex: "CX"
+    case .claudeCode: "CC"
     }
 }
 
@@ -533,6 +534,8 @@ private enum WidgetPreviewData {
         codexSnapshot(plan: .codexPro, used: 72, minutes: 5 * 60, resetHours: 2),
         codexSnapshot(plan: .codexPro, used: 42, minutes: 7 * 24 * 60, resetHours: 96),
         codexSnapshot(plan: .codexLunaReserve, used: 8, minutes: 7 * 24 * 60, resetHours: 168),
+        claudeCodeSnapshot(used: 54, minutes: 5 * 60, resetHours: 3),
+        claudeCodeSnapshot(used: 31, minutes: 7 * 24 * 60, resetHours: 120),
     ]
 
     static func entry(provider: Provider, snapshots: [UsageSnapshot] = snapshots) -> AIUMWidgetEntry {
@@ -546,6 +549,14 @@ private enum WidgetPreviewData {
             provider: .codex, planKind: plan, windowKind: .custom, used: used, limit: 100,
             resetAt: date.addingTimeInterval(resetHours * 3600), unit: "percent",
             source: "preview", fetchedAt: date.addingTimeInterval(-2 * 60 * 60), windowDurationMins: minutes
+        )
+    }
+
+    private static func claudeCodeSnapshot(used: Double, minutes: Int, resetHours: Double) -> UsageSnapshot {
+        UsageSnapshot(
+            provider: .claudeCode, displayName: "user@example.com", planKind: .unknown, windowKind: .custom,
+            used: used, limit: 100, resetAt: date.addingTimeInterval(resetHours * 3600), unit: "percent",
+            source: "preview", fetchedAt: date.addingTimeInterval(-10 * 60), windowDurationMins: minutes
         )
     }
 }
@@ -584,6 +595,12 @@ private enum WidgetPreviewData {
         provider: .codex,
         snapshots: [.error(provider: .codex, message: "Connection failed")]
     )
+}
+
+#Preview("Claude Code Rectangular", as: .accessoryRectangular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .claudeCode)
 }
 
 #Preview("Copilot Rectangular", as: .accessoryRectangular) {

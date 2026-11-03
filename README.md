@@ -1,6 +1,6 @@
 # AIUM — AI Usage Monitor
 
-AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するための個人用 iOS アプリです。
+AIUM は、GitHub Copilot、OpenAI Codex、Claude Code の利用状況を確認するための個人用 iOS アプリです。
 
 アプリ本体で利用状況を取得し、ホーム画面やロック画面のウィジェットからすぐ確認できるようにします。主な用途は、利用上限までの残量やリセット時刻の目安を日常的に把握することです。
 
@@ -13,9 +13,10 @@ AIUM は、GitHub Copilot や OpenAI Codex の利用状況を確認するため�
 
 - GitHub Copilot の利用状況表示
 - OpenAI Codex の利用状況表示
+- Claude Code（Pro / Max）の 5 時間枠・7 日枠の利用率表示
 - ホーム画面ウィジェット
 - ロック画面ウィジェット
-- GitHub / Codex のログイン状態管理
+- GitHub / Codex / Claude Code のログイン状態管理
 - 利用上限値の手動補正
 - アプリとウィジェット間の利用状況キャッシュ共有
 
@@ -99,14 +100,29 @@ CODEX_OAUTH_CLIENT_ID = app_xxx
 
 この部分はサービス側の変更によって仕様が変わる可能性があります。
 
-### 6. 実行する
+### 6. Claude Code 認証を設定する
+
+Claude Code 側は、Claude Code CLI と同じ OAuth クライアントで Authorization Code Flow + PKCE を行い、`https://api.anthropic.com/api/oauth/usage` から 5 時間枠と 7 日枠の利用率を取得します。Claude Pro / Max アカウントが対象です。要求するスコープは利用状況の取得に必要な `user:profile` のみです。
+
+`Config/AIUM.xcconfig` には現在確認できている `CLAUDE_CODE_OAUTH_CLIENT_ID` を設定しています。公開クライアントIDであり secret ではありませんが、Anthropic 側で変更される可能性があります。変更が必要な場合は `Config/AIUM.local.xcconfig` で上書きしてから `xcodegen generate` を実行します。
+
+```xcconfig
+// Config/AIUM.local.xcconfig
+CLAUDE_CODE_OAUTH_CLIENT_ID = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+この OAuth クライアントはリダイレクト先として `http://localhost:<port>/callback` のみを受け付けます。そのため、サインイン中はアプリがループバックインターフェースで一時的に待ち受け、`ASWebAuthenticationSession` で開いた認可画面からのリダイレクトを受け取ります。受け取った後はアプリ専用スキーム `aium-claude-code://` に転送してシートを閉じ、`state` を検証してからトークンを交換します。
+
+エンドポイント・レスポンス形式・認証フローは非公開仕様のため、予告なく変わる可能性があります。取得に失敗した場合は Claude Code のエラーとしてカードに表示します。詳細は `docs/API_NOTES.md` を参照してください。
+
+### 7. 実行する
 
 アプリを起動し、各サービスにログインして利用状況を更新します。その後、iOS のウィジェット追加画面から AIUM のウィジェットを追加します。
 
 ## 使い方
 
 1. アプリを起動する
-2. GitHub または Codex にログインする
+2. GitHub・Codex・Claude Code のいずれかにログインする
 3. 利用状況を更新する
 4. 必要に応じて利用上限値を手動で補正する
 5. ホーム画面またはロック画面にウィジェットを追加する
@@ -129,7 +145,8 @@ AIUM は、利用状況の表示に必要な情報を端末内に保存します
 
 ## 既知の制限
 
-- Codex の利用状況取得は、サービス側の変更で突然動作しなくなる可能性があります。
+- Codex と Claude Code の利用状況取得は非公開 API に依存するため、サービス側の変更で突然動作しなくなる可能性があります。
+- Claude Code の usage endpoint は短時間に繰り返し呼ぶと HTTP 429 を返すことがあります。
 - 取得できる利用状況は、アカウント種別・契約プラン・サービス側の状態によって変わる可能性があります。
 - ウィジェットの更新タイミングは iOS によって制御されます。
 - 公開配布する場合は、利用規約の確認、プライバシーポリシーの整備が必要です。
