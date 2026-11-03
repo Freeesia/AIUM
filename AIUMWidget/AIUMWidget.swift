@@ -283,33 +283,38 @@ struct AIUMLockScreenWidget: Widget {
     static let kind = "AIUMLockScreenUsageWidget"
 
     var body: some WidgetConfiguration {
-        if #available(iOS 27.0, *) {
-            AppIntentConfiguration(
-                kind: Self.kind,
-                intent: AIUMShortcutWidgetConfigurationIntent.self,
-                provider: AIUMShortcutWidgetProvider()
-            ) { entry in
-                AIUMShortcutWidgetView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            }
-            .configurationDisplayName("AIUM — Lock Screen Usage")
-            .description("Shows usage and runs your configured app or shortcut when tapped.")
-            .supportedFamilies([.accessoryCircular, .accessoryRectangular])
-            .promptsForUserConfiguration()
-        } else {
-            AppIntentConfiguration(
-                kind: Self.kind,
-                intent: AIUMWidgetConfigurationIntent.self,
-                provider: AIUMLockScreenWidgetProvider()
-            ) { entry in
-                AIUMConfigurableWidgetView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            }
-            .configurationDisplayName("AIUM — Lock Screen Usage")
-            .description("Shows usage for your selected provider, with three rings for Codex limits.")
-            .supportedFamilies([.accessoryCircular, .accessoryRectangular])
-            .promptsForUserConfiguration()
+        AppIntentConfiguration(
+            kind: Self.kind,
+            intent: AIUMWidgetConfigurationIntent.self,
+            provider: AIUMLockScreenWidgetProvider()
+        ) { entry in
+            AIUMConfigurableWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
+        .configurationDisplayName("AIUM — Lock Screen Usage")
+        .description("Shows usage for your selected provider, with three rings for Codex limits.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .promptsForUserConfiguration()
+    }
+}
+
+@available(iOS 27.0, *)
+struct AIUMShortcutLockScreenWidget: Widget {
+    static let kind = "AIUMLockScreenUsageWidget"
+
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: Self.kind,
+            intent: AIUMShortcutWidgetConfigurationIntent.self,
+            provider: AIUMShortcutWidgetProvider()
+        ) { entry in
+            AIUMShortcutWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("AIUM — Lock Screen Usage")
+        .description("Shows usage and runs your configured app or shortcut when tapped.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .promptsForUserConfiguration()
     }
 }
 
