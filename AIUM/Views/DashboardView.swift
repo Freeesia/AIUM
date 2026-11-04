@@ -5,6 +5,7 @@ struct DashboardView: View {
     @State private var presentedSheet: DashboardSheet? = ScreenshotLaunchConfiguration.showSettings ? .settings : nil
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
+    @State private var claudeCodeAuthenticated = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -17,7 +18,7 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                let layout = providerLayout(for: geometry.size.width)
+                let columnCount = providerColumnCount(for: geometry.size.width)
 
                 ScrollView {
                     VStack(spacing: sectionSpacing) {
@@ -25,9 +26,18 @@ struct DashboardView: View {
                             demoBanner
                         }
 
-                        layout {
+                        // Keep the same view identity when folding, resizing, or changing text size.
+                        LazyVGrid(
+                            columns: Array(
+                                repeating: GridItem(.flexible(), spacing: sectionSpacing, alignment: .top),
+                                count: columnCount
+                            ),
+                            alignment: .leading,
+                            spacing: sectionSpacing
+                        ) {
                             githubSection
                             codexSection
+                            claudeCodeSection
                         }
 
                         if let error = viewModel.lastError {
@@ -103,15 +113,11 @@ struct DashboardView: View {
 
     // MARK: - Helpers
 
-    private func providerLayout(for availableWidth: CGFloat) -> AnyLayout {
+    private func providerColumnCount(for availableWidth: CGFloat) -> Int {
+        guard !dynamicTypeSize.isAccessibilitySize else { return 1 }
         let contentWidth = min(availableWidth - contentPadding * 2, maximumContentWidth)
-        let fitsColumns = contentWidth >= minimumProviderColumnWidth * 2 + sectionSpacing
-
-        // Keep the same view identity when folding, resizing, or changing text size.
-        if fitsColumns && !dynamicTypeSize.isAccessibilitySize {
-            return AnyLayout(HStackLayout(alignment: .top, spacing: sectionSpacing))
-        }
-        return AnyLayout(VStackLayout(alignment: .leading, spacing: sectionSpacing))
+        let fittingColumns = Int((contentWidth + sectionSpacing) / (minimumProviderColumnWidth + sectionSpacing))
+        return min(max(fittingColumns, 1), Provider.allCases.count)
     }
 
     private var githubSection: some View {
@@ -153,6 +159,24 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
+    private var claudeCodeSection: some View {
+        VStack(alignment: .leading, spacing: sectionSpacing) {
+            sectionHeader(provider: .claudeCode)
+            if claudeCodeAuthenticated {
+                if viewModel.claudeCodeSnapshots.isEmpty {
+                    placeholderCard(provider: .claudeCode)
+                } else {
+                    ForEach(viewModel.claudeCodeSnapshots) { snapshot in
+                        UsageCardView(snapshot: snapshot)
+                    }
+                }
+            } else {
+                NotSignedInCardView(provider: .claudeCode)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
     private var visibleGitHubSnapshots: [UsageSnapshot] {
         viewModel.githubSnapshots.filter { snapshot in
             switch snapshot.planKind {
@@ -169,6 +193,7 @@ struct DashboardView: View {
     private func updateAuthStatus() async {
         githubAuthenticated = await viewModel.githubIsAuthenticated
         codexAuthenticated = await viewModel.codexIsAuthenticated
+        claudeCodeAuthenticated = await viewModel.claudeCodeIsAuthenticated
     }
 
     @ViewBuilder

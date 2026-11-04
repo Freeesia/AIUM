@@ -7,11 +7,15 @@ final class SettingsViewModel: ObservableObject {
     @Published var isDemoMode = false
     @Published var isGitHubAuthenticated = false
     @Published var isCodexAuthenticated = false
+    @Published var isClaudeCodeAuthenticated = false
     @Published var isAuthenticatingGitHub = false
     @Published var isAuthenticatingCodex = false
+    @Published var isAuthenticatingClaudeCode = false
     @Published var isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
     @Published var isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil
+    @Published var isClaudeCodeClientIdConfigured = ClaudeCodeOAuthConfig.clientId != nil
     @Published var codexAccountDisplayName: String?
+    @Published var claudeCodeAccountDisplayName: String?
     @Published var authError: String?
 
     // GitHub device flow state
@@ -42,6 +46,7 @@ final class SettingsViewModel: ObservableObject {
 
     private let githubAuth: GitHubAuthProvider
     private let codexAuth: CodexAuthProvider
+    private let claudeCodeAuth: ClaudeCodeAuthProvider
     private let usageStore: UsageStore
     private let demoModeStore: DemoModeStore
 
@@ -50,11 +55,13 @@ final class SettingsViewModel: ObservableObject {
     init(
         githubAuth: GitHubAuthProvider = .shared,
         codexAuth: CodexAuthProvider = CodexAuthProvider(),
+        claudeCodeAuth: ClaudeCodeAuthProvider = ClaudeCodeAuthProvider(),
         usageStore: UsageStore? = nil,
         demoModeStore: DemoModeStore = DemoModeStore()
     ) {
         self.githubAuth = githubAuth
         self.codexAuth = codexAuth
+        self.claudeCodeAuth = claudeCodeAuth
         self.usageStore = usageStore ?? .shared
         self.demoModeStore = demoModeStore
 
@@ -81,12 +88,19 @@ final class SettingsViewModel: ObservableObject {
         Task {
             isGitHubClientIdConfigured = GitHubOAuthConfig.clientId != nil
             isCodexClientIdConfigured = CodexOAuthConfig.clientId != nil
+            isClaudeCodeClientIdConfigured = ClaudeCodeOAuthConfig.clientId != nil
             isGitHubAuthenticated = await githubAuth.isAuthenticated
+            isClaudeCodeAuthenticated = await claudeCodeAuth.isAuthenticated
+            claudeCodeAccountDisplayName = await claudeCodeAuth.tokenBundle?.accountDisplayName
             isCodexAuthenticated = await codexAuth.isAuthenticated
             codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
             if isCodexAuthenticated, let accessToken = try? await codexAuth.validAccessToken() {
                 _ = await codexAuth.refreshAccountProfile(accessToken: accessToken)
                 codexAccountDisplayName = await codexAuth.tokenBundle?.accountDisplayName
+            }
+            if isClaudeCodeAuthenticated, let accessToken = try? await claudeCodeAuth.validAccessToken() {
+                _ = await claudeCodeAuth.refreshAccountProfile(accessToken: accessToken)
+                claudeCodeAccountDisplayName = await claudeCodeAuth.tokenBundle?.accountDisplayName
             }
         }
     }
@@ -177,6 +191,42 @@ final class SettingsViewModel: ObservableObject {
             isCodexAuthenticated = false
             codexAccountDisplayName = nil
             usageStore.clear(provider: .codex)
+        }
+    }
+
+    // MARK: - Claude Code
+
+    func startClaudeCodeLogin() {
+        guard !isAuthenticatingClaudeCode else { return }
+        guard ClaudeCodeOAuthConfig.clientId != nil else {
+            isClaudeCodeClientIdConfigured = false
+            authError = ClaudeCodeAuthError.clientIdNotConfigured.localizedDescription
+            return
+        }
+
+        isAuthenticatingClaudeCode = true
+        authError = nil
+
+        Task {
+            do {
+                let bundle = try await claudeCodeAuth.signIn(using: ClaudeCodeWebAuthorizationSession())
+                isClaudeCodeAuthenticated = true
+                claudeCodeAccountDisplayName = bundle.accountDisplayName
+            } catch ClaudeCodeAuthError.cancelled {
+                // Closing the sign-in sheet is not an error.
+            } catch {
+                authError = error.localizedDescription
+            }
+            isAuthenticatingClaudeCode = false
+        }
+    }
+
+    func logoutClaudeCode() {
+        Task {
+            await claudeCodeAuth.logout()
+            isClaudeCodeAuthenticated = false
+            claudeCodeAccountDisplayName = nil
+            usageStore.clear(provider: .claudeCode)
         }
     }
 }

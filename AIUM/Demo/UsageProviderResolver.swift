@@ -16,15 +16,18 @@ final class AppUsageProviderResolver: UsageProviderResolving {
     private let demoModeStore: DemoModeStore
     private let githubProvider: any UsageProvider
     private let codexProvider: any UsageProvider
+    private let claudeCodeProvider: any UsageProvider
 
     init(
         demoModeStore: DemoModeStore = DemoModeStore(),
         githubProvider: any UsageProvider = GitHubUsageProvider(),
-        codexProvider: any UsageProvider = PrivateCodexUsageProvider()
+        codexProvider: any UsageProvider = PrivateCodexUsageProvider(),
+        claudeCodeProvider: any UsageProvider = PrivateClaudeCodeUsageProvider()
     ) {
         self.demoModeStore = demoModeStore
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
+        self.claudeCodeProvider = claudeCodeProvider
     }
 
     func provider(for provider: Provider) -> any UsageProvider {
@@ -34,6 +37,7 @@ final class AppUsageProviderResolver: UsageProviderResolving {
         switch provider {
         case .githubCopilot: return githubProvider
         case .codex: return codexProvider
+        case .claudeCode: return claudeCodeProvider
         }
     }
 }

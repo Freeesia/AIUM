@@ -2,7 +2,7 @@ import Foundation
 
 /// Creates demo usage snapshots for App Review and testing purposes.
 enum DemoUsageDataFactory {
-    /// Returns demo snapshots for both GitHub Copilot and OpenAI Codex.
+    /// Returns demo snapshots for GitHub Copilot, OpenAI Codex, and Claude Code.
     /// All snapshots use `source = "demo"` and time values based on `now`.
     static func snapshots(for provider: Provider, now: Date = Date()) -> [UsageSnapshot] {
         switch provider {
@@ -10,6 +10,8 @@ enum DemoUsageDataFactory {
             return githubSnapshots(now: now)
         case .codex:
             return codexSnapshots(now: now)
+        case .claudeCode:
+            return claudeCodeSnapshots(now: now)
         }
     }
 
@@ -81,6 +83,41 @@ enum DemoUsageDataFactory {
                 used: 42,
                 limit: 100,
                 resetAt: weeklyReset,
+                unit: "percent",
+                source: "demo",
+                fetchedAt: now,
+                windowDurationMins: 7 * 24 * 60
+            ),
+        ]
+    }
+
+    // MARK: - Claude Code
+
+    private static func claudeCodeSnapshots(now: Date) -> [UsageSnapshot] {
+        [
+            UsageSnapshot(
+                provider: .claudeCode,
+                accountId: "demo-claude-code",
+                displayName: "demo@example.com",
+                planKind: .unknown,
+                windowKind: .custom,
+                used: 54,
+                limit: 100,
+                resetAt: now.addingTimeInterval(3 * 3600),
+                unit: "percent",
+                source: "demo",
+                fetchedAt: now,
+                windowDurationMins: 5 * 60
+            ),
+            UsageSnapshot(
+                provider: .claudeCode,
+                accountId: "demo-claude-code",
+                displayName: "demo@example.com",
+                planKind: .unknown,
+                windowKind: .custom,
+                used: 31,
+                limit: 100,
+                resetAt: now.addingTimeInterval(5 * 24 * 3600),
                 unit: "percent",
                 source: "demo",
                 fetchedAt: now,

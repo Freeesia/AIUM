@@ -1,6 +1,6 @@
 # API Notes
 
-This document describes the GitHub and Codex API endpoints used by AIUM.
+This document describes the GitHub, Codex, and Claude Code API endpoints used by AIUM.
 
 ---
 
@@ -179,6 +179,93 @@ Legacy snake_case windows are still accepted:
 
 ---
 
+## Claude Code APIs
+
+> **Note:** The Claude Code endpoints below are not part of an officially published Anthropic API.
+>
+> - The endpoints, response schema, and OAuth flow may change or be removed at any time without notice.
+> - All Claude Code API details are isolated in `AIUM/Providers/ClaudeCode/` (`ClaudeCodeAuthProvider.swift`, `ClaudeCodeWebAuthorizationSession.swift`, `PrivateClaudeCodeUsageProvider.swift`).
+> - Any failure (HTTP error, decode error, or a response without rate-limit windows) is stored as a Claude Code error snapshot so API changes are visible in the app UI.
+>
+> The values below were verified against the Claude Code CLI 2.1.309 bundle (November 2026).
+
+### Authentication: Authorization Code Flow + PKCE
+
+```
+GET  https://claude.com/cai/oauth/authorize
+POST https://platform.claude.com/v1/oauth/token
+```
+
+**Client ID:** `CLAUDE_CODE_OAUTH_CLIENT_ID` is passed through `AIUM/Info.plist` as `ClaudeCodeOAuthClientID`. The tracked default matches the Claude Code CLI client ID (`9d1c250a-e61b-44d9-88ed-5944d1962f5e`) and can be overridden from ignored `Config/AIUM.local.xcconfig`.
+
+**Authorization request query:** `code=true`, `client_id`, `response_type=code`, `redirect_uri`, `scope`, `code_challenge`, `code_challenge_method=S256`, `state`.
+
+AIUM requests only `user:profile`, which is the scope the usage endpoint requires. It does not request `user:inference` or API-key scopes.
+
+**Redirect URI:** the Claude Code OAuth client accepts `http://localhost:<port>/callback` (automatic flow) or `https://platform.claude.com/oauth/code/callback` (a page that shows `code#state` for manual copy). Custom URL schemes are not registered, so AIUM:
+
+1. Starts a one-shot HTTP listener on the loopback interface with an ephemeral port.
+2. Opens the authorization URL in `ASWebAuthenticationSession` with `redirect_uri=http://localhost:<port>/callback`.
+3. Receives `GET /callback?code=...&state=...`, answers `302 Location: aium-claude-code://oauth/callback?...`, and closes the sheet.
+4. Rejects the response unless `state` matches, then exchanges the code.
+
+**Token exchange (JSON body):**
+```json
+{
+  "grant_type": "authorization_code",
+  "code": "...",
+  "redirect_uri": "http://localhost:<port>/callback",
+  "client_id": "...",
+  "code_verifier": "...",
+  "state": "..."
+}
+```
+
+The response contains `access_token`, `refresh_token`, `expires_in`, `scope`, `account.uuid`, `account.email_address`, and `organization.uuid`.
+
+**Token refresh (JSON body):** `grant_type=refresh_token`, `refresh_token`, `client_id`, `scope` (the granted scopes). Refresh uses the same single-flight protection as Codex.
+
+**Token bundle stored in Keychain** (`claude_code_token_bundle`): access token, refresh token, expiry, granted scopes, account UUID, email, organization UUID, and the cached profile name.
+
+### Claude Account Profile
+
+```
+GET https://api.anthropic.com/api/oauth/profile
+Authorization: Bearer {access_token}
+```
+
+AIUM shows `account.display_name` (falling back to `account.full_name`) in settings and on usage cards, like the Codex profile name. The email address is not displayed. When neither name is available, the name row is omitted.
+
+The profile is refreshed after sign-in, during usage refresh, and when opening settings. Requests use a 10-second timeout; HTTP errors, malformed responses, and network failures keep the cached name without failing sign-in or usage refresh. Token refresh keeps the profile for the same account, and a response is discarded if the sign-in or account changes while it is in flight.
+
+### Claude Code Usage
+
+```
+GET https://api.anthropic.com/api/oauth/usage
+Authorization: Bearer {access_token}
+anthropic-beta: oauth-2025-04-20
+```
+
+**Response fields used:**
+```json
+{
+  "five_hour": { "utilization": 37.0, "resets_at": "2026-11-04T15:00:00.123456+00:00" },
+  "seven_day": { "utilization": 12.0, "resets_at": "2026-11-08T03:00:00+00:00" }
+}
+```
+
+Other fields (`seven_day_opus`, `seven_day_sonnet`, `extra_usage`, `limits`, ...) are ignored.
+
+**Normalization logic:**
+- `utilization` is already a percentage (the CLI prints `Math.floor(utilization)% used`), so AIUM stores `used = utilization`, `limit = 100`, `unit = "percent"` without rescaling. Values can exceed 100.
+- `five_hour` → `windowDurationMins = 300`; `seven_day` → `windowDurationMins = 10080`. Both use `planKind = .unknown`, `windowKind = .custom`, and `source = "claude-code-private-api"`.
+- A window that is `null` or has a `null` utilization is omitted; for example, some plans report only `seven_day`.
+- `resets_at` accepts ISO 8601 (with or without fractional seconds, including microseconds), Unix epoch seconds, and Unix epoch milliseconds.
+
+**Rate limiting:** The endpoint returns HTTP 429 (`rate_limit_error`) when polled too often. The response is stored as an error snapshot and the next refresh tries again.
+
+---
+
 ## Codex Usage Reset
 
 The reset card opens a confirmation sheet before any reset request is sent.
@@ -224,11 +311,11 @@ Demo mode cannot submit reset requests.
 
 ## Adding Official APIs
 
-When official GitHub Copilot or Codex usage APIs are released:
+When official GitHub Copilot, Codex, or Claude Code usage APIs are released:
 
-1. Create a new file in `AIUM/Providers/GitHub/` or `AIUM/Providers/Codex/`
-2. Implement the `UsageProvider` (or `CodexUsageProvider`) protocol
+1. Create a new file in `AIUM/Providers/GitHub/`, `AIUM/Providers/Codex/`, or `AIUM/Providers/ClaudeCode/`
+2. Implement the `UsageProvider` (or `CodexUsageProvider` / `ClaudeCodeUsageProvider`) protocol
 3. Swap the concrete type in `DashboardViewModel` and `SettingsViewModel`
-4. Delete or mark `PrivateCodexUsageProvider.swift` as deprecated
+4. Delete or mark `PrivateCodexUsageProvider.swift` / `PrivateClaudeCodeUsageProvider.swift` as deprecated
 
 The `UsageSnapshot` model is designed to be provider-agnostic and should not need changes.

@@ -137,3 +137,22 @@
 "Refresh Codex usage before resetting it." = "リセットする前にCodexの利用量を更新してください。";
 "Could not confirm the reset. Retry to check the same request without using an additional reset." = "リセットの結果を確認できませんでした。再試行すると、追加のリセット権を使わずに同じリクエストを確認します。";
 "Could not refresh usage. Close this sheet and refresh the dashboard." = "利用量を取得できませんでした。シートを閉じてダッシュボードを更新してください。";
+
+/* Claude Code */
+"Claude Code" = "Claude Code";
+"Connecting to Claude Code…" = "Claude Codeに接続中…";
+"Sign in with Claude Code" = "Claude Codeでサインイン";
+"Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings before signing in." = "サインインする前に、AIUMターゲットのビルド設定でCLAUDE_CODE_OAUTH_CLIENT_IDを設定してください。";
+"Sign in with your Claude Pro or Max account. AIUM requests only profile access to read your Claude Code usage limits." = "Claude ProまたはMaxのアカウントでサインインします。AIUMはClaude Codeの利用上限を取得するため、プロフィールへのアクセスのみを要求します。";
+"Claude Code OAuth Client ID is not configured. Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings." = "Claude Code OAuthクライアントIDが設定されていません。AIUMターゲットのビルド設定でCLAUDE_CODE_OAUTH_CLIENT_IDを設定してください。";
+"Not signed in to Claude Code." = "Claude Codeにサインインしていません。";
+"Sign-in was cancelled." = "サインインがキャンセルされました。";
+"Claude Code sign-in returned an unexpected state. Please try again." = "Claude Codeのサインインで想定外のstateが返されました。もう一度お試しください。";
+"Claude Code sign-in did not return an authorization code." = "Claude Codeのサインインで認可コードが返されませんでした。";
+"Could not start the local sign-in listener: %@" = "サインイン用のローカル受信を開始できませんでした：%@";
+"The sign-in browser could not be opened." = "サインイン用のブラウザを開けませんでした。";
+"Claude Code auth error %lld: %@" = "Claude Code認証エラー %lld：%@";
+"Claude Code authorization failed: %@" = "Claude Codeの認可に失敗しました：%@";
+"Claude Code token exchange did not return an access token." = "Claude Codeのトークン交換でアクセストークンが返されませんでした。";
+"Claude Code usage response was not a JSON object." = "Claude Codeの利用状況レスポンスがJSONオブジェクトではありません。";
+"Claude Code usage response did not include rate-limit data. Body: %@" = "Claude Codeの利用状況レスポンスにレート制限データが含まれていません。レスポンス：%@";

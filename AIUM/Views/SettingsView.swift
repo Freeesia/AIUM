@@ -71,6 +71,36 @@ struct SettingsView: View {
                     Text("OpenAI Codex")
                 }
 
+                // Claude Code section
+                Section {
+                    if viewModel.isDemoMode {
+                        demoModeAuthMessage
+                    } else {
+                        if !viewModel.isClaudeCodeClientIdConfigured {
+                            claudeCodeClientIdWarning
+                        }
+                        claudeCodeAuthRow
+                        if viewModel.isClaudeCodeAuthenticated,
+                           let account = viewModel.claudeCodeAccountDisplayName {
+                            HStack {
+                                Text("Account")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(account)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.trailing)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Claude Code")
+                } footer: {
+                    if !viewModel.isDemoMode {
+                        Text("Sign in with your Claude Pro or Max account. AIUM requests only profile access to read your Claude Code usage limits.")
+                    }
+                }
+
                 // Refresh interval
                 Section {
                     Picker("Interval", selection: $viewModel.refreshSetting) {
@@ -226,6 +256,43 @@ struct SettingsView: View {
     private var codexClientIdWarning: some View {
         Label {
             Text("Set CODEX_OAUTH_CLIENT_ID in the AIUM target build settings before signing in.")
+                .font(.caption)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        }
+    }
+
+    // MARK: - Claude Code auth row
+
+    @ViewBuilder
+    private var claudeCodeAuthRow: some View {
+        if viewModel.isClaudeCodeAuthenticated {
+            HStack {
+                Label("Claude Code", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Spacer()
+                Button("Sign Out", role: .destructive) {
+                    viewModel.logoutClaudeCode()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        } else if viewModel.isAuthenticatingClaudeCode {
+            ProgressView("Connecting to Claude Code…")
+        } else {
+            Button {
+                viewModel.startClaudeCodeLogin()
+            } label: {
+                Label("Sign in with Claude Code", systemImage: "person.badge.plus")
+            }
+            .disabled(!viewModel.isClaudeCodeClientIdConfigured)
+        }
+    }
+
+    private var claudeCodeClientIdWarning: some View {
+        Label {
+            Text("Set CLAUDE_CODE_OAUTH_CLIENT_ID in the AIUM target build settings before signing in.")
                 .font(.caption)
         } icon: {
             Image(systemName: "exclamationmark.triangle.fill")

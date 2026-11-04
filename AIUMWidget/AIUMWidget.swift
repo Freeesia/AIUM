@@ -7,18 +7,21 @@ import AppIntents
 enum AIUMWidgetProviderOption: String, AppEnum {
     case githubCopilot
     case codex
+    case claudeCode
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Provider"
 
     static var caseDisplayRepresentations: [AIUMWidgetProviderOption: DisplayRepresentation] = [
         .githubCopilot: "GitHub Copilot",
         .codex: "OpenAI Codex",
+        .claudeCode: "Claude Code",
     ]
 
     var provider: Provider {
         switch self {
         case .githubCopilot: .githubCopilot
         case .codex: .codex
+        case .claudeCode: .claudeCode
         }
     }
 }

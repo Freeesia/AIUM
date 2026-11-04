@@ -217,7 +217,7 @@ struct UsageCardView: View {
     // MARK: - Helpers
 
     private var planLabel: LocalizedStringKey {
-        if snapshot.provider == .codex {
+        if snapshot.provider == .codex || snapshot.provider == .claudeCode {
             if snapshot.planKind == .codexLunaReserve {
                 return "Luna Reserve"
             }

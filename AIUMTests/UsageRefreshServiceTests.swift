@@ -74,6 +74,94 @@ final class UsageRefreshServiceTests: XCTestCase {
         XCTAssertEqual(fetchCount, 0)
     }
 
+    func testClaudeCodeRefreshReplacesOnlyClaudeCodeSnapshots() async {
+        let storeURL = temporaryStoreURL()
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        let store = UsageStore(testingStoreURL: storeURL)
+        store.upsert(snapshot(provider: .githubCopilot))
+        store.upsert(snapshot(provider: .codex))
+        store.upsert(UsageSnapshot.error(provider: .claudeCode, message: "old failure"))
+        let claudeCodeSnapshots = [300, 10_080].map { minutes in
+            UsageSnapshot(
+                provider: .claudeCode,
+                accountId: "claude-account",
+                windowKind: .custom,
+                used: 40,
+                limit: 100,
+                unit: "percent",
+                source: PrivateClaudeCodeUsageProvider.source,
+                windowDurationMins: minutes
+            )
+        }
+        let service = UsageRefreshService(
+            usageStore: store,
+            resolver: StubUsageProviderResolver(
+                githubProvider: StubUsageProvider(
+                    provider: .githubCopilot,
+                    isAuthenticated: true,
+                    snapshots: [snapshot(provider: .githubCopilot)]
+                ),
+                codexProvider: StubUsageProvider(
+                    provider: .codex,
+                    isAuthenticated: true,
+                    snapshots: [snapshot(provider: .codex)]
+                ),
+                claudeCodeProvider: StubUsageProvider(
+                    provider: .claudeCode,
+                    isAuthenticated: true,
+                    snapshots: claudeCodeSnapshots
+                )
+            )
+        )
+
+        _ = await service.refreshUsage()
+
+        let stored = store.snapshots(for: .claudeCode)
+        XCTAssertEqual(stored.count, 2)
+        XCTAssertTrue(stored.allSatisfy { $0.errorMessage == nil })
+        XCTAssertEqual(Set(stored.compactMap(\.windowDurationMins)), [300, 10_080])
+        XCTAssertEqual(store.snapshots(for: .githubCopilot).count, 1)
+        XCTAssertEqual(store.snapshots(for: .codex).count, 1)
+    }
+
+    func testClaudeCodeFailureAddsErrorSnapshotWithoutTouchingOtherProviders() async {
+        let storeURL = temporaryStoreURL()
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        let store = UsageStore(testingStoreURL: storeURL)
+        store.upsert(snapshot(provider: .codex))
+        let service = UsageRefreshService(
+            usageStore: store,
+            resolver: StubUsageProviderResolver(
+                githubProvider: StubUsageProvider(provider: .githubCopilot, isAuthenticated: false),
+                codexProvider: StubUsageProvider(
+                    provider: .codex,
+                    isAuthenticated: true,
+                    snapshots: [snapshot(provider: .codex)]
+                ),
+                claudeCodeProvider: StubUsageProvider(
+                    provider: .claudeCode,
+                    isAuthenticated: true,
+                    error: StubRefreshError.credentialsUnavailable
+                )
+            )
+        )
+
+        let result = await service.refreshUsage()
+
+        XCTAssertEqual(result.errorMessage, "credentials unavailable")
+        let claudeCode = store.snapshots(for: .claudeCode)
+        XCTAssertEqual(claudeCode.count, 1)
+        XCTAssertEqual(claudeCode.first?.errorMessage, "credentials unavailable")
+        XCTAssertEqual(
+            UsageSnapshot.displaySnapshot(from: store.snapshots, for: .claudeCode)?.errorMessage,
+            "credentials unavailable"
+        )
+        XCTAssertEqual(store.snapshots(for: .codex).count, 1)
+        XCTAssertNil(store.snapshots(for: .codex).first?.errorMessage)
+    }
+
     // MARK: - Demo Mode Tests
 
     func testDemoModeUsesOnlyDemoProviders() async {
@@ -244,16 +332,23 @@ private actor StubUsageProvider: UsageProvider {
 private final class StubUsageProviderResolver: UsageProviderResolving {
     private let githubProvider: any UsageProvider
     private let codexProvider: any UsageProvider
+    private let claudeCodeProvider: any UsageProvider
 
-    init(githubProvider: any UsageProvider, codexProvider: any UsageProvider) {
+    init(
+        githubProvider: any UsageProvider,
+        codexProvider: any UsageProvider,
+        claudeCodeProvider: any UsageProvider = StubUsageProvider(provider: .claudeCode, isAuthenticated: false)
+    ) {
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
+        self.claudeCodeProvider = claudeCodeProvider
     }
 
     func provider(for provider: Provider) -> any UsageProvider {
         switch provider {
         case .githubCopilot: return githubProvider
         case .codex: return codexProvider
+        case .claudeCode: return claudeCodeProvider
         }
     }
 }

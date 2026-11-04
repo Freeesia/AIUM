@@ -29,6 +29,7 @@ final class UsageRefreshService {
         let errors = [
             await refreshProvider(.githubCopilot),
             await refreshProvider(.codex),
+            await refreshProvider(.claudeCode),
         ].compactMap { $0 }
 
         let currentSnapshots = usageStore.snapshots

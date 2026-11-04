@@ -5,11 +5,13 @@ import Foundation
 public enum Provider: String, Codable, CaseIterable, Sendable {
     case githubCopilot
     case codex
+    case claudeCode
 
     public var displayName: String {
         switch self {
         case .githubCopilot: return "GitHub Copilot"
         case .codex: return "OpenAI Codex"
+        case .claudeCode: return "Claude Code"
         }
     }
 
@@ -17,6 +19,7 @@ public enum Provider: String, Codable, CaseIterable, Sendable {
         switch self {
         case .githubCopilot: return "GitHubCopilot"
         case .codex: return "OpenAI"
+        case .claudeCode: return "Claude"
         }
     }
 }
