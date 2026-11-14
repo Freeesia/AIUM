@@ -115,6 +115,8 @@ CLAUDE_CODE_OAUTH_CLIENT_ID = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 設定画面と使用量カードの接続先には、`https://api.anthropic.com/api/oauth/profile` の `account.display_name`（未設定なら `full_name`）を表示します。メールアドレスは表示しません。取得に失敗した場合は保存済みの名前を使い、名前がない場合は名前欄を表示しません。
 
+アカウントに利用上限のリセット権がある場合は、Codex と同様にダッシュボードへリセットカードを表示します。実行ボタンから確認シートを開き、各リセット権の内容と有効期限を確認してから、Claude Code CLI の `/limit-reset` と同じ `POST https://api.anthropic.com/api/organizations/{organization_uuid}/reset_rate_limits` でリセットします。
+
 エンドポイント・レスポンス形式・認証フローは非公開仕様のため、予告なく変わる可能性があります。取得に失敗した場合は Claude Code のエラーとしてカードに表示します。詳細は `docs/API_NOTES.md` を参照してください。
 
 ### 7. 実行する

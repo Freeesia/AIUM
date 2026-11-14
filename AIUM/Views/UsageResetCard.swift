@@ -1,7 +1,8 @@
 import SwiftUI
 
-struct CodexResetCreditsCard: View {
+struct UsageResetCard: View {
     let remainingCount: Int
+    let accessibilityIdentifier: String
     let isDisabled: Bool
     let onReset: () -> Void
 
@@ -29,7 +30,7 @@ struct CodexResetCreditsCard: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .disabled(isDisabled)
                 .accessibilityLabel("Reset usage")
-                .accessibilityIdentifier("codex-reset-usage")
+                .accessibilityIdentifier(accessibilityIdentifier)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -38,11 +39,11 @@ struct CodexResetCreditsCard: View {
 }
 
 #Preview("Available resets") {
-    CodexResetCreditsCard(remainingCount: 2, isDisabled: false, onReset: {})
+    UsageResetCard(remainingCount: 2, accessibilityIdentifier: "codex-reset-usage", isDisabled: false, onReset: {})
         .padding()
 }
 
 #Preview("Reset in progress") {
-    CodexResetCreditsCard(remainingCount: 1, isDisabled: true, onReset: {})
+    UsageResetCard(remainingCount: 1, accessibilityIdentifier: "codex-reset-usage", isDisabled: true, onReset: {})
         .padding()
 }

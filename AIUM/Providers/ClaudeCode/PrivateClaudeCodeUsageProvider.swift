@@ -11,6 +11,9 @@ struct ClaudeCodeUsageResponse: Sendable {
 
     let fiveHour: ClaudeCodeUsageWindow?
     let sevenDay: ClaudeCodeUsageWindow?
+    /// Limit resets from the `cedar_ember` block. `nil` when the response
+    /// does not include a readable block.
+    var resetStatus: ClaudeCodeResetStatus? = nil
 
     var windows: [ClaudeCodeUsageWindow] {
         [fiveHour, sevenDay].compactMap { $0 }
@@ -27,7 +30,41 @@ struct ClaudeCodeUsageResponse: Sendable {
 
         return ClaudeCodeUsageResponse(
             fiveHour: window(root, keys: ["five_hour", "fiveHour"], durationMins: fiveHourWindowMins),
-            sevenDay: window(root, keys: ["seven_day", "sevenDay"], durationMins: sevenDayWindowMins)
+            sevenDay: window(root, keys: ["seven_day", "sevenDay"], durationMins: sevenDayWindowMins),
+            resetStatus: (root["cedar_ember"] as? [String: Any]).flatMap(resetStatus)
+        )
+    }
+
+    /// Mirrors the Claude Code CLI: a malformed block is ignored, and a
+    /// malformed grant is dropped without discarding the others.
+    private static func resetStatus(_ block: [String: Any]) -> ClaudeCodeResetStatus? {
+        guard let eligible = block["eligible"] as? Bool else { return nil }
+        let grants = (block["grants"] as? [Any] ?? [])
+            .compactMap { ($0 as? [String: Any]).flatMap(resetGrant) }
+        let nextGrantId = (block["next_grant_id"] as? String)
+            .flatMap { id in grants.contains { $0.id == id } ? id : nil }
+        return ClaudeCodeResetStatus(
+            eligible: eligible,
+            grants: grants,
+            nextGrantId: nextGrantId,
+            cooldownUntil: block["cooldown_until"].flatMap { $0 is NSNull ? nil : parseDate($0) }
+        )
+    }
+
+    private static func resetGrant(_ grant: [String: Any]) -> ClaudeCodeResetGrant? {
+        guard let id = grant["id"] as? String,
+              id.range(of: #"^[a-z0-9_-]{1,40}$"#, options: .regularExpression) != nil,
+              let resetsLeft = (grant["resets_left"] as? NSNumber).map(\.intValue),
+              resetsLeft >= 0 else { return nil }
+        return ClaudeCodeResetGrant(
+            id: id,
+            label: grant["label"] as? String,
+            resetsLeft: resetsLeft,
+            endsAt: grant["ends_at"].flatMap { $0 is NSNull ? nil : parseDate($0) },
+            paused: grant["paused"] as? Bool ?? false,
+            usableNow: grant["usable_now"] as? Bool ?? false,
+            useRequiresLimit: grant["use_requires_limit"] as? Bool ?? true,
+            kind: (grant["type"] as? String).flatMap(ClaudeCodeResetGrant.Kind.init(rawValue:))
         )
     }
 
@@ -150,17 +187,81 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
         get async { await authProvider.isAuthenticated }
     }
 
+    var accountIdentity: ClaudeCodeAccountIdentity {
+        get async {
+            let bundle = await authProvider.tokenBundle
+            return ClaudeCodeAccountIdentity(
+                accountId: bundle?.accountId,
+                organizationId: bundle?.organizationId,
+                profileName: bundle?.accountDisplayName
+            )
+        }
+    }
+
+    /// Reads the account's limit-reset grants. Reading never uses a reset.
+    func fetchResetStatus(accountId: String) async throws -> ClaudeCodeResetStatus {
+        let token = try await authProvider.validAccessToken()
+        guard !accountId.isEmpty, await authProvider.tokenBundle?.accountId == accountId else {
+            throw ClaudeCodeUsageResetError.accountChanged
+        }
+
+        var request = makeRequest(url: usageURL, token: token)
+        request.timeoutInterval = 10
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data, endpointName: "Claude Code limit resets")
+        guard await authProvider.tokenBundle?.accountId == accountId else {
+            throw ClaudeCodeUsageResetError.accountChanged
+        }
+
+        let decoded = try ClaudeCodeUsageResponse.decode(from: data)
+        return decoded.resetStatus
+            ?? ClaudeCodeResetStatus(eligible: false, grants: [], nextGrantId: nil, cooldownUntil: nil)
+    }
+
+    /// Call only after confirming with the user. The request ID belongs to one
+    /// logical attempt and must stay the same after an uncertain response.
+    func resetUsage(
+        requestID: UUID,
+        grantId: String,
+        accountId: String,
+        organizationId: String
+    ) async throws -> ClaudeCodeUsageResetOutcome {
+        let token = try await authProvider.validAccessToken()
+        let bundle = await authProvider.tokenBundle
+        guard !accountId.isEmpty, bundle?.accountId == accountId,
+              !organizationId.isEmpty, bundle?.organizationId == organizationId else {
+            throw ClaudeCodeUsageResetError.accountChanged
+        }
+
+        var request = makeRequest(
+            url: apiBaseURL.appending(path: ClaudeCodeOAuthConfig.resetEndpointPath(organizationId: organizationId)),
+            token: token
+        )
+        request.httpMethod = "POST"
+        request.timeoutInterval = 25
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "program": ClaudeCodeOAuthConfig.resetProgram,
+            "grant_id": grantId,
+            "request_id": requestID.uuidString,
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data, endpointName: "Claude Code usage reset")
+        let result = try JSONDecoder().decode(ClaudeCodeUsageResetResponse.self, from: data).result
+        // `unavailable` and unknown results do not say whether the reset was
+        // applied, so they cannot consume a fresh request ID.
+        guard let outcome = ClaudeCodeUsageResetOutcome(rawValue: result) else {
+            throw ClaudeCodeUsageResetError.unconfirmed
+        }
+        return outcome
+    }
+
     func fetchUsage() async throws -> [UsageSnapshot] {
         let token = try await authProvider.validAccessToken()
         var tokenBundle = await authProvider.tokenBundle
 
-        var request = URLRequest(url: apiBaseURL.appending(path: usageEndpointPath), timeoutInterval: 15)
-        request.httpMethod = "GET"
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue(ClaudeCodeOAuthConfig.betaHeader, forHTTPHeaderField: "anthropic-beta")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("AIUM", forHTTPHeaderField: "User-Agent")
+        let request = makeRequest(url: usageURL, token: token)
 
         debugLog("Requesting Claude Code usage: \(request.url?.absoluteString ?? "unknown URL")")
         let (data, response) = try await session.data(for: request)
@@ -189,7 +290,8 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
         tokenBundle: ClaudeCodeTokenBundle?,
         now: Date = Date()
     ) -> [UsageSnapshot] {
-        response.windows.map { window in
+        let resetCredits = response.resetStatus.map { Double($0.availableCount(now: now)) }
+        return response.windows.map { window in
             UsageSnapshot(
                 provider: .claudeCode,
                 accountId: tokenBundle?.accountId,
@@ -202,12 +304,30 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
                 unit: "percent",
                 source: source,
                 fetchedAt: now,
-                windowDurationMins: window.windowDurationMins
+                windowDurationMins: window.windowDurationMins,
+                resetCredits: resetCredits
             )
         }
     }
 
     // MARK: - Private helpers
+
+    private var usageURL: URL {
+        apiBaseURL
+            .appending(path: usageEndpointPath)
+            .appending(queryItems: ClaudeCodeOAuthConfig.usageQueryItems)
+    }
+
+    private func makeRequest(url: URL, token: String) -> URLRequest {
+        var request = URLRequest(url: url, timeoutInterval: 15)
+        request.httpMethod = "GET"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(ClaudeCodeOAuthConfig.betaHeader, forHTTPHeaderField: "anthropic-beta")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("AIUM", forHTTPHeaderField: "User-Agent")
+        return request
+    }
 
     private func validate(response: URLResponse, data: Data, endpointName: String) throws {
         guard let httpResponse = response as? HTTPURLResponse,
@@ -229,6 +349,16 @@ actor PrivateClaudeCodeUsageProvider: ClaudeCodeUsageProvider {
         print("[AIUM][ClaudeCodeUsage] \(message())")
         #endif
     }
+}
+
+struct ClaudeCodeAccountIdentity: Sendable {
+    let accountId: String?
+    let organizationId: String?
+    let profileName: String?
+}
+
+private struct ClaudeCodeUsageResetResponse: Decodable {
+    let result: String
 }
 
 private struct ClaudeCodeUsageDecodeFailure: LocalizedError {

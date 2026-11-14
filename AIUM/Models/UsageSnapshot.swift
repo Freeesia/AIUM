@@ -68,8 +68,9 @@ public struct UsageSnapshot: Codable, Identifiable, Sendable {
     public let errorMessage: String?
     /// Duration of the rate-limit window in minutes (nil for monthly).
     public let windowDurationMins: Int?
-    /// Number of Codex usage reset credits currently available, when provided
-    /// by the Codex backend. This is shared across the Codex usage windows.
+    /// Number of usage resets currently available, when provided by the
+    /// Codex or Claude Code backend. This is shared across the provider's
+    /// usage windows.
     public let resetCredits: Double?
 
     // MARK: Computed
