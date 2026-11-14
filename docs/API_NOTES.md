@@ -173,7 +173,7 @@ Legacy snake_case windows are still accepted:
 - Percent-only windows are normalized to `limit = 100`, `unit = "percent"`.
 - `limitWindowSeconds`, `windowDurationMins`, `resetAfterSeconds`, `resetsAt`, and `reset_at` are normalized into `UsageSnapshot.windowDurationMins` and `UsageSnapshot.resetAt`.
 - When multiple response branches expose the same window duration for the same plan, AIUM displays it once and prefers the canonical `codex` limit.
-- The `gpt-reserve` / `base_model_inference` window remains separate and is presented as **Luna Reserve**.
+- The `gpt-reserve` / `base_model_inference` (Luna Reserve) limit has been discontinued; AIUM ignores it if the backend still returns it.
 
 **Failure diagnostics:** HTTP errors include the endpoint name, status code, and body preview. Decode failures and empty usage payloads are surfaced as Codex error snapshots so API changes are visible in the app UI.
 

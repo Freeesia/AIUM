@@ -390,6 +390,8 @@ private struct CodexUsageParser {
             individualLimit: firstDouble(container, keys: ["individualLimit", "individual_limit", "limit"]),
             planName: firstString(container, keys: ["planType", "plan_type", "plan"])
         )
+        // The discontinued Luna Reserve limit must not be shown as a Codex window.
+        guard !isDiscontinuedReserve(metadata) else { return [] }
         var windows: [CodexUsageWindow] = []
 
         if let nestedRateLimit = container["rate_limit"] as? [String: Any] {
@@ -559,14 +561,16 @@ private struct CodexUsageParser {
         }
     }
 
+    private func isDiscontinuedReserve(_ metadata: WindowMetadata) -> Bool {
+        [metadata.limitName, metadata.limitId]
+            .compactMap { $0?.lowercased() }
+            .contains { $0.contains("gpt-reserve") || $0.contains("base_model_inference") }
+    }
+
     private func planKind(metadata: WindowMetadata) -> PlanKind {
         let raw = [metadata.planName, metadata.limitName, metadata.limitId]
             .compactMap { $0?.lowercased() }
             .joined(separator: " ")
-
-        if raw.contains("gpt-reserve") || raw.contains("base_model_inference") {
-            return .codexLunaReserve
-        }
 
         if raw.contains("free") {
             return .codexFree

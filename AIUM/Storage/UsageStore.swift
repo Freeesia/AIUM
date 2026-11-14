@@ -100,10 +100,25 @@ final class UsageStore: ObservableObject {
         guard let url = storeURL,
               let data = try? Data(contentsOf: url)
         else { return }
+        if let loaded = Self.decodeSnapshots(from: data) {
+            snapshots = loaded
+        }
+    }
+
+    /// Decodes snapshots, skipping entries that no longer decode (for example
+    /// snapshots of the discontinued Codex Luna Reserve limit) so one stale
+    /// entry does not discard the whole cache.
+    nonisolated static func decodeSnapshots(from data: Data) -> [UsageSnapshot]? {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let loaded = try? decoder.decode([UsageSnapshot].self, from: data) {
-            snapshots = loaded
+        return (try? decoder.decode([LossySnapshot].self, from: data))?.compactMap(\.snapshot)
+    }
+
+    private struct LossySnapshot: Decodable {
+        let snapshot: UsageSnapshot?
+
+        init(from decoder: Decoder) throws {
+            snapshot = try? UsageSnapshot(from: decoder)
         }
     }
 
@@ -152,8 +167,6 @@ extension UsageStore {
         guard let url = sharedStoreURL() else { return [] }
         guard let data = try? Data(contentsOf: url) else { return [] }
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return (try? decoder.decode([UsageSnapshot].self, from: data)) ?? []
+        return decodeSnapshots(from: data) ?? []
     }
 }

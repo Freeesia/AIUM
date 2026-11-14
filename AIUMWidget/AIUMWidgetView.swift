@@ -524,7 +524,6 @@ private enum WidgetPreviewData {
         ),
         codexSnapshot(plan: .codexPro, used: 72, minutes: 5 * 60, resetHours: 2),
         codexSnapshot(plan: .codexPro, used: 42, minutes: 7 * 24 * 60, resetHours: 96),
-        codexSnapshot(plan: .codexLunaReserve, used: 8, minutes: 7 * 24 * 60, resetHours: 168),
         claudeCodeSnapshot(used: 54, minutes: 5 * 60, resetHours: 3),
         claudeCodeSnapshot(used: 31, minutes: 7 * 24 * 60, resetHours: 120),
     ]
@@ -570,12 +569,14 @@ private enum WidgetPreviewData {
     WidgetPreviewData.entry(provider: .codex)
 }
 
-#Preview("Codex Missing Reserve", as: .accessoryCircular) {
+#Preview("Codex Missing Weekly", as: .accessoryCircular) {
     AIUMLockScreenWidget()
 } timeline: {
     WidgetPreviewData.entry(
         provider: .codex,
-        snapshots: WidgetPreviewData.snapshots.filter { $0.planKind != .codexLunaReserve }
+        snapshots: WidgetPreviewData.snapshots.filter {
+            !($0.provider == .codex && $0.windowDurationMins == 7 * 24 * 60)
+        }
     )
 }
 

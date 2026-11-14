@@ -150,18 +150,6 @@ struct AIUMUsageWidgetProvider: AppIntentTimelineProvider {
                 windowDurationMins: 7 * 24 * 60
             ),
             UsageSnapshot(
-                provider: .codex,
-                displayName: "user@example.com",
-                planKind: .codexLunaReserve,
-                windowKind: .custom,
-                used: 8,
-                limit: 100,
-                resetAt: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
-                unit: "percent",
-                source: "placeholder",
-                windowDurationMins: 7 * 24 * 60
-            ),
-            UsageSnapshot(
                 provider: .claudeCode,
                 windowKind: .custom,
                 used: 54,
