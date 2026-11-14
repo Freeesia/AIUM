@@ -2,7 +2,7 @@
 "AIUM — Usage" = "AIUM — 利用状況";
 "Shows your primary usage at a glance." = "主な利用状況をひと目で確認できます。";
 "AIUM — Lock Screen Usage" = "AIUM — ロック画面の利用状況";
-"Shows usage for your selected provider, with three rings for Codex limits." = "選択したプロバイダーの利用状況を表示します。Codexの各リミットは3つの輪で確認できます。";
+"Shows usage for your selected provider, with two rings for Codex limits." = "選択したプロバイダーの利用状況を表示します。Codexの各リミットは2つの輪で確認できます。";
 "Shows usage and runs your configured app or shortcut when tapped." = "利用状況を表示し、タップすると設定したアプリやショートカットを実行します。";
 "AIUM — Copilot & Codex" = "AIUM — CopilotとCodex";
 "Shows GitHub Copilot and Codex usage side by side." = "GitHub CopilotとCodexの利用状況を並べて表示します。";
@@ -15,8 +15,7 @@
 "5h" = "5時間";
 "1w" = "1週間";
 "Outer ring: 5 hours" = "外側の輪：5時間";
-"Middle ring: 1 week" = "中央の輪：1週間";
-"Inner ring: Luna Reserve" = "内側の輪：Luna Reserve";
+"Inner ring: 1 week" = "内側の輪：1週間";
 "Demo: %@" = "デモ：%@";
 "Demo: %lld percent used" = "デモ：%lldパーセント使用済み";
 "%lld percent used" = "%lldパーセント使用済み";

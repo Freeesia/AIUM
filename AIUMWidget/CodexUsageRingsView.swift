@@ -135,7 +135,6 @@ private extension CodexUsageLimit {
         switch self {
         case .fiveHour: .blue
         case .weekly: .purple
-        case .lunaReserve: .teal
         }
     }
 
@@ -143,15 +142,13 @@ private extension CodexUsageLimit {
         switch self {
         case .fiveHour: String(localized: "5h")
         case .weekly: String(localized: "1w")
-        case .lunaReserve: "Luna"
         }
     }
 
     var accessibilityLabel: String {
         switch self {
         case .fiveHour: String(localized: "Outer ring: 5 hours")
-        case .weekly: String(localized: "Middle ring: 1 week")
-        case .lunaReserve: String(localized: "Inner ring: Luna Reserve")
+        case .weekly: String(localized: "Inner ring: 1 week")
         }
     }
 }

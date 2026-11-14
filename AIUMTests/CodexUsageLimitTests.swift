@@ -4,30 +4,21 @@ import XCTest
 final class CodexUsageLimitTests: XCTestCase {
     func testRingsKeepTheirLimitsWhenResponseOrderAndUsageDiffer() {
         let snapshots = [
-            snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 95),
             snapshot(minutes: 7 * 24 * 60, used: 20),
             snapshot(minutes: 5 * 60, used: 45),
         ]
 
         XCTAssertEqual(
             CodexUsageLimit.allCases.map { $0.snapshot(in: snapshots)?.usedPercent },
-            [45, 20, 95]
+            [45, 20]
         )
     }
 
-    func testMissingReserveDoesNotReuseTheWeeklyLimit() {
+    func testMissingFiveHourLimitDoesNotReuseTheWeeklyLimit() {
         let snapshots = [snapshot(minutes: 7 * 24 * 60, used: 80)]
 
         XCTAssertNil(CodexUsageLimit.fiveHour.snapshot(in: snapshots))
         XCTAssertEqual(CodexUsageLimit.weekly.snapshot(in: snapshots)?.usedPercent, 80)
-        XCTAssertNil(CodexUsageLimit.lunaReserve.snapshot(in: snapshots))
-    }
-
-    func testMissingWeeklyLimitDoesNotReuseReserve() {
-        let snapshots = [snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 80)]
-
-        XCTAssertNil(CodexUsageLimit.weekly.snapshot(in: snapshots))
-        XCTAssertEqual(CodexUsageLimit.lunaReserve.snapshot(in: snapshots)?.usedPercent, 80)
     }
 
     func testZeroUsageIsAvailableButUnknownAndFailedLimitsAreNot() {
@@ -37,14 +28,13 @@ final class CodexUsageLimitTests: XCTestCase {
             windowDurationMins: 7 * 24 * 60
         )
         let failed = UsageSnapshot(
-            provider: .codex, planKind: .codexLunaReserve, used: 0, limit: 100,
+            provider: .codex, planKind: .codexPro, used: 0, limit: 100,
             source: "failed", errorMessage: "Unavailable", windowDurationMins: 7 * 24 * 60
         )
         let snapshots = [zero, unavailable, failed]
 
         XCTAssertEqual(CodexUsageLimit.fiveHour.snapshot(in: snapshots)?.usedPercent, 0)
         XCTAssertNil(CodexUsageLimit.weekly.snapshot(in: snapshots))
-        XCTAssertNil(CodexUsageLimit.lunaReserve.snapshot(in: snapshots))
     }
 
     func testSelectsLatestMatchingSnapshotAndExcludesOtherProviders() {

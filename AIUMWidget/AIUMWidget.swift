@@ -123,18 +123,6 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
                 source: "placeholder",
                 windowDurationMins: 7 * 24 * 60
             ),
-            UsageSnapshot(
-                provider: .codex,
-                displayName: "user@example.com",
-                planKind: .codexLunaReserve,
-                windowKind: .custom,
-                used: 8,
-                limit: 100,
-                resetAt: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
-                unit: "percent",
-                source: "placeholder",
-                windowDurationMins: 7 * 24 * 60
-            ),
         ],
         provider: .githubCopilot
     )
@@ -199,7 +187,7 @@ struct AIUMLockScreenWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Lock Screen Usage")
-        .description("Shows usage for your selected provider, with three rings for Codex limits.")
+        .description("Shows usage for your selected provider, with two rings for Codex limits.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         .promptsForUserConfiguration()
     }

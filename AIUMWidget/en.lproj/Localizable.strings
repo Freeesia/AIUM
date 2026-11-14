@@ -2,7 +2,7 @@
 "AIUM — Usage" = "AIUM — Usage";
 "Shows your primary usage at a glance." = "Shows your primary usage at a glance.";
 "AIUM — Lock Screen Usage" = "AIUM — Lock Screen Usage";
-"Shows usage for your selected provider, with three rings for Codex limits." = "Shows usage for your selected provider, with three rings for Codex limits.";
+"Shows usage for your selected provider, with two rings for Codex limits." = "Shows usage for your selected provider, with two rings for Codex limits.";
 "Shows usage and runs your configured app or shortcut when tapped." = "Shows usage and runs your configured app or shortcut when tapped.";
 "AIUM — Copilot & Codex" = "AIUM — Copilot & Codex";
 "Shows GitHub Copilot and Codex usage side by side." = "Shows GitHub Copilot and Codex usage side by side.";
@@ -15,8 +15,7 @@
 "5h" = "5h";
 "1w" = "1w";
 "Outer ring: 5 hours" = "Outer ring: 5 hours";
-"Middle ring: 1 week" = "Middle ring: 1 week";
-"Inner ring: Luna Reserve" = "Inner ring: Luna Reserve";
+"Inner ring: 1 week" = "Inner ring: 1 week";
 "Demo: %@" = "Demo: %@";
 "Demo: %lld percent used" = "Demo: %lld percent used";
 "%lld percent used" = "%lld percent used";
