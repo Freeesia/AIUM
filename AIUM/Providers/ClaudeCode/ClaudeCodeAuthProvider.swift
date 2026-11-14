@@ -18,6 +18,16 @@ struct ClaudeCodeOAuthConfig {
     static let tokenURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
     static let apiBaseURL = URL(string: "https://api.anthropic.com")!
     static let usageEndpointPath = "/api/oauth/usage"
+    /// `cedar_ember=1` adds the account's limit-reset grants to the usage
+    /// response; `skip_spend=1` omits spend data that AIUM does not show.
+    static let usageQueryItems = [
+        URLQueryItem(name: "cedar_ember", value: "1"),
+        URLQueryItem(name: "skip_spend", value: "1"),
+    ]
+    static let resetProgram = "cedar_ember"
+    static func resetEndpointPath(organizationId: String) -> String {
+        "/api/organizations/\(organizationId)/reset_rate_limits"
+    }
     static let profileEndpointPath = "/api/oauth/profile"
     static let betaHeader = "oauth-2025-04-20"
 

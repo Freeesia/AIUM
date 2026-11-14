@@ -21,7 +21,7 @@ final class CodexUsageResetTests: XCTestCase {
         XCTAssertNil(fixture.model.codexResetOutcome)
 
         attachPreview(
-            CodexResetCreditsCard(remainingCount: 2, isDisabled: false, onReset: {})
+            UsageResetCard(remainingCount: 2, accessibilityIdentifier: "codex-reset-usage", isDisabled: false, onReset: {})
                 .padding()
                 .preferredColorScheme(.dark)
                 .environment(\.locale, Locale(identifier: "ja")),
@@ -553,7 +553,7 @@ private final class Fixture {
             usageStore: store,
             demoModeStore: DemoModeStore(defaults: defaults),
             codexProvider: provider,
-            resetRequestStore: CodexResetRequestStore(defaults: defaults),
+            resetRequestStore: .codex(defaults: defaults),
             now: { clock.now }
         )
     }

@@ -137,6 +137,27 @@
 "Could not confirm the reset. Retry to check the same request without using an additional reset." = "Could not confirm the reset. Retry to check the same request without using an additional reset.";
 "Could not refresh usage. Close this sheet and refresh the dashboard." = "Could not refresh usage. Close this sheet and refresh the dashboard.";
 
+/* Claude Code usage resets */
+"Reset Claude Code usage?" = "Reset Claude Code usage?";
+"This uses one reset to reset your Claude Code usage limits." = "This uses one reset to reset your Claude Code usage limits.";
+"Resets remaining: %lld" = "Resets remaining: %lld";
+"Available resets" = "Available resets";
+"Loading reset details…" = "Loading reset details…";
+"Could not load reset details. Try again." = "Could not load reset details. Try again.";
+"No resets are available." = "No resets are available.";
+"No reset can be used right now." = "No reset can be used right now.";
+"Resets the 5-hour limit" = "Resets the 5-hour limit";
+"Resets the weekly limit" = "Resets the weekly limit";
+"Resets all usage limits" = "Resets all usage limits";
+"Can be used after you reach a usage limit." = "Can be used after you reach a usage limit.";
+"Can't be used right now." = "Can't be used right now.";
+"Claude Code usage has been reset." = "Claude Code usage has been reset.";
+"A reset was used recently. Try again later." = "A reset was used recently. Try again later.";
+"This account can't use a usage reset right now." = "This account can't use a usage reset right now.";
+"The connected Claude account changed. Close this sheet and refresh before trying again." = "The connected Claude account changed. Close this sheet and refresh before trying again.";
+"Refresh Claude Code usage before resetting it." = "Refresh Claude Code usage before resetting it.";
+"Sign in to Claude Code again before resetting usage." = "Sign in to Claude Code again before resetting usage.";
+
 /* Claude Code */
 "Claude Code" = "Claude Code";
 "Connecting to Claude Code…" = "Connecting to Claude Code…";

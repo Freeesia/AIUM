@@ -241,10 +241,15 @@ The profile is refreshed after sign-in, during usage refresh, and when opening s
 ### Claude Code Usage
 
 ```
-GET https://api.anthropic.com/api/oauth/usage
+GET https://api.anthropic.com/api/oauth/usage?cedar_ember=1&skip_spend=1
 Authorization: Bearer {access_token}
 anthropic-beta: oauth-2025-04-20
 ```
+
+`cedar_ember=1` asks the backend to include the account's limit-reset grants
+(see [Claude Code Usage Reset](#claude-code-usage-reset)). `skip_spend=1`
+omits spend data, which AIUM does not show. The Claude Code CLI sends the same
+query when it reads reset grants.
 
 **Response fields used:**
 ```json
@@ -254,7 +259,7 @@ anthropic-beta: oauth-2025-04-20
 }
 ```
 
-Other fields (`seven_day_opus`, `seven_day_sonnet`, `extra_usage`, `limits`, ...) are ignored.
+Other fields (`seven_day_opus`, `seven_day_sonnet`, `extra_usage`, `limits`, ...) are ignored. The `cedar_ember` block is described in [Claude Code Usage Reset](#claude-code-usage-reset).
 
 **Normalization logic:**
 - `utilization` is already a percentage (the CLI prints `Math.floor(utilization)% used`), so AIUM stores `used = utilization`, `limit = 100`, `unit = "percent"` without rescaling. Values can exceed 100.
@@ -308,6 +313,87 @@ the reset. Unknown outcomes and transport errors retain the same request UUID
 for a retry; pending UUIDs are stored per account across sheet dismissal and
 app restarts. The connected account is checked again before sending the POST.
 Demo mode cannot submit reset requests.
+
+## Claude Code Usage Reset
+
+> The request and response shapes below were read from the Claude Code CLI
+> 2.1.325 bundle (November 2026), where the `/limit-reset` command uses them.
+> Tests use mocked responses and do not consume a real reset.
+
+### Reset grants
+
+The usage response (requested with `cedar_ember=1`) may include:
+
+```json
+"cedar_ember": {
+  "eligible": true,
+  "at_limit": true,
+  "grants": [
+    {
+      "id": "grant_id",
+      "label": "Bonus reset",
+      "resets_total": 1,
+      "resets_left": 1,
+      "starts_at": "2026-11-01T00:00:00Z",
+      "ends_at": "2026-11-30T00:00:00Z",
+      "paused": false,
+      "usable_now": true,
+      "use_requires_limit": true,
+      "type": "session"
+    }
+  ],
+  "next_grant_id": "grant_id",
+  "cooldown_until": null
+}
+```
+
+Like the CLI, AIUM ignores a block without a boolean `eligible`, drops a grant
+whose `id` does not match `^[a-z0-9_-]{1,40}$` or that has no integer
+`resets_left`, and ignores a `next_grant_id` that names no listed grant.
+The reset count shown on the dashboard is the sum of `resets_left` over grants
+that are not paused and whose `ends_at` has not passed, and only when
+`eligible` is true. It is stored in `UsageSnapshot.resetCredits`.
+`type` is `session` (the 5-hour limit), `weekly`, or `full`.
+
+### Confirmation sheet
+
+The reset card opens a confirmation sheet before any reset request is sent.
+Opening the sheet reads the usage endpoint again to load the grants, shown
+earliest expiration first with their label, type, remaining count, expiration
+date and whether they can be used now. Grants with `use_requires_limit: true`
+and `usable_now: false` can only be used once the account reaches a limit.
+The account is checked before and after the read.
+
+The reset uses the grant named by `next_grant_id` when it is usable now;
+otherwise the usable grant that expires first. When no grant is usable, the
+reset button is disabled.
+
+Successful reads are cached in memory for one minute per account, like the
+Codex reset credits. A grant that expires in that time, a reset attempt,
+sign-out, an account change, and demo-mode changes invalidate the cache.
+
+### Reset request
+
+After confirmation, AIUM uses the Claude Code bearer token with:
+
+```http
+POST https://api.anthropic.com/api/organizations/{organization_uuid}/reset_rate_limits
+Content-Type: application/json
+anthropic-beta: oauth-2025-04-20
+
+{"program": "cedar_ember", "grant_id": "<grant id>", "request_id": "<UUID for this attempt>"}
+```
+
+`organization_uuid` comes from the token response saved at sign-in. Both the
+account and organization are checked again before sending the POST.
+
+The response's `result` is `reset`, `already_used`, `not_limited`,
+`cooldown`, `ineligible` or `unavailable`. The first five are shown
+distinctly, end the attempt, and refresh usage. `unavailable`, unknown
+results, HTTP errors (including 429) and transport errors do not confirm
+whether the reset applied, so the same request ID is kept for a retry. Pending
+request IDs are stored per account and grant across sheet dismissal and app
+restarts. Demo mode cannot submit reset requests.
 
 ## Adding Official APIs
 
