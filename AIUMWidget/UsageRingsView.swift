@@ -79,7 +79,7 @@ struct UsageRingsView: View {
                 }
                 return percent
             } ?? String(localized: "Usage unavailable")
-            return "\(limit.accessibilityLabel(index: index, count: limits.count)): \(usage)"
+            return "\(limit.accessibilityLabel(index: index)): \(usage)"
         }.joined(separator: ", ")
 
         if isDemoData {
@@ -144,7 +144,6 @@ private extension UsageLimit {
         switch self {
         case .fiveHour: .blue
         case .weekly: .purple
-        case .lunaReserve: .teal
         }
     }
 
@@ -152,20 +151,15 @@ private extension UsageLimit {
         switch self {
         case .fiveHour: String(localized: "5h")
         case .weekly: String(localized: "1w")
-        case .lunaReserve: "Luna"
         }
     }
 
-    /// Describes the ring by its position, which depends on how many rings
-    /// the provider shows (three for Codex, two for Claude Code).
-    func accessibilityLabel(index: Int, count: Int) -> String {
-        let isInner = count > 1 && index == count - 1
-        switch (self, index == 0, isInner) {
-        case (.fiveHour, true, _): return String(localized: "Outer ring: 5 hours")
-        case (.weekly, _, true): return String(localized: "Inner ring: 1 week")
-        case (.weekly, _, _): return String(localized: "Middle ring: 1 week")
-        case (.lunaReserve, _, _): return String(localized: "Inner ring: Luna Reserve")
-        case (.fiveHour, false, _): return String(localized: "5h")
+    /// Describes the ring by its position (5 hours outside, 1 week inside).
+    func accessibilityLabel(index: Int) -> String {
+        switch (self, index == 0) {
+        case (.fiveHour, true): return String(localized: "Outer ring: 5 hours")
+        case (.fiveHour, false): return String(localized: "5h")
+        case (.weekly, _): return String(localized: "Inner ring: 1 week")
         }
     }
 }

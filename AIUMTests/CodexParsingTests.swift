@@ -136,7 +136,7 @@ final class CodexParsingTests: XCTestCase {
         XCTAssertEqual(response.windows[1].limit, 100, accuracy: 0.001)
     }
 
-    func testDecodeCurrentRateLimitsShowsCodexAndLunaReserveWindows() throws {
+    func testDecodeCurrentRateLimitsIgnoresDiscontinuedLunaReserveWindow() throws {
         let json = Data("""
         {
           "plan_type": "plus",
@@ -178,19 +178,12 @@ final class CodexParsingTests: XCTestCase {
 
         let response = try CodexUsageResponse.decode(from: json)
 
-        XCTAssertEqual(response.windows.count, 3)
-
-        let codexWindows = response.windows.filter { $0.planKind == .codexPro }
-        XCTAssertEqual(codexWindows.map(\.windowDurationMins), [300, 10_080])
-        XCTAssertEqual(codexWindows.map(\.used), [28, 95])
-        XCTAssertTrue(codexWindows.allSatisfy { $0.source.hasSuffix("(codex)") })
-
-        let reserve = try XCTUnwrap(
-            response.windows.first { $0.planKind == .codexLunaReserve }
-        )
-        XCTAssertEqual(reserve.windowDurationMins, 10_080)
-        XCTAssertEqual(reserve.used, 0)
-        XCTAssertTrue(reserve.source.hasSuffix("(gpt-reserve)"))
+        XCTAssertEqual(response.windows.count, 2)
+        XCTAssertTrue(response.windows.allSatisfy { $0.planKind == .codexPro })
+        XCTAssertEqual(response.windows.map(\.windowDurationMins), [300, 10_080])
+        XCTAssertEqual(response.windows.map(\.used), [28, 95])
+        XCTAssertTrue(response.windows.allSatisfy { $0.source.hasSuffix("(codex)") })
+        XCTAssertFalse(response.windows.contains { $0.source.contains("gpt-reserve") })
     }
 
     func testDecodeLegacySnakeCaseRateLimitResponse() throws {

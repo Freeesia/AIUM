@@ -56,6 +56,32 @@ final class UsageStoreTests: XCTestCase {
         XCTAssertEqual(actual.limit, expected.limit, accuracy: 0.001)
     }
 
+    func testDecodeSkipsDiscontinuedLunaReserveSnapshots() throws {
+        let kept = UsageSnapshot(
+            provider: .codex,
+            planKind: .codexPro,
+            windowKind: .custom,
+            used: 20,
+            limit: 100,
+            unit: "percent",
+            source: "test",
+            windowDurationMins: 7 * 24 * 60
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        var entries = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoder.encode([kept, kept])) as? [[String: Any]]
+        )
+        entries[1]["planKind"] = "codexLunaReserve"
+        let data = try JSONSerialization.data(withJSONObject: entries)
+
+        let loaded = try XCTUnwrap(UsageStore.decodeSnapshots(from: data))
+
+        XCTAssertEqual(loaded.count, 1)
+        XCTAssertEqual(loaded.first?.planKind, .codexPro)
+        XCTAssertEqual(loaded.first?.windowDurationMins, 7 * 24 * 60)
+    }
+
     private func repositoryRoot() -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

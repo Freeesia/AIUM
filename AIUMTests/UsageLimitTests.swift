@@ -4,30 +4,21 @@ import XCTest
 final class UsageLimitTests: XCTestCase {
     func testRingsKeepTheirLimitsWhenResponseOrderAndUsageDiffer() {
         let snapshots = [
-            snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 95),
             snapshot(minutes: 7 * 24 * 60, used: 20),
             snapshot(minutes: 5 * 60, used: 45),
         ]
 
         XCTAssertEqual(
             UsageLimit.limits(for: .codex).map { $0.snapshot(in: snapshots, for: .codex)?.usedPercent },
-            [45, 20, 95]
+            [45, 20]
         )
     }
 
-    func testMissingReserveDoesNotReuseTheWeeklyLimit() {
+    func testMissingFiveHourLimitDoesNotReuseTheWeeklyLimit() {
         let snapshots = [snapshot(minutes: 7 * 24 * 60, used: 80)]
 
         XCTAssertNil(UsageLimit.fiveHour.snapshot(in: snapshots, for: .codex))
         XCTAssertEqual(UsageLimit.weekly.snapshot(in: snapshots, for: .codex)?.usedPercent, 80)
-        XCTAssertNil(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex))
-    }
-
-    func testMissingWeeklyLimitDoesNotReuseReserve() {
-        let snapshots = [snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 80)]
-
-        XCTAssertNil(UsageLimit.weekly.snapshot(in: snapshots, for: .codex))
-        XCTAssertEqual(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex)?.usedPercent, 80)
     }
 
     func testZeroUsageIsAvailableButUnknownAndFailedLimitsAreNot() {
@@ -37,14 +28,13 @@ final class UsageLimitTests: XCTestCase {
             windowDurationMins: 7 * 24 * 60
         )
         let failed = UsageSnapshot(
-            provider: .codex, planKind: .codexLunaReserve, used: 0, limit: 100,
+            provider: .codex, planKind: .codexPro, used: 0, limit: 100,
             source: "failed", errorMessage: "Unavailable", windowDurationMins: 7 * 24 * 60
         )
         let snapshots = [zero, unavailable, failed]
 
         XCTAssertEqual(UsageLimit.fiveHour.snapshot(in: snapshots, for: .codex)?.usedPercent, 0)
         XCTAssertNil(UsageLimit.weekly.snapshot(in: snapshots, for: .codex))
-        XCTAssertNil(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex))
     }
 
     func testSelectsLatestMatchingSnapshotAndExcludesOtherProviders() {
@@ -58,7 +48,8 @@ final class UsageLimitTests: XCTestCase {
         XCTAssertEqual(UsageLimit.fiveHour.snapshot(in: [latest, github, old], for: .codex)?.usedPercent, 10)
     }
 
-    func testClaudeCodeShowsFiveHourAndWeeklyRingsOnly() {
+    func testCodexAndClaudeCodeShowFiveHourAndWeeklyRingsOnly() {
+        XCTAssertEqual(UsageLimit.limits(for: .codex), [.fiveHour, .weekly])
         XCTAssertEqual(UsageLimit.limits(for: .claudeCode), [.fiveHour, .weekly])
         XCTAssertEqual(UsageLimit.limits(for: .githubCopilot), [])
         XCTAssertTrue(Provider.claudeCode.usesUsageRings)

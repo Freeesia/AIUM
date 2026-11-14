@@ -6,7 +6,6 @@ import Foundation
 enum UsageLimit: Int, CaseIterable, Identifiable {
     case fiveHour
     case weekly
-    case lunaReserve
 
     var id: Self { self }
 
@@ -15,8 +14,7 @@ enum UsageLimit: Int, CaseIterable, Identifiable {
     static func limits(for provider: Provider) -> [UsageLimit] {
         switch provider {
         case .githubCopilot: []
-        case .codex: [.fiveHour, .weekly, .lunaReserve]
-        case .claudeCode: [.fiveHour, .weekly]
+        case .codex, .claudeCode: [.fiveHour, .weekly]
         }
     }
 
@@ -29,13 +27,9 @@ enum UsageLimit: Int, CaseIterable, Identifiable {
 
             switch self {
             case .fiveHour:
-                return snapshot.planKind != .codexLunaReserve
-                    && snapshot.windowDurationMins == 5 * 60
+                return snapshot.windowDurationMins == 5 * 60
             case .weekly:
-                return snapshot.planKind != .codexLunaReserve
-                    && snapshot.windowDurationMins == 7 * 24 * 60
-            case .lunaReserve:
-                return snapshot.planKind == .codexLunaReserve
+                return snapshot.windowDurationMins == 7 * 24 * 60
             }
         }
         .max { $0.fetchedAt < $1.fetchedAt }

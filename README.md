@@ -129,7 +129,7 @@ CLAUDE_CODE_OAUTH_CLIENT_ID = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 4. 必要に応じて利用上限値を手動で補正する
 5. ホーム画面またはロック画面にウィジェットを追加する
 
-ホーム画面の小ウィジェットは表示するプロバイダーを 1 つ、中ウィジェットは左右に並べるプロバイダーを 2 つ、ウィジェットの編集画面から選択できます。未設定の場合、小は GitHub Copilot、中は GitHub Copilot と OpenAI Codex を表示します。OpenAI Codex と Claude Code は、5 時間枠・1 週間枠（Codex は Luna Reserve も）をリングで表示します。
+ホーム画面の小ウィジェットは表示するプロバイダーを 1 つ、中ウィジェットは左右に並べるプロバイダーを 2 つ、ウィジェットの編集画面から選択できます。未設定の場合、小は GitHub Copilot、中は GitHub Copilot と OpenAI Codex を表示します。OpenAI Codex と Claude Code は、5 時間枠・1 週間枠をリングで表示します。
 
 ウィジェットは 5 分ごとに App Group 共有領域の利用状況キャッシュを読み直すように要求します。実際の再描画タイミングは iOS の更新スケジュールに従うため、リアルタイム更新を保証するものではありません。
 
