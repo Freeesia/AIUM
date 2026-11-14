@@ -1,11 +1,11 @@
 /* Widget configuration */
 "AIUM — Usage" = "AIUM — 利用状況";
-"Shows your primary usage at a glance." = "主な利用状況をひと目で確認できます。";
+"Shows usage for your selected provider at a glance." = "選択したプロバイダーの利用状況をひと目で確認できます。";
 "AIUM — Lock Screen Usage" = "AIUM — ロック画面の利用状況";
-"Shows usage for your selected provider, with three rings for Codex limits." = "選択したプロバイダーの利用状況を表示します。Codexの各リミットは3つの輪で確認できます。";
+"Shows usage for your selected provider, with rings for Codex and Claude Code limits." = "選択したプロバイダーの利用状況を表示します。CodexとClaude Codeの各リミットは輪で確認できます。";
 "Shows usage and runs your configured app or shortcut when tapped." = "利用状況を表示し、タップすると設定したアプリやショートカットを実行します。";
-"AIUM — Copilot & Codex" = "AIUM — CopilotとCodex";
-"Shows GitHub Copilot and Codex usage side by side." = "GitHub CopilotとCodexの利用状況を並べて表示します。";
+"AIUM — Usage Comparison" = "AIUM — 利用状況の比較";
+"Shows usage for two selected providers side by side." = "選択した2つのプロバイダーの利用状況を並べて表示します。";
 
 /* Widget content */
 "used" = "使用済み";
@@ -17,6 +17,7 @@
 "Outer ring: 5 hours" = "外側の輪：5時間";
 "Middle ring: 1 week" = "中央の輪：1週間";
 "Inner ring: Luna Reserve" = "内側の輪：Luna Reserve";
+"Inner ring: 1 week" = "内側の輪：1週間";
 "Demo: %@" = "デモ：%@";
 "Demo: %lld percent used" = "デモ：%lldパーセント使用済み";
 "%lld percent used" = "%lldパーセント使用済み";
@@ -43,6 +44,11 @@
 "Usage Provider" = "利用状況プロバイダー";
 "Choose the provider whose usage is shown." = "利用状況を表示するプロバイダーを選択します。";
 "Provider: ${provider}" = "プロバイダー：${provider}";
+"Usage Providers" = "利用状況プロバイダー";
+"Choose the two providers whose usage is shown side by side." = "並べて表示する2つのプロバイダーを選択します。";
+"Left Provider" = "左のプロバイダー";
+"Right Provider" = "右のプロバイダー";
+"Left: ${leadingProvider}, Right: ${trailingProvider}" = "左：${leadingProvider}、右：${trailingProvider}";
 "Action" = "アクション";
 "Usage Provider & Action" = "利用状況プロバイダーとアクション";
 "Choose the usage provider and the app or shortcut to run when tapped." = "利用状況を表示するプロバイダーと、タップ時に実行するアプリやショートカットを選択します。";

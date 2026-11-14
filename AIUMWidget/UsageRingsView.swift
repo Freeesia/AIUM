@@ -1,9 +1,17 @@
 import SwiftUI
 import WidgetKit
 
-struct CodexUsageRingsView: View {
+/// Concentric rings, one per rate-limit window of a provider (Codex, Claude Code).
+struct UsageRingsView: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
+    let provider: Provider
     let snapshots: [UsageSnapshot]
+
+    private var limits: [UsageLimit] { UsageLimit.limits(for: provider) }
+
+    private var isDemoData: Bool {
+        snapshots.contains { $0.provider == provider && $0.source == "demo" }
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -12,9 +20,9 @@ struct CodexUsageRingsView: View {
             let ringSpacing = size * 0.12
 
             ZStack {
-                ForEach(CodexUsageLimit.allCases) { limit in
-                    let snapshot = limit.snapshot(in: snapshots)
-                    let diameter = size - lineWidth - CGFloat(limit.rawValue) * ringSpacing * 2
+                ForEach(Array(limits.enumerated()), id: \.element) { index, limit in
+                    let snapshot = limit.snapshot(in: snapshots, for: provider)
+                    let diameter = size - lineWidth - CGFloat(index) * ringSpacing * 2
 
                     ZStack {
                         Circle()
@@ -40,24 +48,24 @@ struct CodexUsageRingsView: View {
                     .frame(width: diameter, height: diameter)
                 }
 
-                if snapshots.contains(where: { $0.provider == .codex && $0.source == "demo" }) {
+                if isDemoData {
                     Text(verbatim: "D")
                         .font(.system(size: size * 0.22, weight: .bold, design: .rounded))
                 } else {
-                    ProviderIconView(provider: .codex, size: size * 0.24)
+                    ProviderIconView(provider: provider, size: size * 0.24)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Provider.codex.displayName)
+        .accessibilityLabel(provider.displayName)
         .accessibilityValue(accessibilitySummary)
     }
 
     private var accessibilitySummary: String {
-        let summary = CodexUsageLimit.allCases.map { limit in
-            let usage = limit.snapshot(in: snapshots).map { snapshot in
+        let summary = limits.enumerated().map { index, limit in
+            let usage = limit.snapshot(in: snapshots, for: provider).map { snapshot in
                 let percent = String.localizedStringWithFormat(
                     String(localized: "%lld percent used"),
                     Int64(max(0, snapshot.usedPercent))
@@ -71,29 +79,30 @@ struct CodexUsageRingsView: View {
                 }
                 return percent
             } ?? String(localized: "Usage unavailable")
-            return "\(limit.accessibilityLabel): \(usage)"
+            return "\(limit.accessibilityLabel(index: index, count: limits.count)): \(usage)"
         }.joined(separator: ", ")
 
-        if snapshots.contains(where: { $0.provider == .codex && $0.source == "demo" }) {
+        if isDemoData {
             return String.localizedStringWithFormat(String(localized: "Demo: %@"), summary)
         }
         return summary
     }
 }
 
-struct CodexUsageRingsDetailView: View {
+struct UsageRingsDetailView: View {
+    let provider: Provider
     let snapshots: [UsageSnapshot]
     let ringSize: CGFloat
     var showsResetTimes = false
 
     var body: some View {
         HStack(spacing: 8) {
-            CodexUsageRingsView(snapshots: snapshots)
+            UsageRingsView(provider: provider, snapshots: snapshots)
                 .frame(width: ringSize, height: ringSize)
 
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(CodexUsageLimit.allCases) { limit in
-                    let snapshot = limit.snapshot(in: snapshots)
+                ForEach(UsageLimit.limits(for: provider)) { limit in
+                    let snapshot = limit.snapshot(in: snapshots, for: provider)
 
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 3) {
@@ -130,7 +139,7 @@ struct CodexUsageRingsDetailView: View {
     }
 }
 
-private extension CodexUsageLimit {
+private extension UsageLimit {
     var color: Color {
         switch self {
         case .fiveHour: .blue
@@ -147,11 +156,16 @@ private extension CodexUsageLimit {
         }
     }
 
-    var accessibilityLabel: String {
-        switch self {
-        case .fiveHour: String(localized: "Outer ring: 5 hours")
-        case .weekly: String(localized: "Middle ring: 1 week")
-        case .lunaReserve: String(localized: "Inner ring: Luna Reserve")
+    /// Describes the ring by its position, which depends on how many rings
+    /// the provider shows (three for Codex, two for Claude Code).
+    func accessibilityLabel(index: Int, count: Int) -> String {
+        let isInner = count > 1 && index == count - 1
+        switch (self, index == 0, isInner) {
+        case (.fiveHour, true, _): return String(localized: "Outer ring: 5 hours")
+        case (.weekly, _, true): return String(localized: "Inner ring: 1 week")
+        case (.weekly, _, _): return String(localized: "Middle ring: 1 week")
+        case (.lunaReserve, _, _): return String(localized: "Inner ring: Luna Reserve")
+        case (.fiveHour, false, _): return String(localized: "5h")
         }
     }
 }

@@ -32,7 +32,7 @@ struct AIUMShortcutWidgetProvider: AppIntentTimelineProvider {
 
     func placeholder(in context: Context) -> AIUMShortcutWidgetEntry {
         AIUMShortcutWidgetEntry(
-            usage: AIUMLockScreenWidgetProvider.placeholderEntry,
+            usage: AIUMUsageWidgetProvider.placeholderEntry,
             shortcut: nil
         )
     }

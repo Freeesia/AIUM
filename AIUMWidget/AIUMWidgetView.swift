@@ -63,8 +63,9 @@ struct AIUMSmallWidgetView: View {
                     .font(.caption2)
                     .foregroundStyle(.red)
                     .lineLimit(2)
-            } else if snapshot.provider == .codex {
-                CodexUsageRingsDetailView(
+            } else if snapshot.provider.usesUsageRings {
+                UsageRingsDetailView(
+                    provider: snapshot.provider,
                     snapshots: entry.snapshots,
                     ringSize: 48,
                     showsResetTimes: true
@@ -94,7 +95,7 @@ struct AIUMSmallWidgetView: View {
 
             Spacer(minLength: 0)
 
-            if snapshot.provider != .codex, let resetAt = snapshot.resetAt {
+            if !snapshot.provider.usesUsageRings, let resetAt = snapshot.resetAt {
                 resetInfo(resetAt: resetAt, style: .compact)
             }
 
@@ -123,14 +124,8 @@ struct AIUMSmallWidgetView: View {
 // MARK: - Medium Widget View
 
 struct AIUMMediumWidgetView: View {
-    var entry: AIUMWidgetEntry
+    var entry: AIUMMediumWidgetEntry
 
-    private var githubSnapshot: UsageSnapshot? {
-        UsageSnapshot.displaySnapshot(from: entry.snapshots, for: .githubCopilot)
-    }
-    private var codexSnapshot: UsageSnapshot? {
-        UsageSnapshot.displaySnapshot(from: entry.snapshots, for: .codex)
-    }
     private var isDemoData: Bool {
         entry.snapshots.contains { $0.source == "demo" }
     }
@@ -138,15 +133,9 @@ struct AIUMMediumWidgetView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             HStack(spacing: 0) {
-                providerPane(
-                    provider: .githubCopilot,
-                    snapshot: githubSnapshot
-                )
+                providerPane(provider: entry.leadingProvider)
                 Divider()
-                providerPane(
-                    provider: .codex,
-                    snapshot: codexSnapshot
-                )
+                providerPane(provider: entry.trailingProvider)
             }
             .padding(12)
 
@@ -163,7 +152,9 @@ struct AIUMMediumWidgetView: View {
     }
 
     @ViewBuilder
-    private func providerPane(provider: Provider, snapshot: UsageSnapshot?) -> some View {
+    private func providerPane(provider: Provider) -> some View {
+        let snapshot = UsageSnapshot.displaySnapshot(from: entry.snapshots, for: provider)
+
         VStack(alignment: .leading, spacing: 6) {
             Label {
                 Text(provider.displayName)
@@ -185,8 +176,9 @@ struct AIUMMediumWidgetView: View {
                 } else {
                     Spacer(minLength: 0)
 
-                    if provider == .codex {
-                        CodexUsageRingsDetailView(
+                    if provider.usesUsageRings {
+                        UsageRingsDetailView(
+                            provider: provider,
                             snapshots: entry.snapshots,
                             ringSize: 60,
                             showsResetTimes: true
@@ -239,9 +231,9 @@ struct AIUMAccessoryCircularView: View {
                     systemImage: "exclamationmark.triangle.fill",
                     accessibilityValue: errorMessage
                 )
-            } else if snapshot.provider == .codex {
+            } else if snapshot.provider.usesUsageRings {
                 VStack(spacing: 1) {
-                    CodexUsageRingsView(snapshots: entry.snapshots)
+                    UsageRingsView(provider: snapshot.provider, snapshots: entry.snapshots)
                     updatedInfo(
                         fetchedAt: displayedFetchDate(for: snapshot, in: entry.snapshots),
                         style: .circular
@@ -300,7 +292,7 @@ struct AIUMAccessoryRectangularView: View {
                     Label("Usage unavailable", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption2)
                 }
-            } else if snapshot.provider == .codex {
+            } else if snapshot.provider.usesUsageRings {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
                         Text(snapshot.provider.displayName)
@@ -317,7 +309,7 @@ struct AIUMAccessoryRectangularView: View {
                     }
                     .lineLimit(1)
 
-                    CodexUsageRingsDetailView(snapshots: entry.snapshots, ringSize: 46)
+                    UsageRingsDetailView(provider: snapshot.provider, snapshots: entry.snapshots, ringSize: 46)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 2) {
@@ -359,12 +351,11 @@ struct AIUMAccessoryRectangularView: View {
 
 // MARK: - Shared helper
 
-/// A set of Codex rings shows multiple snapshots, so report the age of the
+/// A set of usage rings shows multiple snapshots, so report the age of the
 /// oldest visible limit rather than making older data appear freshly fetched.
 private func displayedFetchDate(for snapshot: UsageSnapshot, in snapshots: [UsageSnapshot]) -> Date {
-    guard snapshot.provider == .codex else { return snapshot.fetchedAt }
-    return CodexUsageLimit.allCases
-        .compactMap { $0.snapshot(in: snapshots)?.fetchedAt }
+    UsageLimit.limits(for: snapshot.provider)
+        .compactMap { $0.snapshot(in: snapshots, for: snapshot.provider)?.fetchedAt }
         .min() ?? snapshot.fetchedAt
 }
 
@@ -597,8 +588,20 @@ private enum WidgetPreviewData {
     )
 }
 
+#Preview("Claude Code Circular", as: .accessoryCircular) {
+    AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .claudeCode)
+}
+
 #Preview("Claude Code Rectangular", as: .accessoryRectangular) {
     AIUMLockScreenWidget()
+} timeline: {
+    WidgetPreviewData.entry(provider: .claudeCode)
+}
+
+#Preview("Claude Code Small", as: .systemSmall) {
+    AIUMSmallWidget()
 } timeline: {
     WidgetPreviewData.entry(provider: .claudeCode)
 }
@@ -612,7 +615,18 @@ private enum WidgetPreviewData {
 #Preview("Medium", as: .systemMedium) {
     AIUMMediumWidget()
 } timeline: {
-    WidgetPreviewData.entry(provider: .githubCopilot)
+    AIUMMediumWidgetEntry(
+        date: WidgetPreviewData.date,
+        snapshots: WidgetPreviewData.snapshots,
+        leadingProvider: .githubCopilot,
+        trailingProvider: .codex
+    )
+    AIUMMediumWidgetEntry(
+        date: WidgetPreviewData.date,
+        snapshots: WidgetPreviewData.snapshots,
+        leadingProvider: .codex,
+        trailingProvider: .claudeCode
+    )
 }
 
 #Preview("Small — Stale, Error & Not Signed In", as: .systemSmall) {

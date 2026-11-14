@@ -1,7 +1,7 @@
 import XCTest
 @testable import AIUM
 
-final class CodexUsageLimitTests: XCTestCase {
+final class UsageLimitTests: XCTestCase {
     func testRingsKeepTheirLimitsWhenResponseOrderAndUsageDiffer() {
         let snapshots = [
             snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 95),
@@ -10,7 +10,7 @@ final class CodexUsageLimitTests: XCTestCase {
         ]
 
         XCTAssertEqual(
-            CodexUsageLimit.allCases.map { $0.snapshot(in: snapshots)?.usedPercent },
+            UsageLimit.limits(for: .codex).map { $0.snapshot(in: snapshots, for: .codex)?.usedPercent },
             [45, 20, 95]
         )
     }
@@ -18,16 +18,16 @@ final class CodexUsageLimitTests: XCTestCase {
     func testMissingReserveDoesNotReuseTheWeeklyLimit() {
         let snapshots = [snapshot(minutes: 7 * 24 * 60, used: 80)]
 
-        XCTAssertNil(CodexUsageLimit.fiveHour.snapshot(in: snapshots))
-        XCTAssertEqual(CodexUsageLimit.weekly.snapshot(in: snapshots)?.usedPercent, 80)
-        XCTAssertNil(CodexUsageLimit.lunaReserve.snapshot(in: snapshots))
+        XCTAssertNil(UsageLimit.fiveHour.snapshot(in: snapshots, for: .codex))
+        XCTAssertEqual(UsageLimit.weekly.snapshot(in: snapshots, for: .codex)?.usedPercent, 80)
+        XCTAssertNil(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex))
     }
 
     func testMissingWeeklyLimitDoesNotReuseReserve() {
         let snapshots = [snapshot(plan: .codexLunaReserve, minutes: 7 * 24 * 60, used: 80)]
 
-        XCTAssertNil(CodexUsageLimit.weekly.snapshot(in: snapshots))
-        XCTAssertEqual(CodexUsageLimit.lunaReserve.snapshot(in: snapshots)?.usedPercent, 80)
+        XCTAssertNil(UsageLimit.weekly.snapshot(in: snapshots, for: .codex))
+        XCTAssertEqual(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex)?.usedPercent, 80)
     }
 
     func testZeroUsageIsAvailableButUnknownAndFailedLimitsAreNot() {
@@ -42,9 +42,9 @@ final class CodexUsageLimitTests: XCTestCase {
         )
         let snapshots = [zero, unavailable, failed]
 
-        XCTAssertEqual(CodexUsageLimit.fiveHour.snapshot(in: snapshots)?.usedPercent, 0)
-        XCTAssertNil(CodexUsageLimit.weekly.snapshot(in: snapshots))
-        XCTAssertNil(CodexUsageLimit.lunaReserve.snapshot(in: snapshots))
+        XCTAssertEqual(UsageLimit.fiveHour.snapshot(in: snapshots, for: .codex)?.usedPercent, 0)
+        XCTAssertNil(UsageLimit.weekly.snapshot(in: snapshots, for: .codex))
+        XCTAssertNil(UsageLimit.lunaReserve.snapshot(in: snapshots, for: .codex))
     }
 
     func testSelectsLatestMatchingSnapshotAndExcludesOtherProviders() {
@@ -55,17 +55,40 @@ final class CodexUsageLimitTests: XCTestCase {
             fetchedAt: Date(timeIntervalSince1970: 300), windowDurationMins: 5 * 60
         )
 
-        XCTAssertEqual(CodexUsageLimit.fiveHour.snapshot(in: [latest, github, old])?.usedPercent, 10)
+        XCTAssertEqual(UsageLimit.fiveHour.snapshot(in: [latest, github, old], for: .codex)?.usedPercent, 10)
+    }
+
+    func testClaudeCodeShowsFiveHourAndWeeklyRingsOnly() {
+        XCTAssertEqual(UsageLimit.limits(for: .claudeCode), [.fiveHour, .weekly])
+        XCTAssertEqual(UsageLimit.limits(for: .githubCopilot), [])
+        XCTAssertTrue(Provider.claudeCode.usesUsageRings)
+        XCTAssertTrue(Provider.codex.usesUsageRings)
+        XCTAssertFalse(Provider.githubCopilot.usesUsageRings)
+    }
+
+    func testClaudeCodeLimitsDoNotMixWithCodexSnapshots() {
+        let snapshots = [
+            snapshot(minutes: 5 * 60, used: 90),
+            snapshot(provider: .claudeCode, plan: .unknown, minutes: 7 * 24 * 60, used: 31),
+            snapshot(provider: .claudeCode, plan: .unknown, minutes: 5 * 60, used: 54),
+        ]
+
+        XCTAssertEqual(
+            UsageLimit.limits(for: .claudeCode).map { $0.snapshot(in: snapshots, for: .claudeCode)?.usedPercent },
+            [54, 31]
+        )
+        XCTAssertNil(UsageLimit.weekly.snapshot(in: snapshots, for: .codex))
     }
 
     private func snapshot(
+        provider: Provider = .codex,
         plan: PlanKind = .codexPro,
         minutes: Int,
         used: Double,
         fetchedAt: TimeInterval = 100
     ) -> UsageSnapshot {
         UsageSnapshot(
-            provider: .codex, planKind: plan, windowKind: .custom,
+            provider: provider, planKind: plan, windowKind: .custom,
             used: used, limit: 100, source: "test",
             fetchedAt: Date(timeIntervalSince1970: fetchedAt), windowDurationMins: minutes
         )
