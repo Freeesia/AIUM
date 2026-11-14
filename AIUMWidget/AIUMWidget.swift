@@ -38,6 +38,21 @@ struct AIUMWidgetConfigurationIntent: WidgetConfigurationIntent {
     }
 }
 
+struct AIUMMediumWidgetConfigurationIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "Usage Providers"
+    static var description = IntentDescription("Choose the two providers whose usage is shown side by side.")
+
+    @Parameter(title: "Left Provider", default: .githubCopilot)
+    var leadingProvider: AIUMWidgetProviderOption
+
+    @Parameter(title: "Right Provider", default: .codex)
+    var trailingProvider: AIUMWidgetProviderOption
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Left: \(\.$leadingProvider), Right: \(\.$trailingProvider)")
+    }
+}
+
 // MARK: - Timeline Entry
 
 struct AIUMWidgetEntry: TimelineEntry {
@@ -50,9 +65,17 @@ struct AIUMWidgetEntry: TimelineEntry {
     }
 }
 
-// MARK: - Timeline Provider
+struct AIUMMediumWidgetEntry: TimelineEntry {
+    let date: Date
+    let snapshots: [UsageSnapshot]
+    let leadingProvider: Provider
+    let trailingProvider: Provider
+}
 
-struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
+// MARK: - Timeline Providers
+
+/// Shared by the small and Lock Screen widgets, which show one selected provider.
+struct AIUMUsageWidgetProvider: AppIntentTimelineProvider {
     private static let refreshInterval: TimeInterval = 5 * 60
 
     func placeholder(in context: Context) -> AIUMWidgetEntry {
@@ -138,50 +161,86 @@ struct AIUMLockScreenWidgetProvider: AppIntentTimelineProvider {
                 source: "placeholder",
                 windowDurationMins: 7 * 24 * 60
             ),
+            UsageSnapshot(
+                provider: .claudeCode,
+                windowKind: .custom,
+                used: 54,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .hour, value: 3, to: Date()),
+                unit: "percent",
+                source: "placeholder",
+                windowDurationMins: 5 * 60
+            ),
+            UsageSnapshot(
+                provider: .claudeCode,
+                windowKind: .custom,
+                used: 31,
+                limit: 100,
+                resetAt: Calendar.current.date(byAdding: .day, value: 5, to: Date()),
+                unit: "percent",
+                source: "placeholder",
+                windowDurationMins: 7 * 24 * 60
+            ),
         ],
         provider: .githubCopilot
     )
 }
 
-struct AIUMStaticWidgetProvider: TimelineProvider {
+struct AIUMMediumWidgetProvider: AppIntentTimelineProvider {
     private static let refreshInterval: TimeInterval = 5 * 60
 
-    func placeholder(in context: Context) -> AIUMWidgetEntry {
-        AIUMLockScreenWidgetProvider.placeholderEntry
+    func placeholder(in context: Context) -> AIUMMediumWidgetEntry {
+        AIUMMediumWidgetEntry(
+            date: Date(),
+            snapshots: AIUMUsageWidgetProvider.placeholderEntry.snapshots,
+            leadingProvider: .githubCopilot,
+            trailingProvider: .codex
+        )
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (AIUMWidgetEntry) -> Void) {
-        completion(makeEntry())
+    func snapshot(
+        for configuration: AIUMMediumWidgetConfigurationIntent,
+        in context: Context
+    ) async -> AIUMMediumWidgetEntry {
+        makeEntry(for: configuration)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<AIUMWidgetEntry>) -> Void) {
-        let now = Date()
-        let entry = makeEntry(date: now)
-        let nextUpdate = now.addingTimeInterval(Self.refreshInterval)
-        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+    func timeline(
+        for configuration: AIUMMediumWidgetConfigurationIntent,
+        in context: Context
+    ) async -> Timeline<AIUMMediumWidgetEntry> {
+        let entry = makeEntry(for: configuration)
+        // Re-read cached snapshots every 5 minutes. WidgetKit may coalesce updates.
+        let nextUpdate = entry.date.addingTimeInterval(Self.refreshInterval)
+        return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
 
-    private func makeEntry(date: Date = Date()) -> AIUMWidgetEntry {
-        AIUMWidgetEntry(
-            date: date,
+    private func makeEntry(for configuration: AIUMMediumWidgetConfigurationIntent) -> AIUMMediumWidgetEntry {
+        AIUMMediumWidgetEntry(
+            date: Date(),
             snapshots: UsageStore.loadSnapshotsFromSharedContainer(),
-            provider: .githubCopilot
+            leadingProvider: configuration.leadingProvider.provider,
+            trailingProvider: configuration.trailingProvider.provider
         )
     }
 }
 
-// MARK: - Small Widget (single provider)
+// MARK: - Small Widget (selected provider)
 
 struct AIUMSmallWidget: Widget {
     static let kind = "AIUMSmallWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: Self.kind, provider: AIUMStaticWidgetProvider()) { entry in
+        AppIntentConfiguration(
+            kind: Self.kind,
+            intent: AIUMWidgetConfigurationIntent.self,
+            provider: AIUMUsageWidgetProvider()
+        ) { entry in
             AIUMSmallWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Usage")
-        .description("Shows your primary usage at a glance.")
+        .description("Shows usage for your selected provider at a glance.")
         .supportedFamilies([.systemSmall])
         .contentMarginsDisabled()
     }
@@ -196,30 +255,34 @@ struct AIUMLockScreenWidget: Widget {
         AppIntentConfiguration(
             kind: Self.kind,
             intent: AIUMWidgetConfigurationIntent.self,
-            provider: AIUMLockScreenWidgetProvider()
+            provider: AIUMUsageWidgetProvider()
         ) { entry in
             AIUMConfigurableWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("AIUM — Lock Screen Usage")
-        .description("Shows usage for your selected provider, with three rings for Codex limits.")
+        .description("Shows usage for your selected provider, with rings for Codex and Claude Code limits.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         .promptsForUserConfiguration()
     }
 }
 
-// MARK: - Medium Widget (both providers)
+// MARK: - Medium Widget (two selected providers)
 
 struct AIUMMediumWidget: Widget {
     static let kind = "AIUMMediumWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: Self.kind, provider: AIUMStaticWidgetProvider()) { entry in
+        AppIntentConfiguration(
+            kind: Self.kind,
+            intent: AIUMMediumWidgetConfigurationIntent.self,
+            provider: AIUMMediumWidgetProvider()
+        ) { entry in
             AIUMMediumWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("AIUM — Copilot & Codex")
-        .description("Shows GitHub Copilot and Codex usage side by side.")
+        .configurationDisplayName("AIUM — Usage Comparison")
+        .description("Shows usage for two selected providers side by side.")
         .supportedFamilies([.systemMedium])
         .contentMarginsDisabled()
     }
