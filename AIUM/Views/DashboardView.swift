@@ -6,6 +6,7 @@ struct DashboardView: View {
     @State private var githubAuthenticated = false
     @State private var codexAuthenticated = false
     @State private var claudeCodeAuthenticated = false
+    @State private var displayDivision: ClosedRange<CGFloat>?
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -26,18 +27,20 @@ struct DashboardView: View {
                             demoBanner
                         }
 
-                        // Keep the same view identity when folding, resizing, or changing text size.
-                        LazyVGrid(
-                            columns: Array(
-                                repeating: GridItem(.flexible(), spacing: sectionSpacing, alignment: .top),
-                                count: columnCount
-                            ),
-                            alignment: .leading,
-                            spacing: sectionSpacing
+                        DashboardColumnsLayout(
+                            columnCount: columnCount,
+                            spacing: sectionSpacing,
+                            division: displayDivision,
+                            minimumColumnWidth: minimumProviderColumnWidth
                         ) {
                             githubSection
                             codexSection
                             claudeCodeSection
+                        }
+                        .onGeometryChange(for: ClosedRange<CGFloat>?.self) { proxy in
+                            DashboardColumnsLayout.verticalDivision(in: proxy)
+                        } action: { division in
+                            displayDivision = division
                         }
 
                         if let error = viewModel.lastError {
