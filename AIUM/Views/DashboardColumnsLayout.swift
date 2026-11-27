@@ -4,16 +4,17 @@ import SwiftUI
 /// so a short section is not padded to the height of a tall neighbor.
 ///
 /// Sections go to columns in reading order (left to right, then the next row
-/// of columns). With two columns and a vertical display division, such as the
-/// fold of iPhone Duo, the gap between the columns is placed on the division.
+/// of columns). With two columns and an active vertical display division, such
+/// as the fold of a partly folded iPhone Duo, the gap between the columns is
+/// placed on the division. A flat display splits the columns evenly.
 ///
 /// The column count is a layout parameter, so the sections keep their view
 /// identity when folding, resizing, or changing text size.
 struct DashboardColumnsLayout: Layout {
     var columnCount: Int
     var spacing: CGFloat
-    /// Horizontal extent of a vertical display division in this layout's
-    /// coordinate space. Zero width when the display is flat.
+    /// Horizontal extent of an active vertical display division in this
+    /// layout's coordinate space. `nil` when the display is flat.
     var division: ClosedRange<CGFloat>?
     /// Narrowest column allowed when aligning to the division.
     var minimumColumnWidth: CGFloat
@@ -79,11 +80,13 @@ struct DashboardColumnsLayout: Layout {
 }
 
 extension DashboardColumnsLayout {
-    /// The vertical display division (fold) inside the view, if any.
+    /// The vertical display division (fold) inside the view while the display
+    /// is folded. The division is inactive while the display is flat.
     static func verticalDivision(in proxy: GeometryProxy) -> ClosedRange<CGFloat>? {
         guard #available(iOS 27.1, *) else { return nil }
         let bounds = CGRect(origin: .zero, size: proxy.size)
-        return proxy.reservedRegions(kind: .division, options: .includeInactive)
+        return proxy.reservedRegions(kind: .division)
+            .filter(\.isActive)
             .map(\.frame)
             .first { frame in
                 frame.width <= frame.height

@@ -11,8 +11,8 @@ final class DashboardColumnsLayoutTests: XCTestCase {
         XCTAssertEqual(columns.map(\.width), [500, 500])
     }
 
-    func testTwoColumnsSplitAroundFlatDivision() {
-        // The fold is right of the center because trailing bars take space.
+    func testTwoColumnsSplitAroundNarrowFold() {
+        // A folded display: the fold is right of the center because trailing bars take space.
         let layout = DashboardColumnsLayout(columnCount: 2, spacing: 16, division: 480...480, minimumColumnWidth: 320)
 
         let columns = layout.columns(width: 880, count: 2)
