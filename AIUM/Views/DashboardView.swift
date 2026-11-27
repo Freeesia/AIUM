@@ -7,9 +7,11 @@ struct DashboardView: View {
     @State private var codexAuthenticated = false
     @State private var claudeCodeAuthenticated = false
     @State private var displayDivision: ClosedRange<CGFloat>?
+    @State private var hasReadDisplayDivision = false
     @AppStorage(AppSettings.githubAICreditsVisibleKey) private var showsGitHubAICredits = true
     @AppStorage(AppSettings.githubPremiumRequestsVisibleKey) private var showsGitHubPremiumRequests = true
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var minimumProviderColumnWidth: CGFloat = 320
 
     private let contentPadding: CGFloat = 16
@@ -40,7 +42,13 @@ struct DashboardView: View {
                         .onGeometryChange(for: ClosedRange<CGFloat>?.self) { proxy in
                             DashboardColumnsLayout.verticalDivision(in: proxy)
                         } action: { division in
-                            displayDivision = division
+                            // Slide the columns to or from the fold as the display folds or
+                            // flattens, but not into place when the dashboard first appears.
+                            let animation: Animation? = hasReadDisplayDivision && !reduceMotion ? .smooth : nil
+                            hasReadDisplayDivision = true
+                            withAnimation(animation) {
+                                displayDivision = division
+                            }
                         }
 
                         if let error = viewModel.lastError {
