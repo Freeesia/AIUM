@@ -137,6 +137,27 @@
 "Could not confirm the reset. Retry to check the same request without using an additional reset." = "リセットの結果を確認できませんでした。再試行すると、追加のリセット権を使わずに同じリクエストを確認します。";
 "Could not refresh usage. Close this sheet and refresh the dashboard." = "利用量を取得できませんでした。シートを閉じてダッシュボードを更新してください。";
 
+/* Claude Code usage resets */
+"Reset Claude Code usage?" = "Claude Codeの利用量のリセット";
+"This uses one reset to reset your Claude Code usage limits." = "リセット権を1回分使って、Claude Codeの利用量をリセットします。";
+"Resets remaining: %lld" = "リセット残り回数：%lld回";
+"Available resets" = "利用可能なリセット権";
+"Loading reset details…" = "リセット権の情報を取得中…";
+"Could not load reset details. Try again." = "リセット権の情報を取得できませんでした。再試行してください。";
+"No resets are available." = "利用可能なリセット権がありません。";
+"No reset can be used right now." = "現在使用できるリセット権がありません。";
+"Resets the 5-hour limit" = "5時間の利用上限をリセット";
+"Resets the weekly limit" = "週間の利用上限をリセット";
+"Resets all usage limits" = "すべての利用上限をリセット";
+"Can be used after you reach a usage limit." = "利用上限に達すると使用できます。";
+"Can't be used right now." = "現在は使用できません。";
+"Claude Code usage has been reset." = "Claude Codeの利用量をリセットしました。";
+"A reset was used recently. Try again later." = "最近リセットを使用したため、しばらくしてから再試行してください。";
+"This account can't use a usage reset right now." = "このアカウントは現在、利用量のリセットを使用できません。";
+"The connected Claude account changed. Close this sheet and refresh before trying again." = "接続先のClaudeアカウントが変わりました。シートを閉じて利用量を更新してください。";
+"Refresh Claude Code usage before resetting it." = "リセットする前にClaude Codeの利用量を更新してください。";
+"Sign in to Claude Code again before resetting usage." = "利用量をリセットする前に、Claude Codeに再度サインインしてください。";
+
 /* Claude Code */
 "Claude Code" = "Claude Code";
 "Connecting to Claude Code…" = "Claude Codeに接続中…";

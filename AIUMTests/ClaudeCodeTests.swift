@@ -354,7 +354,7 @@ final class ClaudeCodeTests: XCTestCase {
         XCTAssertEqual(snapshots.count, 2)
         XCTAssertTrue(snapshots.allSatisfy { $0.provider == .claudeCode && $0.errorMessage == nil })
         XCTAssertEqual(Set(snapshots.compactMap(\.windowDurationMins)), [300, 10_080])
-        XCTAssertEqual(usageRequest?.url?.absoluteString, "https://api.anthropic.com/api/oauth/usage")
+        XCTAssertEqual(usageRequest?.url?.absoluteString, "https://api.anthropic.com/api/oauth/usage?cedar_ember=1&skip_spend=1")
         XCTAssertEqual(usageRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer fake-access")
         XCTAssertEqual(usageRequest?.value(forHTTPHeaderField: "anthropic-beta"), "oauth-2025-04-20")
         XCTAssertTrue(snapshots.allSatisfy { $0.displayName == "Profile Name" })

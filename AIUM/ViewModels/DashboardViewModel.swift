@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 final class DashboardViewModel: ObservableObject {
     private static let codexResetCreditDetailsCacheDuration: TimeInterval = 60
+    private static let claudeCodeResetStatusCacheDuration: TimeInterval = 60
 
     // MARK: - Published state
 
@@ -15,6 +16,12 @@ final class DashboardViewModel: ObservableObject {
     @Published private(set) var codexResetCreditDetails: CodexResetCreditDetails?
     @Published private(set) var isLoadingCodexResetCreditDetails = false
     @Published private(set) var codexResetCreditDetailsError: String?
+    @Published private(set) var isResettingClaudeCodeUsage = false
+    @Published private(set) var claudeCodeResetError: String?
+    @Published private(set) var claudeCodeResetOutcome: ClaudeCodeUsageResetOutcome?
+    @Published private(set) var claudeCodeResetStatus: ClaudeCodeResetStatus?
+    @Published private(set) var isLoadingClaudeCodeResetStatus = false
+    @Published private(set) var claudeCodeResetStatusError: String?
     @Published var isRefreshing = false
     @Published var lastError: String?
     @Published var activeRefreshIntervalMinutes = UsageRefreshSchedule.defaultAutomaticIntervalMinutes
@@ -29,11 +36,15 @@ final class DashboardViewModel: ObservableObject {
     private let githubProvider: GitHubUsageProvider
     private let codexProvider: PrivateCodexUsageProvider
     private let claudeCodeProvider: PrivateClaudeCodeUsageProvider
-    private let resetRequestStore: CodexResetRequestStore
+    private let resetRequestStore: UsageResetRequestStore
+    private let claudeCodeResetRequestStore: UsageResetRequestStore
     private let now: () -> Date
     private var codexResetCreditDetailsAccountId: String?
     private var codexResetCreditDetailsFetchedAt: Date?
     private var codexResetCreditDetailsRequestID: UUID?
+    private var claudeCodeResetStatusAccountId: String?
+    private var claudeCodeResetStatusFetchedAt: Date?
+    private var claudeCodeResetStatusRequestID: UUID?
     private var periodicRefreshTask: Task<Void, Never>?
     private var periodicRefreshGeneration = 0
     private var automaticRefreshIntervalMinutes = UsageRefreshSchedule.storedAutomaticIntervalMinutes()
@@ -46,7 +57,8 @@ final class DashboardViewModel: ObservableObject {
         githubProvider: GitHubUsageProvider = GitHubUsageProvider(),
         codexProvider: PrivateCodexUsageProvider = PrivateCodexUsageProvider(),
         claudeCodeProvider: PrivateClaudeCodeUsageProvider = PrivateClaudeCodeUsageProvider(),
-        resetRequestStore: CodexResetRequestStore? = nil,
+        resetRequestStore: UsageResetRequestStore? = nil,
+        claudeCodeResetRequestStore: UsageResetRequestStore? = nil,
         now: @escaping () -> Date = Date.init
     ) {
         let resolvedUsageStore = usageStore ?? .shared
@@ -55,7 +67,8 @@ final class DashboardViewModel: ObservableObject {
         self.githubProvider = githubProvider
         self.codexProvider = codexProvider
         self.claudeCodeProvider = claudeCodeProvider
-        self.resetRequestStore = resetRequestStore ?? CodexResetRequestStore()
+        self.resetRequestStore = resetRequestStore ?? .codex()
+        self.claudeCodeResetRequestStore = claudeCodeResetRequestStore ?? .claudeCode()
         self.now = now
         self.refreshService = UsageRefreshService(
             usageStore: resolvedUsageStore,
@@ -75,6 +88,11 @@ final class DashboardViewModel: ObservableObject {
 
     // MARK: - Public
 
+    /// True while either provider's reset request is in flight.
+    var isResettingUsage: Bool {
+        isResettingCodexUsage || isResettingClaudeCodeUsage
+    }
+
     var codexResetCredits: Int? {
         guard let snapshot = UsageSnapshot.displaySnapshot(from: codexSnapshots, for: .codex),
               snapshot.errorMessage == nil,
@@ -85,10 +103,10 @@ final class DashboardViewModel: ObservableObject {
 
     func prepareCodexUsageReset() async -> CodexUsageResetConfirmation? {
         guard !isDemoMode, !demoModeStore.isEnabled,
-              !isRefreshing, !isResettingCodexUsage,
+              !isRefreshing, !isResettingUsage,
               let remainingCount = codexResetCredits else { return nil }
         let identity = await codexProvider.accountIdentity
-        guard !isRefreshing, !isResettingCodexUsage else { return nil }
+        guard !isRefreshing, !isResettingUsage else { return nil }
         guard let accountId = identity.accountId,
               codexSnapshots.contains(where: { $0.accountId == accountId }) else {
             invalidateCodexResetCreditDetails()
@@ -152,7 +170,7 @@ final class DashboardViewModel: ObservableObject {
     }
 
     func resetCodexUsage(_ confirmation: CodexUsageResetConfirmation) async {
-        guard !isResettingCodexUsage, !isRefreshing, codexResetOutcome == nil,
+        guard !isResettingUsage, !isRefreshing, codexResetOutcome == nil,
               !isDemoMode, !demoModeStore.isEnabled else { return }
         isResettingCodexUsage = true
         codexResetError = nil
@@ -184,6 +202,144 @@ final class DashboardViewModel: ObservableObject {
             codexResetError = error.localizedDescription
         } catch {
             codexResetError = String(localized: "Could not confirm the reset. Retry to check the same request without using an additional reset.")
+        }
+    }
+
+    // MARK: - Claude Code usage reset
+
+    var claudeCodeResetCredits: Int? {
+        guard let snapshot = UsageSnapshot.displaySnapshot(from: claudeCodeSnapshots, for: .claudeCode),
+              snapshot.errorMessage == nil,
+              let value = snapshot.resetCredits,
+              let count = Int(exactly: value), count > 0 else { return nil }
+        return count
+    }
+
+    func prepareClaudeCodeUsageReset() async -> ClaudeCodeUsageResetConfirmation? {
+        guard !isDemoMode, !demoModeStore.isEnabled,
+              !isRefreshing, !isResettingUsage,
+              let remainingCount = claudeCodeResetCredits else { return nil }
+        let identity = await claudeCodeProvider.accountIdentity
+        guard !isRefreshing, !isResettingUsage else { return nil }
+        guard let accountId = identity.accountId,
+              claudeCodeSnapshots.contains(where: { $0.accountId == accountId }) else {
+            invalidateClaudeCodeResetStatus()
+            lastError = String(localized: "Refresh Claude Code usage before resetting it.")
+            return nil
+        }
+        guard let organizationId = identity.organizationId, !organizationId.isEmpty else {
+            invalidateClaudeCodeResetStatus()
+            lastError = String(localized: "Sign in to Claude Code again before resetting usage.")
+            return nil
+        }
+        claudeCodeResetError = nil
+        claudeCodeResetOutcome = nil
+        if claudeCodeResetStatusAccountId != accountId {
+            invalidateClaudeCodeResetStatus()
+        }
+        claudeCodeResetStatusError = nil
+        claudeCodeResetStatusRequestID = nil
+        isLoadingClaudeCodeResetStatus = false
+        return ClaudeCodeUsageResetConfirmation(
+            accountId: accountId,
+            organizationId: organizationId,
+            accountDisplayName: identity.profileName,
+            remainingCount: remainingCount
+        )
+    }
+
+    /// The grant a confirmed reset will use, once the status has loaded.
+    var claudeCodeResetGrantToUse: ClaudeCodeResetGrant? {
+        claudeCodeResetStatus?.grantToUse(now: now())
+    }
+
+    func loadClaudeCodeResetStatus(for confirmation: ClaudeCodeUsageResetConfirmation) async {
+        guard !isDemoMode, !demoModeStore.isEnabled,
+              !isLoadingClaudeCodeResetStatus, !isResettingClaudeCodeUsage,
+              claudeCodeResetOutcome == nil else { return }
+        let requestID = UUID()
+        claudeCodeResetStatusRequestID = requestID
+        isLoadingClaudeCodeResetStatus = true
+        claudeCodeResetStatusError = nil
+        defer {
+            if claudeCodeResetStatusRequestID == requestID {
+                isLoadingClaudeCodeResetStatus = false
+            }
+        }
+
+        let identity = await claudeCodeProvider.accountIdentity
+        guard !Task.isCancelled, claudeCodeResetStatusRequestID == requestID else { return }
+        guard identity.accountId == confirmation.accountId,
+              identity.organizationId == confirmation.organizationId else {
+            invalidateClaudeCodeResetStatus()
+            claudeCodeResetStatusError = ClaudeCodeUsageResetError.accountChanged.localizedDescription
+            return
+        }
+        if hasFreshClaudeCodeResetStatus(for: confirmation.accountId) { return }
+
+        do {
+            let status = try await claudeCodeProvider.fetchResetStatus(accountId: confirmation.accountId)
+            try Task.checkCancellation()
+            guard claudeCodeResetStatusRequestID == requestID else { return }
+            claudeCodeResetStatus = status
+            claudeCodeResetStatusAccountId = confirmation.accountId
+            claudeCodeResetStatusFetchedAt = now()
+        } catch {
+            guard !Task.isCancelled, claudeCodeResetStatusRequestID == requestID else { return }
+            if let error = error as? ClaudeCodeUsageResetError {
+                invalidateClaudeCodeResetStatus()
+                claudeCodeResetStatusError = error.localizedDescription
+            } else {
+                claudeCodeResetStatusError = String(localized: "Could not load reset details. Try again.")
+            }
+        }
+    }
+
+    func resetClaudeCodeUsage(_ confirmation: ClaudeCodeUsageResetConfirmation) async {
+        guard !isResettingUsage, !isRefreshing, claudeCodeResetOutcome == nil,
+              !isLoadingClaudeCodeResetStatus,
+              !isDemoMode, !demoModeStore.isEnabled else { return }
+        guard claudeCodeResetStatusAccountId == confirmation.accountId,
+              let grant = claudeCodeResetGrantToUse else {
+            claudeCodeResetError = ClaudeCodeUsageResetError.noUsableReset.localizedDescription
+            return
+        }
+        isResettingClaudeCodeUsage = true
+        claudeCodeResetError = nil
+        lastError = nil
+        // Keep the grant for a retry, but do not reuse the counts afterwards.
+        claudeCodeResetStatusFetchedAt = nil
+        defer { isResettingClaudeCodeUsage = false }
+
+        let requestKey = "\(confirmation.accountId).\(grant.id)"
+        let requestID = claudeCodeResetRequestStore.requestID(for: requestKey)
+        do {
+            let outcome = try await claudeCodeProvider.resetUsage(
+                requestID: requestID,
+                grantId: grant.id,
+                accountId: confirmation.accountId,
+                organizationId: confirmation.organizationId
+            )
+            claudeCodeResetRequestStore.clear(for: requestKey)
+            claudeCodeResetOutcome = outcome
+            invalidateClaudeCodeResetStatus()
+
+            // The old limits and reset count no longer describe the account.
+            // A refresh failure must not turn a completed reset into a retry.
+            usageStore.clear(provider: .claudeCode)
+            loadFromStore()
+            do {
+                let snapshots = try await claudeCodeProvider.fetchUsage()
+                usageStore.replace(provider: .claudeCode, with: snapshots)
+                loadFromStore()
+            } catch {
+                lastError = String(localized: "Could not refresh usage. Close this sheet and refresh the dashboard.")
+            }
+        } catch let error as ClaudeCodeUsageResetError {
+            if case .accountChanged = error { invalidateClaudeCodeResetStatus() }
+            claudeCodeResetError = error.localizedDescription
+        } catch {
+            claudeCodeResetError = ClaudeCodeUsageResetError.unconfirmed.localizedDescription
         }
     }
 
@@ -254,7 +410,9 @@ final class DashboardViewModel: ObservableObject {
     var claudeCodeIsAuthenticated: Bool {
         get async {
             if isDemoMode { return true }
-            return await claudeCodeProvider.isAuthenticated
+            let isAuthenticated = await claudeCodeProvider.isAuthenticated
+            if !isAuthenticated { invalidateClaudeCodeResetStatus() }
+            return isAuthenticated
         }
     }
 
@@ -263,7 +421,10 @@ final class DashboardViewModel: ObservableObject {
         let wasEnabled = isDemoMode
         let isEnabled = demoModeStore.isEnabled
         isDemoMode = isEnabled
-        if wasEnabled != isEnabled { invalidateCodexResetCreditDetails() }
+        if wasEnabled != isEnabled {
+            invalidateCodexResetCreditDetails()
+            invalidateClaudeCodeResetStatus()
+        }
 
         if !wasEnabled && isEnabled {
             // Demo mode turned ON: populate store with demo snapshots
@@ -313,6 +474,29 @@ final class DashboardViewModel: ObservableObject {
         isLoadingCodexResetCreditDetails = false
     }
 
+    private func hasFreshClaudeCodeResetStatus(for accountId: String) -> Bool {
+        guard claudeCodeResetStatusAccountId == accountId,
+              let status = claudeCodeResetStatus,
+              let fetchedAt = claudeCodeResetStatusFetchedAt else { return false }
+        let currentDate = now()
+        let age = currentDate.timeIntervalSince(fetchedAt)
+        // A grant that was usable when fetched but has since expired makes
+        // the cached counts wrong; grants that were already expired do not.
+        return age >= 0 && age < Self.claudeCodeResetStatusCacheDuration
+            && status.activeGrants(now: fetchedAt).allSatisfy { grant in
+                grant.endsAt.map { $0 > currentDate } ?? true
+            }
+    }
+
+    private func invalidateClaudeCodeResetStatus() {
+        claudeCodeResetStatus = nil
+        claudeCodeResetStatusAccountId = nil
+        claudeCodeResetStatusFetchedAt = nil
+        claudeCodeResetStatusRequestID = nil
+        claudeCodeResetStatusError = nil
+        isLoadingClaudeCodeResetStatus = false
+    }
+
     private func loadFromStore() {
         githubSnapshots = usageStore.snapshots(for: .githubCopilot)
         codexSnapshots = usageStore.snapshots(for: .codex)
@@ -320,7 +504,7 @@ final class DashboardViewModel: ObservableObject {
     }
 
     private func refreshNow(shouldReschedulePeriodicRefresh: Bool) async {
-        guard !isRefreshing, !isResettingCodexUsage else { return }
+        guard !isRefreshing, !isResettingUsage else { return }
         isRefreshing = true
         lastError = nil
 

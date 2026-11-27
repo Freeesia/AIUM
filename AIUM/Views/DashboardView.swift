@@ -69,7 +69,7 @@ struct DashboardView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
-                    .disabled(viewModel.isResettingCodexUsage)
+                    .disabled(viewModel.isResettingUsage)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -82,7 +82,7 @@ struct DashboardView: View {
                             Image(systemName: "arrow.clockwise")
                         }
                     }
-                    .disabled(viewModel.isRefreshing || viewModel.isResettingCodexUsage)
+                    .disabled(viewModel.isRefreshing || viewModel.isResettingUsage)
                 }
             }
             .sheet(item: $presentedSheet) { destination in
@@ -91,6 +91,8 @@ struct DashboardView: View {
                     SettingsView()
                 case .codexReset(let confirmation):
                     CodexUsageResetSheet(confirmation: confirmation, viewModel: viewModel)
+                case .claudeCodeReset(let confirmation):
+                    ClaudeCodeUsageResetSheet(confirmation: confirmation, viewModel: viewModel)
                 }
             }
             .onChange(of: presentedSheet?.id) { oldID, _ in
@@ -181,6 +183,7 @@ struct DashboardView: View {
                         UsageCardView(snapshot: snapshot)
                     }
                 }
+                claudeCodeResetCard
             } else {
                 NotSignedInCardView(provider: .claudeCode)
             }
@@ -273,13 +276,31 @@ struct DashboardView: View {
     @ViewBuilder
     private var codexResetCreditsCard: some View {
         if let resetCredits = viewModel.codexResetCredits, resetCredits > 0 {
-            CodexResetCreditsCard(
+            UsageResetCard(
                 remainingCount: resetCredits,
-                isDisabled: viewModel.isRefreshing || viewModel.isResettingCodexUsage || viewModel.isDemoMode
+                accessibilityIdentifier: "codex-reset-usage",
+                isDisabled: viewModel.isRefreshing || viewModel.isResettingUsage || viewModel.isDemoMode
             ) {
                 Task {
                     if let confirmation = await viewModel.prepareCodexUsageReset() {
                         presentedSheet = .codexReset(confirmation)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var claudeCodeResetCard: some View {
+        if let resetCredits = viewModel.claudeCodeResetCredits, resetCredits > 0 {
+            UsageResetCard(
+                remainingCount: resetCredits,
+                accessibilityIdentifier: "claude-code-reset-usage",
+                isDisabled: viewModel.isRefreshing || viewModel.isResettingUsage || viewModel.isDemoMode
+            ) {
+                Task {
+                    if let confirmation = await viewModel.prepareClaudeCodeUsageReset() {
+                        presentedSheet = .claudeCodeReset(confirmation)
                     }
                 }
             }
@@ -290,11 +311,13 @@ struct DashboardView: View {
 private enum DashboardSheet: Identifiable {
     case settings
     case codexReset(CodexUsageResetConfirmation)
+    case claudeCodeReset(ClaudeCodeUsageResetConfirmation)
 
     var id: String {
         switch self {
         case .settings: return "settings"
         case .codexReset(let confirmation): return confirmation.id.uuidString
+        case .claudeCodeReset(let confirmation): return confirmation.id.uuidString
         }
     }
 }
